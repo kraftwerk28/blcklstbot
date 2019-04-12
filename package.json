@@ -1,0 +1,25 @@
+{
+  "name": "blcklstbot",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "Vsevolod (@kraftwerk28) <kefirchik3@gmail.com>",
+  "license": "MIT",
+  "scripts": {
+    "start": "NODE_ENV=development node dist/",
+    "dev": "webpack --watch --mode=development",
+    "build": "webpack-dev-server --mode=production",
+    "lint": "eslint . --fix",
+    "clean": "rm -r dist/*"
+  },
+  "dependencies": {
+    "dotenv": "^7.0.0",
+    "telegraf": "^3.28.0"
+  },
+  "devDependencies": {
+    "ts-loader": "^5.3.3",
+    "typescript": "^3.4.3",
+    "webpack": "^4.30.0",
+    "webpack-cli": "^3.3.0",
+    "webpack-dev-server": "^3.3.1"
+  }
+}
