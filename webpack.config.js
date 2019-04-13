@@ -14,8 +14,8 @@ module.exports = (env, { mode }) => ({
   module: {
     rules: [
       {
-        test: /\.ts$/,
-        loader: 'ts-loader'
+        test: /\.mjs$/,
+        type: 'javascript/auto'
       }
     ]
   },
@@ -25,7 +25,7 @@ module.exports = (env, { mode }) => ({
     // })
   ],
   resolve: {
-    extensions: ['.ts']
+    extensions: ['.js']
   }
 
 })

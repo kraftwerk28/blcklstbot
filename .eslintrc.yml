@@ -1,8 +1,11 @@
-parserOptions:
-  ecmaVersion: 2017
 env:
   es6: true
   node: true
+parserOptions:
+  sourceType: module
+  ecmaFeatures:
+    spread: true
+    experimentalObjectRestSpread: true
 extends: eslint:recommended
 rules:
   no-console: 0
