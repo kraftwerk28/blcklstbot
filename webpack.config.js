@@ -1,8 +1,9 @@
 'use strict'
 
 const { resolve } = require('path')
+const WNE = require('webpack-node-externals')
 
-module.exports = (env, { mode }) => ({
+exports = (env, { mode }) => ({
   mode,
   target: 'node',
   entry: '.',
@@ -14,18 +15,17 @@ module.exports = (env, { mode }) => ({
   module: {
     rules: [
       {
-        test: /\.mjs$/,
-        type: 'javascript/auto'
+        test: /\.js$/,
+        loader: 'babel-loader'
       }
     ]
   },
+  devtool: mode === 'development' ? 'source-map' : false,
   plugins: [
-    // new DefinePlugin({
-    //   NODE_ENV: JSON.stringify(mode)
-    // })
   ],
   resolve: {
     extensions: ['.js']
-  }
+  },
+  externals: [WNE()]
 
 })

@@ -1,0 +1,6 @@
+{
+  "commands": {
+    "report": "spam",
+    "unban": "unban"
+  }
+}
