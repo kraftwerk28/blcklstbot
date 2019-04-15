@@ -1,0 +1,4 @@
+CREATE TABLE groups (
+  group_id BIGINT PRIMARY KEY,
+  silent BOOLEAN NOT NULL DEFAULT TRUE
+);

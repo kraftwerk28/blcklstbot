@@ -3,7 +3,7 @@
 const { resolve } = require('path')
 const WNE = require('webpack-node-externals')
 
-exports = (env, { mode }) => ({
+module.exports = (env, { mode }) => ({
   mode,
   target: 'node',
   entry: '.',

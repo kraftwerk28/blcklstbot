@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "dotenv": "^7.0.0",
+    "pg": "^7.9.0",
     "telegraf": "^3.28.0"
   },
   "devDependencies": {
