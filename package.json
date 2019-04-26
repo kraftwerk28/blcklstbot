@@ -5,11 +5,12 @@
   "author": "Vsevolod (@kraftwerk28) <kefirchik3@gmail.com>",
   "license": "MIT",
   "scripts": {
-    "start": "NODE_ENV=development node dist/",
-    "dev": "webpack --watch --mode=development",
+    "start": "webpack --watch --mode=development",
     "build": "webpack --mode=production",
+    "dev": "NODE_ENV=development node dist/",
     "lint": "eslint . --fix",
-    "clean": "rm -r dist/*"
+    "clean": "rm -r dist/*",
+    "deploy-db": "psql -d blcklstbot -f ./db.sql"
   },
   "dependencies": {
     "dotenv": "^7.0.0",

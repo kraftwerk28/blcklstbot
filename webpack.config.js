@@ -1,31 +1,32 @@
 'use strict'
 
 const { resolve } = require('path')
-const WNE = require('webpack-node-externals')
+const WebpackNodeExt = require('webpack-node-externals')
 
-module.exports = (env, { mode }) => ({
-  mode,
-  target: 'node',
-  entry: '.',
-  output: {
-    filename: 'index.js',
-    path: resolve('dist/'),
-  },
-  stats: 'minimal',
-  module: {
-    rules: [
-      {
-        test: /\.js$/,
-        loader: 'babel-loader'
-      }
-    ]
-  },
-  devtool: mode === 'development' ? 'source-map' : false,
-  plugins: [
-  ],
-  resolve: {
-    extensions: ['.js']
-  },
-  externals: [WNE()]
+module.exports = (env, { mode }) => {
+  const dev = mode === 'development'
 
-})
+  return {
+    mode,
+    target: 'node',
+    entry: '.',
+    output: {
+      filename: 'index.js',
+      path: resolve('dist/'),
+    },
+    stats: 'minimal',
+    module: {
+      rules: [
+        {
+          test: /\.js$/,
+          loader: 'babel-loader'
+        }
+      ]
+    },
+    devtool: dev ? 'source-map' : false,
+    resolve: {
+      extensions: ['.js']
+    },
+    externals: [WebpackNodeExt()]
+  }
+}
