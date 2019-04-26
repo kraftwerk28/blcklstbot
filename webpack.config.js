@@ -27,6 +27,10 @@ module.exports = (env, { mode }) => {
     resolve: {
       extensions: ['.js']
     },
-    externals: [WebpackNodeExt()]
+    externals: [WebpackNodeExt()],
+    node: {
+      __dirname: false,
+      __filename: false
+    }
   }
 }
