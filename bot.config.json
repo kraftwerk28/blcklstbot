@@ -11,6 +11,7 @@
     "group_welcome": "Hi there:) use /spam for reporting bad guys. For more info: /help. Developer: @kraftwerk28",
     "rules": "First of all, give me rights to delete messages and kick members, so I can pwn \"users\" that other admins of this group reported. Report user by replying to \"bad\" message with /report. Each reported user goes to blacklist (but not in every group🌚) so in he will be banned in other groups that this bot belong to.",
     "user_banned": "$1 have been banned. GG WP!",
-    "self_report": "You are so smart..."
+    "self_report": "You are so smart...",
+    "private_messsages_restriction": "I am only for groups and supergroups."
   }
 }
