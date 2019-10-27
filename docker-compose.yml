@@ -1,0 +1,15 @@
+version: '3'
+services:
+  blcklstbot:
+    build: ./
+    env_file: ./.env
+    ports:
+      - 1490:1490
+    restart: always
+    volumes:
+      - ./lenc:/etc/letsencrypt/live/kraftwerk28.pp.ua
+
+networks:
+  default:
+    external:
+      name: globalpg
