@@ -3,7 +3,8 @@
     "report": "report",
     "unban": "unban",
     "debug_info": "debuginfo",
-    "toggle_silent": "toggle_silent"
+    "toggle_silent": "toggle_silent",
+    "voteban": "voteban"
   },
   "replicas": {
     "i_am_not_admin": "Bruh... I cannot ban because I've no proper rights to do this. Use /help",

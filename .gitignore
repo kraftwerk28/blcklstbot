@@ -63,3 +63,5 @@ typings/
 # custom
 .vscode/
 dist/
+*.dump
+reports.json
