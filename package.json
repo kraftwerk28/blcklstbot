@@ -7,7 +7,8 @@
   "scripts": {
     "start": "tsc -w --sourcemap",
     "build": "tsc",
-    "dev": "NODE_ENV=development nodemon dist/",
+    "nodemon": "NODE_ENV=development nodemon dist/",
+    "dev": "NODE_ENV=development node dist/",
     "lint": "eslint --ignore-path .gitignore --fix .",
     "clean": "rm -r dist/*",
     "deploy-db": "psql -d blcklstbot -f ./db.sql",

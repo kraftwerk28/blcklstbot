@@ -1,11 +1,18 @@
-import { createServer, Server, IncomingMessage, ServerResponse } from 'http';
+import { createServer, Server } from 'http';
 import { promisify } from 'util';
+import Telegraf, { ContextMessageUpdate } from 'telegraf';
 
-import Telegraf, { Extra, Markup, ContextMessageUpdate } from 'telegraf';
-import * as api from './api';
 import eat from './updateEater';
-import * as middlewares from './middlewares';
+import * as m from './middlewares';
 import * as db from './db';
+import * as api from './api';
+import { VotebanCooldown } from './votebanCD';
+import {
+  Message,
+  ExtraReplyMessage,
+  Chat,
+  User
+} from 'telegraf/typings/telegram-types';
 
 type Tf = Telegraf<ContextMessageUpdate>;
 
@@ -13,13 +20,37 @@ let dev = false;
 let server: Server;
 let bot: Tf;
 
+export interface Report {
+  chat: Chat;
+  reportedUser: User;
+  reportedMsg?: Message;
+  pollMsg: Message;
+  reportMsg: Message;
+}
+// typing for context extending feature
+declare module 'telegraf' {
+  export interface ComposerConstructor {
+    admin<TContext extends ContextMessageUpdate>(
+      ...middlewares: Middleware<TContext>[]
+    ): Middleware<TContext>;
+  }
+  export interface ContextMessageUpdate {
+    votebanCD: VotebanCooldown;
+    replyTo(
+      text: string,
+      extra?: ExtraReplyMessage | undefined
+    ): Promise<Message | null>;
+    votebans: Map<string, Report>;
+    banned: Map<
+      number,
+      { chatId: number; userId: number; resultMsgId: number }
+    >;
+    cbQueryError(): Promise<boolean>;
+  }
+}
+
 function initBot() {
-  const {
-    NODE_ENV,
-    BOT_TOKEN,
-    BOT_USERNAME,
-    API_TOKEN,
-  } = process.env;
+  const { NODE_ENV, BOT_TOKEN, BOT_USERNAME, API_TOKEN } = process.env;
   dev = NODE_ENV === 'development';
   api.setAPIToken(API_TOKEN!);
   bot = new Telegraf(BOT_TOKEN!, {
@@ -27,56 +58,50 @@ function initBot() {
     telegram: { webhookReply: false }
   });
 
+  bot.context.votebanCD = new VotebanCooldown();
+  bot.context.replyTo = async function(text, extra) {
+    const { message, chat, telegram } = this;
+    if (!(message && chat)) return null;
+    return telegram.sendMessage(chat.id, text, {
+      ...extra,
+      reply_to_message_id: message.message_id
+    });
+  };
+  bot.context.votebans = new Map();
+  bot.context.banned = new Map();
+  bot.context.cbQueryError = function(
+    text = 'An error occured',
+    showAlert = false
+  ) {
+    return this.answerCbQuery(text, showAlert);
+  };
+
   bot
-    .on('text', middlewares.onText)
-    .on('poll' as any, middlewares.onPoll)
-    .on('new_chat_members', middlewares.onNewMember)
-    .on('left_chat_member', middlewares.onLeftMember)
-    .use(middlewares.noPM)
-    .command('report', middlewares.report)
-    .command('unban', middlewares.unban)
-    .command('det_debug_info', middlewares.debugInfo)
-    .command('voteban', middlewares.voteban)
-    .command('get_user', middlewares.getByUsernameReply)
-    .help(middlewares.help);
-  // .command('board', ctx => {
-  //   ctx.reply('...', {
-  //     reply_markup: Markup.inlineKeyboard(
-  //       Array(8)
-  //         .fill(null)
-  //         .map((_, i) =>
-  //           Array(8)
-  //             .fill(null)
-  //             .map((_, j) =>
-  //               Markup.callbackButton((i * 8 + j).toString(), 'Hello')
-  //             )
-  //         )
-  //     )
-  //   });
-  // })
-  // .on('callback_query', ctx => {
-  //   const { callbackQuery } = ctx;
-  //   console.log(callbackQuery);
-  //   return ctx.answerCbQuery('Ok!');
-  // })
-  // .on('inline_query', ctx => {
-  //   const { inlineQuery } = ctx;
-  //   console.log(inlineQuery);
-  //   return ctx.answerInlineQuery([
-  //     {
-  //       type: 'article',
-  //       id: '0',
-  //       input_message_content: { message_text: 'Lol' },
-  //       title: inlineQuery!.query
-  //     },
-  //     {
-  //       type: 'article',
-  //       id: '0',
-  //       input_message_content: { message_text: 'Kek' },
-  //       title: ':' + inlineQuery!.query + ':'
-  //     }
-  //   ]);
-  // });
+    .on('poll' as any, m.onPoll)
+    .use(m.noPM)
+    .on('text', m.onText)
+    .on('new_chat_members', m.checkBotAdminWeak, m.onNewMember)
+    .on('left_chat_member', m.checkBotAdminWeak, m.onLeftMember)
+    .command(
+      'report',
+      m.safeBanReport,
+      m.checkBotAdmin,
+      m.adminPermission,
+      m.report
+    )
+    .command('get_debug_info', m.debugInfo)
+    .command(
+      'voteban',
+      m.safeBanReport,
+      m.checkBotAdmin,
+      m.adminPermission,
+      m.voteban
+    )
+    .command('get_user', m.getByUsernameReply)
+    .command('stop', m.adminPermission, m.stopVoteban)
+    .action('unban', m.adminPermissionCBQuery, m.unbanAction)
+    .action('deleteMessage', m.adminPermissionCBQuery, m.deleteMessageAction)
+    .help(m.adminPermission, m.help);
 }
 
 async function runBot() {
@@ -84,7 +109,7 @@ async function runBot() {
     BOT_HTTP_PORT,
     BOT_WEBHOOK_PORT,
     BOT_SECRET_PATH,
-    BOT_URL,
+    BOT_URL
   } = process.env;
   if (dev) {
     bot.startPolling();
@@ -118,9 +143,9 @@ async function main() {
 main();
 
 ['SIGINT', 'SIGTERM'].forEach(signal => {
-  process.on(signal as any, async () => {
-    console.log('Starting graceful shutdown.');
-    await bot.stop();
+  process.on(signal as any, async code => {
+    console.log(`\nCode: ${code}. Starting graceful shutdown.`);
+    // await bot.stop();
     if (!dev) {
       await bot.telegram.deleteWebhook();
       await promisify(server.close.bind(server))();
@@ -129,4 +154,9 @@ main();
     console.log('Finished graceful shutdown.');
     process.exit(0);
   });
+});
+
+process.on('unhandledRejection', reason => {
+  console.log('UNHANDLED PROMISE REJECTION.');
+  console.error((reason as Error).message);
 });

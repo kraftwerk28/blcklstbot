@@ -34,7 +34,10 @@ function n<T>(value: T): NonNullable<T> | null {
 }
 
 export const getChatById = (id: number) =>
-  client.first().where({ chat_id: id }).from('chats');
+  client
+    .first()
+    .where({ chat_id: id })
+    .from('chats');
 
 export const getChat = (chat: Chat) =>
   client
@@ -45,14 +48,16 @@ export const getChat = (chat: Chat) =>
 export const getChats = () => client.select().from('chats');
 
 export const addChat = (chat: Chat) =>
-  client.raw(
-    `
-      INSERT INTO chats (chat_id, username, title)
-      VALUES (?, ?, ?)
-      ON CONFLICT DO NOTHING
-    `,
-    [chat.id, n(chat.username) as any, n(chat.title)]
-  ).then(r => r.rowCount > 0);
+  client
+    .raw(
+      `
+        INSERT INTO chats (chat_id, username, title)
+          VALUES (?, ?, ?)
+          ON CONFLICT DO NOTHING
+      `,
+      [chat.id, n(chat.username) as any, n(chat.title)]
+    )
+    .then(r => r.rowCount > 0);
 
 export const setChatProp = (chat: Chat, propName: string, propValue: any) =>
   client

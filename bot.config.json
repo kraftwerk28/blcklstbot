@@ -1,16 +1,9 @@
 {
-  "commands": {
-    "report": "report",
-    "unban": "unban",
-    "debug_info": "debuginfo",
-    "toggle_silent": "toggle_silent",
-    "voteban": "voteban"
-  },
   "replicas": {
-    "i_am_not_admin": "Bruh... I cannot ban because I've no proper rights to do this. Use /help",
+    "i_am_not_admin": "I don't have permission to ban.",
     "you_are_not_admin": "Nice try, but only admins can report spammers...",
     "group_welcome": "Hi there:) use /spam for reporting bad guys. For more info: /help. Developer: @kraftwerk28",
-    "rules": "First of all, give me rights to delete messages and kick members, so I can pwn \"users\" that other admins of this group reported. Report user by replying to \"bad\" message with /report. Each reported user goes to blacklist (but not in every group🌚) so in he will be banned in other groups that this bot belong to.",
+    "rules": "/report - [admin] ban and report user\n/voteban - start voteban\n/stop - [admin] start voteban cooldown",
     "user_banned": "$1 have been banned. GG WP!",
     "self_report": "You are so smart...",
     "private_messsages_restriction": "I am only for groups and supergroups."

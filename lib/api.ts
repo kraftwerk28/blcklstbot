@@ -35,18 +35,23 @@ export function getBlacklist(): Promise<Banned[]> {
   return fetch(API_URL + BLACKLIST, { token: API_TOKEN });
 }
 
-export function getById(uId: number) {
-  return fetch(API_URL + BLACKLIST, { token: API_TOKEN, id: uId  });
+export async function getById(uId: number): Promise<Banned | null> {
+  const res = await fetch(API_URL + BLACKLIST, { token: API_TOKEN, id: uId });
+  if (res?.result === 'error') return null;
+  return res;
 }
 
-export function addUser (data: any) {
-  return fetch(API_URL + ADDUSER, { token: API_TOKEN, ...data });
+export async function addUser(data: any) {
+  const res = await fetch(API_URL + ADDUSER, { token: API_TOKEN, ...data });
+  return res?.result === 'added';
 }
 
-export function checkUser (uId: number) {
-  return fetch(API_URL + CHECKUSER, { id: uId });
+export async function checkUser(uId: number) {
+  const res = await fetch(API_URL + CHECKUSER, { id: uId });
+  return res?.result === 'success';
 }
 
-export function rmUser (uId: number) {
-  return fetch(API_URL + DELUSER, { token: API_TOKEN, id: uId });
+export async function rmUser(uId: number) {
+  const res = await fetch(API_URL + DELUSER, { token: API_TOKEN, id: uId });
+  return res?.result === 'deleted';
 }
