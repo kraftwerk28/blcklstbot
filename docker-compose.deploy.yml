@@ -1,0 +1,4 @@
+version: '3'
+services:
+  blcklstbot:
+    image: 'kraftwerk28/blcklstbot'

@@ -5,6 +5,7 @@ import * as db from './db';
 import * as utils from './utils';
 import { replicas as REPLICAS } from '../bot.config.json';
 import { Report } from './bot';
+import { helpText } from './helpText';
 
 type CtxMW = Middleware<ContextMessageUpdate>;
 
@@ -208,10 +209,7 @@ export const onText: CtxMW = async function(ctx, next) {
 export const unban: CtxMW = function(ctx) {};
 
 export const help: CtxMW = async function(ctx) {
-  const isAdminMsg = await utils.checkAdmin(ctx);
-  if (!isAdminMsg) return;
-
-  return ctx.replyTo(REPLICAS.rules);
+  return ctx.replyTo(helpText());
 };
 
 export const debugInfo: CtxMW = async function({ message, reply }) {
@@ -244,6 +242,9 @@ export const voteban: CtxMW = async function(ctx) {
 
   const reportedUser = utils.getReportedUser(ctx);
   if (!reportedUser) return;
+
+  if (Array.from(votebans).find(v => v[1].reportedUser.id === reportedUser.id))
+    return;
 
   const pollMsg = await telegram.sendPoll(
     chat!.id,
@@ -338,3 +339,32 @@ export const safeBanReport: CtxMW = async function(ctx, next) {
 
   if (!['administrator', 'creator'].includes(cm.status)) return next!();
 };
+
+export const setVotebanThreshold: CtxMW = async function(ctx, next) {
+  const { match, chat } = ctx;
+  if (!(match && chat)) return;
+  const threshold = +match[1];
+  await db.setChatProp(chat, 'voteban_threshold', threshold);
+  return ctx.replyTo(`Updated voteban threshold to ${threshold}.`);
+};
+
+export const cancelLastVoteban: CtxMW = async function(ctx, next) {
+  const { telegram: tg, votebans, chat } = ctx;
+  if (!chat) return;
+  const vbArr = Array.from(votebans);
+  const lastVb = vbArr.find(v => v[1].chat.id == chat.id);
+  if (!lastVb) return;
+  await utils.runAll(
+    tg.deleteMessage(chat.id, lastVb[1].reportMsg.message_id),
+    tg.deleteMessage(chat.id, lastVb[1].pollMsg.message_id),
+    tg.deleteMessage(chat.id, lastVb[1].reportMsg.message_id),
+    ctx.deleteMessage()
+  );
+  votebans.delete(lastVb[0]);
+};
+
+export const register: CtxMW = async function(ctx, next) {
+  const { chat } = ctx;
+  if (!chat) return;
+  await db.addChat(chat);
+}

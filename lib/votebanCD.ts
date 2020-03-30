@@ -2,7 +2,7 @@ export class VotebanCooldown {
   private cds: Map<number, NodeJS.Timeout>;
   private timeout: number;
 
-  constructor(timeout = 1 * 5E3) {
+  constructor(timeout = 15 * 60E3) {
     this.timeout = timeout;
     this.cds = new Map();
   }

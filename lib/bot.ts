@@ -90,15 +90,16 @@ function initBot() {
       m.report
     )
     .command('get_debug_info', m.debugInfo)
-    .command(
-      'voteban',
-      m.safeBanReport,
-      m.checkBotAdmin,
-      m.adminPermission,
-      m.voteban
-    )
+    .command('voteban', m.safeBanReport, m.checkBotAdmin, m.voteban)
     .command('get_user', m.getByUsernameReply)
     .command('stop', m.adminPermission, m.stopVoteban)
+    .command('cancel_voteban', m.cancelLastVoteban)
+    .command('register', m.register)
+    .hears(
+      /\/set_voteban_threshold(?:[\w@]*)\s*(\d+)\s*$/,
+      m.adminPermission,
+      m.setVotebanThreshold
+    )
     .action('unban', m.adminPermissionCBQuery, m.unbanAction)
     .action('deleteMessage', m.adminPermissionCBQuery, m.deleteMessageAction)
     .help(m.adminPermission, m.help);
