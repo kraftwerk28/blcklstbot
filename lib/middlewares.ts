@@ -200,11 +200,7 @@ export const onPoll: CtxMW = async function(ctx) {
 export const onText: CtxMW = async function(ctx, next) {
   const { chat } = ctx;
   if (!chat) return;
-  try {
-    await db.addChat(chat);
-  } catch(e) {
-    console.error(e);
-  }
+  await db.addChat(chat);
   await utils.checkUser(ctx);
   return next!();
 };
@@ -213,7 +209,15 @@ export const onText: CtxMW = async function(ctx, next) {
 export const unban: CtxMW = function(ctx) {};
 
 export const help: CtxMW = async function(ctx) {
-  return ctx.replyTo(helpText());
+  const { chat } = ctx;
+  if (!chat) return;
+  const commands = helpText();
+  const votebanThreshold = await db
+    .getChat(chat)
+    .then(c => c.voteban_threshold)
+    .catch(() => 'not set');
+  const text = commands + `\n\nVoteban threshold: ${votebanThreshold}`;
+  ctx.replyTo(text);
 };
 
 export const debugInfo: CtxMW = async function({ message, reply }) {
@@ -371,4 +375,4 @@ export const register: CtxMW = async function(ctx, next) {
   const { chat } = ctx;
   if (!chat) return;
   await db.addChat(chat);
-}
+};
