@@ -103,7 +103,7 @@ function initBot() {
     .command('cancel_voteban', m.cancelLastVoteban)
     .command('register', m.register)
     .hears(
-      /\/set_voteban_threshold(?:[\w@]*)\s*(\d+)\s*$/,
+      /\/voteban_threshold(?:[\w@]*)\s*(\d+)?\s*$/,
       m.adminPermission,
       m.setVotebanThreshold
     )
