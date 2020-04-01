@@ -14,6 +14,7 @@ export function mention(u: User, link = false, includeLastName = true) {
   if (link) {
     return `<a href="tg://user?id=${u.id}">${text}</a>`;
   }
+  return text;
 }
 
 export async function runAll(...funcs: (Promise<any> | undefined)[]) {
@@ -37,12 +38,12 @@ export async function checkAdmin(ctx: ContextMessageUpdate): Promise<boolean> {
 }
 
 export async function checkUser(ctx: ContextMessageUpdate) {
-  const { chat, message, from, telegram } = ctx;
+  const { chat, message, from } = ctx;
   if (!(chat && message && from)) return;
 
   const isBanned = await api.checkUser(from.id);
   if (isBanned) {
-    await telegram.deleteMessage(chat.id, message.message_id);
+    await ctx.deleteMessageWeak(chat.id, message.message_id);
     await utils.kickUser(ctx, chat, from, message, undefined, false);
   }
 }

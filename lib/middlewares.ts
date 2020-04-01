@@ -103,8 +103,8 @@ export const report: CtxMW = async function(ctx) {
   );
 
   await utils.runAll(
-    tg.deleteMessage(chat.id, reportedMsg.message_id),
-    tg.deleteMessage(chat.id, message.message_id)
+    ctx.deleteMessageWeak(chat.id, reportedMsg.message_id),
+    ctx.deleteMessageWeak(chat.id, message.message_id)
   );
 };
 
@@ -141,7 +141,7 @@ export const onNewMember: CtxMW = async function(ctx) {
       return;
     }
     if (toBeBanned.length) {
-      await tg.deleteMessage(chat.id, message.message_id);
+      await ctx.deleteMessageWeak(chat.id, message.message_id);
     }
     toBeBanned.forEach(async ({ id }) => {
       await tg.kickChatMember(chat.id, id);
@@ -177,9 +177,9 @@ export const onPoll: CtxMW = async function(ctx) {
     votebans.delete(poll.id);
 
     await utils.runAll(
-      tg.deleteMessage(chat.id, pollMsg.message_id),
-      reportedMsg && tg.deleteMessage(chat.id, reportedMsg.message_id),
-      tg.deleteMessage(chat.id, reportMsg.message_id),
+      ctx.deleteMessageWeak(chat.id, pollMsg.message_id),
+      reportedMsg && ctx.deleteMessageWeak(chat.id, reportedMsg.message_id),
+      ctx.deleteMessageWeak(chat.id, reportMsg.message_id),
       utils.kickUser(
         ctx,
         chat,
@@ -191,18 +191,22 @@ export const onPoll: CtxMW = async function(ctx) {
     );
   } else if (-diff >= voteban_threshold) {
     await utils.runAll(
-      tg.deleteMessage(chat.id, pollMsg.message_id),
-      tg.deleteMessage(chat.id, reportMsg.message_id)
+      ctx.deleteMessageWeak(chat.id, pollMsg.message_id),
+      ctx.deleteMessageWeak(chat.id, reportMsg.message_id)
     );
   }
 };
 
 export const onText: CtxMW = async function(ctx, next) {
-  const { chat, from } = ctx;
+  const { chat } = ctx;
   if (!chat) return;
-  await db.addChat(chat);
+  try {
+    await db.addChat(chat);
+  } catch(e) {
+    console.error(e);
+  }
   await utils.checkUser(ctx);
-  next!();
+  return next!();
 };
 
 /* unimplemented! */
@@ -280,7 +284,7 @@ export const unbanAction: CtxMW = async function(ctx, next) {
 
   await utils.runAll(
     ctx.telegram.unbanChatMember(toUnban.chatId, toUnban.userId),
-    ctx.telegram.deleteMessage(toUnban.chatId, toUnban.resultMsgId),
+    ctx.deleteMessageWeak(toUnban.chatId, toUnban.resultMsgId),
     api.rmUser(toUnban.userId)
   );
   banned.delete(message.message_id);
@@ -288,13 +292,13 @@ export const unbanAction: CtxMW = async function(ctx, next) {
 };
 
 export const deleteMessageAction: CtxMW = async function(ctx, next) {
-  const { telegram, banned, callbackQuery: { message } = {} } = ctx;
+  const { banned, callbackQuery: { message } = {} } = ctx;
   if (!message) return ctx.cbQueryError();
 
   const toUnban = banned.get(message!.message_id);
   if (!toUnban) return ctx.cbQueryError();
 
-  await telegram.deleteMessage(toUnban.chatId, toUnban.resultMsgId);
+  await ctx.deleteMessageWeak(toUnban.chatId, toUnban.resultMsgId);
   banned.delete(message!.message_id);
   return ctx.answerCbQuery();
 };
@@ -355,10 +359,10 @@ export const cancelLastVoteban: CtxMW = async function(ctx, next) {
   const lastVb = vbArr.find(v => v[1].chat.id == chat.id);
   if (!lastVb) return;
   await utils.runAll(
-    tg.deleteMessage(chat.id, lastVb[1].reportMsg.message_id),
-    tg.deleteMessage(chat.id, lastVb[1].pollMsg.message_id),
-    tg.deleteMessage(chat.id, lastVb[1].reportMsg.message_id),
-    ctx.deleteMessage()
+    ctx.deleteMessageWeak(chat.id, lastVb[1].reportMsg.message_id),
+    ctx.deleteMessageWeak(chat.id, lastVb[1].pollMsg.message_id),
+    ctx.deleteMessageWeak(chat.id, lastVb[1].reportMsg.message_id),
+    ctx.deleteMessageWeak(chat.id, ctx.message?.message_id!)
   );
   votebans.delete(lastVb[0]);
 };

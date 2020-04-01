@@ -46,6 +46,10 @@ declare module 'telegraf' {
       { chatId: number; userId: number; resultMsgId: number }
     >;
     cbQueryError(): Promise<boolean>;
+    deleteMessageWeak(
+      chatId: number | string,
+      messageId: number
+    ): Promise<boolean>;
   }
 }
 
@@ -75,6 +79,9 @@ function initBot() {
   ) {
     return this.answerCbQuery(text, showAlert);
   };
+  bot.context.deleteMessageWeak = function(chatId, messageId) {
+    return this.telegram.deleteMessage(chatId, messageId).catch(() => false);
+  }
 
   bot
     .on('poll' as any, m.onPoll)
@@ -158,6 +165,6 @@ main();
 });
 
 process.on('unhandledRejection', reason => {
-  console.log('UNHANDLED PROMISE REJECTION.');
-  console.error((reason as Error).message);
+  console.error('UNHANDLED PROMISE REJECTION.');
+  console.error(reason);
 });

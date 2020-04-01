@@ -2,6 +2,7 @@ version: '3'
 services:
   blcklstbot:
     build: ./
+    image: kraftwerk28/blcklstbot
     environment:
       NODE_ENV: 'production'
     env_file: ./.env.prod
