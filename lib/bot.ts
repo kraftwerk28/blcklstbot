@@ -4,6 +4,7 @@ import Telegraf, { ContextMessageUpdate } from 'telegraf';
 
 import eat from './updateEater';
 import * as m from './middlewares';
+import * as c from './commands';
 import * as db from './db';
 import * as api from './api';
 import { VotebanCooldown } from './votebanCD';
@@ -11,7 +12,7 @@ import {
   Message,
   ExtraReplyMessage,
   Chat,
-  User
+  User,
 } from 'telegraf/typings/telegram-types';
 
 type Tf = Telegraf<ContextMessageUpdate>;
@@ -50,7 +51,35 @@ declare module 'telegraf' {
       chatId: number | string,
       messageId: number
     ): Promise<boolean>;
+    db: typeof db;
+    api: typeof api;
   }
+}
+
+function extendCtx(bot: Tf) {
+  const { context } = bot;
+  context.votebanCD = new VotebanCooldown();
+  context.replyTo = async function (text, extra) {
+    const { message, chat, telegram } = this;
+    if (!(message && chat)) return null;
+    return telegram.sendMessage(chat.id, text, {
+      ...extra,
+      reply_to_message_id: message.message_id,
+    });
+  };
+  context.votebans = new Map();
+  context.banned = new Map();
+  context.cbQueryError = function (
+    text = 'An error occured',
+    showAlert = true,
+  ) {
+    return this.answerCbQuery(text, showAlert);
+  };
+  context.deleteMessageWeak = function (chatId, messageId) {
+    return this.telegram.deleteMessage(chatId, messageId).catch(() => false);
+  };
+  context.db = db;
+  context.api = api;
 }
 
 function initBot() {
@@ -59,33 +88,14 @@ function initBot() {
   api.setAPIToken(API_TOKEN!);
   bot = new Telegraf(BOT_TOKEN!, {
     username: BOT_USERNAME,
-    telegram: { webhookReply: false }
+    telegram: { webhookReply: false },
   });
-
-  bot.context.votebanCD = new VotebanCooldown();
-  bot.context.replyTo = async function(text, extra) {
-    const { message, chat, telegram } = this;
-    if (!(message && chat)) return null;
-    return telegram.sendMessage(chat.id, text, {
-      ...extra,
-      reply_to_message_id: message.message_id
-    });
-  };
-  bot.context.votebans = new Map();
-  bot.context.banned = new Map();
-  bot.context.cbQueryError = function(
-    text = 'An error occured',
-    showAlert = false
-  ) {
-    return this.answerCbQuery(text, showAlert);
-  };
-  bot.context.deleteMessageWeak = function(chatId, messageId) {
-    return this.telegram.deleteMessage(chatId, messageId).catch(() => false);
-  }
+  extendCtx(bot);
 
   bot
-    .on('poll' as any, m.onPoll)
     .use(m.noPM)
+    .use(m.addChat)
+    .on('poll' as any, m.onPoll)
     .on('text', m.onText)
     .on('new_chat_members', m.checkBotAdminWeak, m.onNewMember)
     .on('left_chat_member', m.checkBotAdminWeak, m.onLeftMember)
@@ -94,22 +104,21 @@ function initBot() {
       m.safeBanReport,
       m.checkBotAdmin,
       m.adminPermission,
-      m.report
+      c.report
     )
     .command('get_debug_info', m.debugInfo)
-    .command('voteban', m.safeBanReport, m.checkBotAdmin, m.voteban)
+    .command('voteban', m.safeBanReport, m.checkBotAdmin, c.voteban)
     .command('get_user', m.getByUsernameReply)
-    .command('stop', m.adminPermission, m.stopVoteban)
-    .command('cancel_voteban', m.cancelLastVoteban)
-    .command('register', m.register)
+    .command('stop', m.adminPermission, c.stopVoteban)
+    .command('cancel_voteban', c.cancelLastVoteban)
     .hears(
       /\/voteban_threshold(?:[\w@]*)\s*(\d+)?\s*$/,
       m.adminPermission,
-      m.setVotebanThreshold
+      c.setVotebanThreshold
     )
     .action('unban', m.adminPermissionCBQuery, m.unbanAction)
     .action('deleteMessage', m.adminPermissionCBQuery, m.deleteMessageAction)
-    .help(m.adminPermission, m.help);
+    .help(m.adminPermission, c.help);
 }
 
 async function runBot() {
@@ -117,7 +126,7 @@ async function runBot() {
     BOT_HTTP_PORT,
     BOT_WEBHOOK_PORT,
     BOT_SECRET_PATH,
-    BOT_URL
+    BOT_URL,
   } = process.env;
   if (dev) {
     bot.startPolling();
@@ -150,8 +159,8 @@ async function main() {
 
 main();
 
-['SIGINT', 'SIGTERM'].forEach(signal => {
-  process.on(signal as any, async code => {
+['SIGINT', 'SIGTERM'].forEach((signal) => {
+  process.on(signal as any, async (code) => {
     console.log(`\nCode: ${code}. Starting graceful shutdown.`);
     // await bot.stop();
     if (!dev) {
@@ -164,7 +173,7 @@ main();
   });
 });
 
-process.on('unhandledRejection', reason => {
+process.on('unhandledRejection', (reason) => {
   console.error('UNHANDLED PROMISE REJECTION.');
   console.error(reason);
 });

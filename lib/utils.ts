@@ -1,7 +1,6 @@
 import { ContextMessageUpdate, Markup } from 'telegraf';
 import { User, Message, Chat } from 'telegraf/typings/telegram-types';
 import * as utils from './utils';
-import * as api from './api';
 
 export function mention(u: User, link = false, includeLastName = true) {
   if (u.username) {
@@ -11,15 +10,12 @@ export function mention(u: User, link = false, includeLastName = true) {
   if (includeLastName && u.last_name) {
     text += ` ${u.last_name}`;
   }
-  if (link) {
-    return `<a href="tg://user?id=${u.id}">${text}</a>`;
-  }
-  return text;
+  return link ? `<a href="tg://user?id=${u.id}">${text}</a>` : text;
 }
 
 export async function runAll(...funcs: (Promise<any> | undefined)[]) {
   return await (Promise as any).allSettled(
-    funcs.map(f => f || Promise.resolve(f))
+    funcs.map((f) => f || Promise.resolve(f))
   );
 }
 
@@ -34,11 +30,11 @@ export async function checkAdmin(ctx: ContextMessageUpdate): Promise<boolean> {
   const { chat, from } = ctx;
   if (!(chat && from)) return false;
   const admins = await ctx.getChatAdministrators();
-  return admins.some(cm => cm.user.id === from.id);
+  return admins.some((cm) => cm.user.id === from.id);
 }
 
 export async function checkUser(ctx: ContextMessageUpdate) {
-  const { chat, message, from } = ctx;
+  const { chat, message, from, api } = ctx;
   if (!(chat && message && from)) return;
 
   const isBanned = await api.checkUser(from.id);
@@ -56,7 +52,7 @@ export async function kickUser(
   reportedMsg?: Message,
   globalBanlist = true
 ) {
-  const { telegram: tg, banned } = ctx;
+  const { telegram: tg, banned, api } = ctx;
   const reporter = reportMsg?.from!;
 
   if (globalBanlist) {
@@ -65,7 +61,7 @@ export async function kickUser(
       id,
       first_name,
       last_name,
-      username
+      username,
     } as Record<string, any>;
     if (reportedMsg) {
       reportRecord.message = reportedMsg.text;
@@ -83,7 +79,7 @@ export async function kickUser(
     .catch();
   const unbanMarkup = Markup.inlineKeyboard([
     Markup.callbackButton('⬅️ Undo ban', 'unban'),
-    Markup.callbackButton('️❌ Delete this message', 'deleteMessage')
+    Markup.callbackButton('️❌ Delete this message', 'deleteMessage'),
   ]);
 
   const banResultMsg = await tg.sendMessage(
@@ -95,13 +91,11 @@ export async function kickUser(
   banned.set(banResultMsg.message_id, {
     chatId: chat.id,
     userId: reportedUser.id,
-    resultMsgId: banResultMsg.message_id
+    resultMsgId: banResultMsg.message_id,
   });
 }
 
-export function getReportedUser(
-  ctx: ContextMessageUpdate
-): User | undefined {
+export function getReportedUser(ctx: ContextMessageUpdate): User | undefined {
   const { message: { reply_to_message: r } = {} } = ctx;
   if (!r) return;
   return r.new_chat_members?.length ? r.new_chat_members[0] : r.from;

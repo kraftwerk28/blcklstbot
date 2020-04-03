@@ -17,10 +17,12 @@ export function fetch<T>(
     }
 
     const req = request(url, opts, res => {
+
       if (res.statusCode!.toString()[0] !== '2') {
-        reject('Bad status code (not 2xx)');
+        reject(`Bad API response: ${res.statusCode} ${res.statusMessage}`);
         return;
       }
+
       const data: any[] = [];
       res
         .on('data', ch => data.push(ch))
