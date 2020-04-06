@@ -2,7 +2,7 @@ import { createServer, Server } from 'http';
 import { promisify } from 'util';
 import Telegraf, { ContextMessageUpdate } from 'telegraf';
 
-import eat from './updateEater';
+import { flushUpdates } from './flushUpdates';
 import * as m from './middlewares';
 import * as c from './commands';
 import * as db from './db';
@@ -71,7 +71,7 @@ function extendCtx(bot: Tf) {
   context.banned = new Map();
   context.cbQueryError = function (
     text = 'An error occured',
-    showAlert = true,
+    showAlert = false,
   ) {
     return this.answerCbQuery(text, showAlert);
   };
@@ -152,9 +152,9 @@ async function runBot() {
 
 async function main() {
   initBot();
-  await eat(bot);
+  await flushUpdates(bot);
   db.connect();
-  runBot();
+  return runBot();
 }
 
 main();

@@ -1,5 +1,5 @@
 import Telegraf, { Middleware, ContextMessageUpdate } from 'telegraf';
-import { User, Message } from 'telegraf/typings/telegram-types';
+import { User, Message, Update } from 'telegraf/typings/telegram-types';
 
 import * as utils from './utils';
 import { replicas as REPLICAS } from '../bot.config.json';
@@ -15,6 +15,12 @@ declare module 'telegraf' {
       extra?: Partial<PollExtra>
     ): Promise<Message>;
     unbanChatMember(chatId: number, userId: number): Promise<boolean>;
+    getUpdates(
+      timeout?: number,
+      limit?: number,
+      offset?: number,
+      allowed_updates?: string[]
+    ): Promise<Update[]>;
   }
   export interface ComposerConstructor {
     drop<TContext extends ContextMessageUpdate>(
@@ -206,7 +212,7 @@ export const unbanAction: CtxMW = async function (ctx, next) {
     api.rmUser(toUnban.userId)
   );
   banned.delete(message.message_id);
-  return ctx.answerCbQuery('✅ Unbanned.', true);
+  return ctx.answerCbQuery('✅ Unbanned.');
 };
 
 export const deleteMessageAction: CtxMW = async function (ctx, next) {
@@ -214,10 +220,13 @@ export const deleteMessageAction: CtxMW = async function (ctx, next) {
   if (!message) return ctx.cbQueryError();
 
   const toUnban = banned.get(message!.message_id);
-  if (!toUnban) return ctx.cbQueryError();
-
-  await ctx.deleteMessageWeak(toUnban.chatId, toUnban.resultMsgId);
   banned.delete(message!.message_id);
+
+  if (toUnban) {
+    await ctx.deleteMessageWeak(toUnban.chatId, toUnban.resultMsgId);
+  } else {
+    await ctx.deleteMessageWeak(message.chat.id, message.message_id);
+  }
   return ctx.answerCbQuery();
 };
 
@@ -236,7 +245,7 @@ export const adminPermissionCBQuery: CtxMW = async function (ctx, next: any) {
   if (!from) return false;
   const cm = await ctx.getChatMember(from.id);
   if (['administrator', 'creator'].includes(cm.status)) return next!();
-  return ctx.answerCbQuery("🔓 You don' have permissions.", true);
+  return ctx.answerCbQuery("🔓 You don' have permissions.");
 };
 
 /**
