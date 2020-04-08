@@ -5,7 +5,7 @@
   "author": "Vsevolod (@kraftwerk28) <kefirchik3@gmail.com>",
   "license": "MIT",
   "scripts": {
-    "start": "tsc -w --sourcemap",
+    "start": "tsc -w --inlineSourceMap",
     "build": "tsc",
     "nodemon": "NODE_ENV=development nodemon dist/",
     "dev": "NODE_ENV=development node dist/",
