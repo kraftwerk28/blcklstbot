@@ -85,7 +85,7 @@ export async function kickUser(
   const banResultMsg = await tg.sendMessage(
     chat.id,
     `Kicked ${mention(reportedUser, true)}.`,
-    { reply_markup: unbanMarkup }
+    { reply_markup: unbanMarkup, parse_mode: 'HTML' }
   );
 
   banned.set(banResultMsg.message_id, {
