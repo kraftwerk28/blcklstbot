@@ -11,7 +11,7 @@ export const report: CtxMW = async function (ctx) {
   if (!(from && chat && message)) return;
   const admins = await tg.getChatAdministrators(chat.id);
   const reportedMsg = message.reply_to_message;
-  const reportedUser = reportedMsg?.from;
+  const reportedUser = utils.getReportedUser(ctx);
   const dbGroup = await db.getChat(chat);
   const me = await tg.getMe();
 
@@ -34,7 +34,7 @@ export const report: CtxMW = async function (ctx) {
     chat,
     reportedUser,
     message,
-    reportedMsg,
+    reportedMsg.new_chat_members ? undefined : reportedMsg,
     dbGroup && dbGroup.voteban_to_global
   );
 

@@ -74,18 +74,36 @@ export async function kickUser(
     await api.addUser(reportRecord);
   }
 
+  const unbanMarkupBtns = [];
+  unbanMarkupBtns.push(Markup.callbackButton('⬅️ Undo', 'unban'));
+  if (reportedMsg) {
+    const { reportsChannelUsername } = ctx;
+    const fwd = await tg.forwardMessage(
+      ctx.reportsChannelID,
+      chat.id,
+      reportedMsg.message_id,
+      { disable_notification: true }
+    );
+    unbanMarkupBtns.push(
+      Markup.urlButton(
+        '🗒 Message',
+        `https://t.me/${reportsChannelUsername}/${fwd.message_id}`
+      )
+    );
+  }
+  unbanMarkupBtns.push(Markup.callbackButton('️❌ Delete', 'deleteMessage'));
+
   await tg
     .kickChatMember(chat.id, reportedUser.id, Date.now() + 15 * 6e4)
     .catch();
-  const unbanMarkup = Markup.inlineKeyboard([
-    Markup.callbackButton('⬅️ Undo ban', 'unban'),
-    Markup.callbackButton('️❌ Delete this message', 'deleteMessage'),
-  ]);
 
   const banResultMsg = await tg.sendMessage(
     chat.id,
     `Kicked ${mention(reportedUser, true)}.`,
-    { reply_markup: unbanMarkup, parse_mode: 'HTML' }
+    {
+      reply_markup: Markup.inlineKeyboard(unbanMarkupBtns as any),
+      parse_mode: 'HTML',
+    }
   );
 
   banned.set(banResultMsg.message_id, {

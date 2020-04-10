@@ -53,10 +53,19 @@ declare module 'telegraf' {
     ): Promise<boolean>;
     db: typeof db;
     api: typeof api;
+    adminUID: number;
+    reportsChannelID: number;
+    reportsChannelUsername: string;
   }
 }
 
 function extendCtx(bot: Tf) {
+  const {
+    ADMIN_UID,
+    REPORTS_CHANNEL_ID,
+    REPORTS_CHANNEL_USERNAME,
+  } = process.env;
+
   const { context } = bot;
   context.votebanCD = new VotebanCooldown();
   context.replyTo = async function (text, extra) {
@@ -80,6 +89,9 @@ function extendCtx(bot: Tf) {
   };
   context.db = db;
   context.api = api;
+  context.adminUID = +ADMIN_UID!;
+  context.reportsChannelID = +REPORTS_CHANNEL_ID!;
+  context.reportsChannelUsername = REPORTS_CHANNEL_USERNAME!;
 }
 
 function initBot() {

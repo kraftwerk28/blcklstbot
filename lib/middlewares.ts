@@ -64,14 +64,12 @@ declare module 'telegraf' {
   }
 }
 
-const { ADMIN_UID } = process.env;
-
 export const noPM: CtxMW = Telegraf.drop(async (ctx) => {
   const { chat, reply } = ctx;
   if (!chat) return false;
   const { type } = chat;
 
-  if (['group', 'supergroup'].includes(type)) return false;
+  if (['group', 'supergroup', 'channel'].includes(type)) return false;
   await reply(REPLICAS.private_messsages_restriction);
   return true;
 });
@@ -86,7 +84,7 @@ export const addChat: CtxMW = async (ctx, next) => {
         chat.title +
         `${chat.username ? ' @' + chat.username : ''}\n` +
         `id: <code>${chat.id}</code>`;
-      await telegram.sendMessage(ADMIN_UID!, newGroupMsg, {
+      await telegram.sendMessage(ctx.adminUID, newGroupMsg, {
         parse_mode: 'HTML',
       });
     }
