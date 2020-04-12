@@ -8,12 +8,9 @@ import * as c from './commands';
 import * as db from './db';
 import * as api from './api';
 import { VotebanCooldown } from './votebanCD';
-import {
-  Message,
-  ExtraReplyMessage,
-  Chat,
-  User,
-} from 'telegraf/typings/telegram-types';
+import {} from './commands';
+import { Message, Chat, User } from 'telegraf/typings/telegram-types';
+import { parseCommands } from './utils';
 
 type Tf = Telegraf<ContextMessageUpdate>;
 
@@ -27,36 +24,6 @@ export interface Report {
   reportedMsg?: Message;
   pollMsg: Message;
   reportMsg: Message;
-}
-// typing for context extending feature
-declare module 'telegraf' {
-  export interface ComposerConstructor {
-    admin<TContext extends ContextMessageUpdate>(
-      ...middlewares: Middleware<TContext>[]
-    ): Middleware<TContext>;
-  }
-  export interface ContextMessageUpdate {
-    votebanCD: VotebanCooldown;
-    replyTo(
-      text: string,
-      extra?: ExtraReplyMessage | undefined
-    ): Promise<Message | null>;
-    votebans: Map<string, Report>;
-    banned: Map<
-      number,
-      { chatId: number; userId: number; resultMsgId: number }
-    >;
-    cbQueryError(): Promise<boolean>;
-    deleteMessageWeak(
-      chatId: number | string,
-      messageId: number
-    ): Promise<boolean>;
-    db: typeof db;
-    api: typeof api;
-    adminUID: number;
-    reportsChannelID: number;
-    reportsChannelUsername: string;
-  }
 }
 
 function extendCtx(bot: Tf) {
@@ -80,7 +47,7 @@ function extendCtx(bot: Tf) {
   context.banned = new Map();
   context.cbQueryError = function (
     text = 'An error occured',
-    showAlert = false,
+    showAlert = false
   ) {
     return this.answerCbQuery(text, showAlert);
   };
@@ -92,9 +59,10 @@ function extendCtx(bot: Tf) {
   context.adminUID = +ADMIN_UID!;
   context.reportsChannelID = +REPORTS_CHANNEL_ID!;
   context.reportsChannelUsername = REPORTS_CHANNEL_USERNAME!;
+  context.commands = parseCommands();
 }
 
-function initBot() {
+async function initBot() {
   const { NODE_ENV, BOT_TOKEN, BOT_USERNAME, API_TOKEN } = process.env;
   dev = NODE_ENV === 'development';
   api.setAPIToken(API_TOKEN!);
@@ -103,6 +71,8 @@ function initBot() {
     telegram: { webhookReply: false },
   });
   extendCtx(bot);
+
+  await bot.telegram.setMyCommands(bot.context.commands);
 
   bot
     .use(m.noPM)
@@ -163,7 +133,7 @@ async function runBot() {
 }
 
 async function main() {
-  initBot();
+  await initBot();
   await flushUpdates(bot);
   db.connect();
   return runBot();

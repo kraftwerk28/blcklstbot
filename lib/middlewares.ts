@@ -1,8 +1,12 @@
 import Telegraf, { Middleware, ContextMessageUpdate } from 'telegraf';
-import { User, Message, Update } from 'telegraf/typings/telegram-types';
+import { User, Message, Update, ExtraReplyMessage } from 'telegraf/typings/telegram-types';
 
 import * as utils from './utils';
 import { replicas as REPLICAS } from '../bot.config.json';
+import { VotebanCooldown } from './votebanCD';
+import { Report } from './bot';
+import * as db from './db';
+import * as api from './api';
 
 type CtxMW = Middleware<ContextMessageUpdate>;
 
@@ -21,20 +25,43 @@ declare module 'telegraf' {
       offset?: number,
       allowed_updates?: string[]
     ): Promise<Update[]>;
+    setMyCommands(commands: Command[]): Promise<boolean>;
   }
+
   export interface ComposerConstructor {
     drop<TContext extends ContextMessageUpdate>(
       test: boolean | ((ctx: TContext) => Promise<boolean>)
     ): Middleware<TContext>;
+    admin<TContext extends ContextMessageUpdate>(
+      ...middlewares: Middleware<TContext>[]
+    ): Middleware<TContext>;
   }
-
-  type PollType = 'quiz' | 'regular';
-  type PollOption = { text: string; voter_count: number };
 
   export interface ContextMessageUpdate {
     poll?: Poll;
     pollAnswer?: PollAnswer;
-  }
+    votebanCD: VotebanCooldown;
+    replyTo(
+      text: string,
+      extra?: ExtraReplyMessage | undefined
+    ): Promise<Message | null>;
+    votebans: Map<string, Report>;
+    banned: Map<
+      number,
+      { chatId: number; userId: number; resultMsgId: number }
+    >;
+    cbQueryError(): Promise<boolean>;
+    deleteMessageWeak(
+      chatId: number | string,
+      messageId: number
+    ): Promise<boolean>;
+    db: typeof db;
+    api: typeof api;
+    adminUID: number;
+    reportsChannelID: number;
+    reportsChannelUsername: string;
+    commands: Command[];
+}
   interface PollExtra {
     is_anonymous: boolean;
     type: PollType;
@@ -45,6 +72,9 @@ declare module 'telegraf' {
     reply_to_message_id: number;
     reply_markup: Markup;
   }
+
+  type PollType = 'quiz' | 'regular';
+  type PollOption = { text: string; voter_count: number };
 
   interface Poll {
     id: string;
@@ -61,6 +91,11 @@ declare module 'telegraf' {
     poll_id: string;
     user: User;
     option_ids: number[];
+  }
+
+  interface Command {
+    command: string;
+    description: string;
   }
 }
 

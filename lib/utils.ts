@@ -1,4 +1,6 @@
-import { ContextMessageUpdate, Markup } from 'telegraf';
+import fs from 'fs';
+import path from 'path';
+import { ContextMessageUpdate, Markup, Command } from 'telegraf';
 import { User, Message, Chat } from 'telegraf/typings/telegram-types';
 import * as utils from './utils';
 
@@ -117,4 +119,18 @@ export function getReportedUser(ctx: ContextMessageUpdate): User | undefined {
   const { message: { reply_to_message: r } = {} } = ctx;
   if (!r) return;
   return r.new_chat_members?.length ? r.new_chat_members[0] : r.from;
+}
+
+export function parseCommands(): Command[] {
+  const commandsContent = fs.readFileSync(
+    path.resolve(__dirname, '../../commands.txt'),
+    'utf-8'
+  );
+  return commandsContent
+    .split('\n')
+    .filter((s) => s.trim().length)
+    .map((s) => {
+      const [command, description] = s.split('-').map((s) => s.trim());
+      return { command, description };
+    });
 }

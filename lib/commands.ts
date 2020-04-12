@@ -2,7 +2,6 @@ import { Middleware, ContextMessageUpdate } from 'telegraf';
 
 import * as utils from './utils';
 import { Report } from './bot';
-import { helpText } from './helpText';
 
 type CtxMW = Middleware<ContextMessageUpdate>;
 
@@ -45,7 +44,10 @@ export const report: CtxMW = async function (ctx) {
 };
 
 export const help: CtxMW = async function (ctx) {
-  return ctx.replyTo(helpText());
+  const text = ctx.commands.reduce((acc, { command, description }) => {
+    return acc + `/${command} - ${description}\n`;
+  }, '');
+  return ctx.replyTo(text);
 };
 
 export const stopVoteban: CtxMW = async function (ctx, next) {
