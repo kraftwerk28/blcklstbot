@@ -6,7 +6,7 @@ import { replicas as REPLICAS } from '../bot.config.json';
 import { VotebanCooldown } from './votebanCD';
 import { Report } from './bot';
 import * as db from './db';
-import * as api from './api';
+import { API } from './api';
 
 type CtxMW = Middleware<ContextMessageUpdate>;
 
@@ -56,7 +56,7 @@ declare module 'telegraf' {
       messageId: number
     ): Promise<boolean>;
     db: typeof db;
-    api: typeof api;
+    api: API;
     adminUID: number;
     reportsChannelID: number;
     reportsChannelUsername: string;

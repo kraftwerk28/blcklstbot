@@ -13,7 +13,7 @@
     "clean": "rm -r dist/*",
     "deploy-db": "psql -d blcklstbot -f ./db.sql",
     "build:test": "tsc --outDir test/dist/ --esModuleInterop true test/db.test.ts",
-    "test": "npm run build:test && node test/dist/test/db.test.js"
+    "test": "NODE_ENV=development ts-node test/index.test.ts"
   },
   "dependencies": {
     "dotenv": "^8.2.0",
@@ -26,6 +26,7 @@
     "@types/pg": "^7.14.3",
     "eslint": "^6.8.0",
     "nodemon": "^2.0.3",
+    "ts-node": "^8.10.2",
     "typescript": "^3.8.3"
   }
 }

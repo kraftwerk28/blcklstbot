@@ -1,57 +1,64 @@
-import { fetch } from './fetch';
+import { rest } from './fetch';
 
-let API_TOKEN = '';
-
-const API_URL = 'https://bots.genix.space/api';
-const BLACKLIST = '/blacklist';
-const ADDUSER = '/blacklist/adduser';
-const CHECKUSER = '/blacklist/checkuser';
-const DELUSER = '/blacklist/deluser';
-
+const BASE = 'https://bots.genix.space/rest-api/v1';
 export const SUCCESS = 'success';
 export const ERROR = 'error';
 
 export interface Banned {
-  date: string;
   id: number;
+  telegram_id: number;
+  first_name: string;
+  last_name: string;
+  username: string;
   message: string;
   reason: string;
+  date: string;
 }
 
-export interface User {
-  id: number;
-  message: string;
-  reason?: string;
-  first_name: string;
-  last_name?: string;
-  username?: string;
-}
+export type BanInfo = Omit<Banned, 'id' | 'date'>;
 
-export const setAPIToken = (token: string) => {
-  API_TOKEN = token;
-};
+export class API {
+  constructor(private token: string, private botID: number) {}
 
-export function getBlacklist(): Promise<Banned[]> {
-  return fetch(API_URL + BLACKLIST, { token: API_TOKEN });
-}
+  private url(path: string) {
+    return `${BASE}${path}/`;
+  }
 
-export async function getById(uId: number): Promise<Banned | null> {
-  const res = await fetch(API_URL + BLACKLIST, { token: API_TOKEN, id: uId });
-  if (res?.result === 'error') return null;
-  return res;
-}
+  private headers(extraHeaders: Record<string, string> = {}) {
+    return {
+      Authorization: `Token ${this.token}`,
+      'User-Agent': `Bot ${this.botID}`,
+      'Content-Type': 'application/json',
+      ...extraHeaders,
+    };
+  }
 
-export async function addUser(data: any) {
-  const res = await fetch(API_URL + ADDUSER, { token: API_TOKEN, ...data });
-  return res?.result === 'added';
-}
+  async getBlacklist(): Promise<Banned[]> {
+    return rest(this.url('/blocklist'), 'GET', this.headers());
+  }
 
-export async function checkUser(uId: number) {
-  const res = await fetch(API_URL + CHECKUSER, { id: uId });
-  return res?.result === 'success';
-}
+  async addUser(banInfo: BanInfo): Promise<boolean> {
+    return rest(
+      this.url('/blocklist'),
+      'POST',
+      this.headers(),
+      undefined,
+      banInfo
+    ).then(
+      () => true,
+      () => false
+    );
+  }
 
-export async function rmUser(uId: number) {
-  const res = await fetch(API_URL + DELUSER, { token: API_TOKEN, id: uId });
-  return res?.result === 'deleted';
+  async checkUser(userID: number): Promise<Banned | null> {
+    const req = rest(this.url(`/blocklist/${userID}`), 'GET', this.headers());
+    return req.then(
+      (u) => u as Banned,
+      () => null
+    );
+  }
+
+  async rmUser(userID: number): Promise<boolean> {
+    return rest(this.url(`/blocklist/${userID}`), 'DELETE', this.headers());
+  }
 }

@@ -6,7 +6,7 @@ import { flushUpdates } from './flushUpdates';
 import * as m from './middlewares';
 import * as c from './commands';
 import * as db from './db';
-import * as api from './api';
+import { API } from './api';
 import { VotebanCooldown } from './votebanCD';
 import {} from './commands';
 import { Message, Chat, User } from 'telegraf/typings/telegram-types';
@@ -26,11 +26,12 @@ export interface Report {
   reportMsg: Message;
 }
 
-function extendCtx(bot: Tf) {
+async function extendCtx(bot: Tf) {
   const {
     ADMIN_UID,
     REPORTS_CHANNEL_ID,
     REPORTS_CHANNEL_USERNAME,
+    API_TOKEN,
   } = process.env;
 
   const { context } = bot;
@@ -55,7 +56,10 @@ function extendCtx(bot: Tf) {
     return this.telegram.deleteMessage(chatId, messageId).catch(() => false);
   };
   context.db = db;
+
+  const api = new API(API_TOKEN!, await bot.telegram.getMe().then((u) => u.id));
   context.api = api;
+
   context.adminUID = +ADMIN_UID!;
   context.reportsChannelID = +REPORTS_CHANNEL_ID!;
   context.reportsChannelUsername = REPORTS_CHANNEL_USERNAME!;
@@ -63,14 +67,13 @@ function extendCtx(bot: Tf) {
 }
 
 async function initBot() {
-  const { NODE_ENV, BOT_TOKEN, BOT_USERNAME, API_TOKEN } = process.env;
+  const { NODE_ENV, BOT_TOKEN, BOT_USERNAME } = process.env;
   dev = NODE_ENV === 'development';
-  api.setAPIToken(API_TOKEN!);
   bot = new Telegraf(BOT_TOKEN!, {
     username: BOT_USERNAME,
     telegram: { webhookReply: false },
   });
-  extendCtx(bot);
+  await extendCtx(bot);
 
   await bot.telegram.setMyCommands(bot.context.commands);
 
@@ -117,15 +120,13 @@ async function runBot() {
     const WEBHOOK_URL = `${BOT_URL}:${BOT_WEBHOOK_PORT}${BOT_SECRET_PATH}`;
     const whSetResult = await bot.telegram.setWebhook(WEBHOOK_URL);
     if (whSetResult) {
-      console.log(`Webhook set succsessfully on :${BOT_WEBHOOK_PORT}.`);
+      console.log(`Webhook set succsessfully on ${WEBHOOK_URL}.`);
     } else {
       console.error('Failed to set webhook. Exiting.');
       process.exit(1);
     }
 
-    server = createServer((req, res) => {
-      bot.webhookCallback(BOT_SECRET_PATH!)(req, res);
-    });
+    server = createServer(bot.webhookCallback(BOT_SECRET_PATH!));
     server.listen(BOT_HTTP_PORT, () => {
       console.log(`Server listening on :${BOT_HTTP_PORT}.`);
     });

@@ -3,16 +3,25 @@ import path from 'path';
 import { ContextMessageUpdate, Markup, Command } from 'telegraf';
 import { User, Message, Chat } from 'telegraf/typings/telegram-types';
 import * as utils from './utils';
+import { BanInfo } from './api';
 
 export function mention(u: User, link = false, includeLastName = true) {
+  let text = '';
   if (u.username) {
-    return `@${u.username}`;
+    text += `@${u.username}`;
+  } else {
+    text += u.first_name;
+    if (includeLastName && u.last_name) {
+      text += ` ${u.last_name}`;
+    }
   }
-  let text = u.first_name;
-  if (includeLastName && u.last_name) {
-    text += ` ${u.last_name}`;
-  }
+  text = escapeHtml(text);
+
   return link ? `<a href="tg://user?id=${u.id}">${text}</a>` : text;
+}
+
+export function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/>/g, '&gt;').replace(/</g, '&lt;');
 }
 
 export async function runAll(...funcs: (Promise<any> | undefined)[]) {
@@ -58,21 +67,27 @@ export async function kickUser(
   const reporter = reportMsg?.from!;
 
   if (globalBanlist) {
-    const { id, first_name, last_name, username } = reportedUser;
+    const { id: telegram_id, first_name, last_name, username } = reportedUser;
+
     const reportRecord = {
-      id,
+      telegram_id,
       first_name,
       last_name,
       username,
-    } as Record<string, any>;
-    if (reportedMsg) {
+    } as BanInfo;
+
+    if (reportedMsg && reportedMsg.text) {
       reportRecord.message = reportedMsg.text;
     }
+
     if (reportMsg) {
       reportRecord.reason = `Reported by ${utils.mention(reporter)} (${
         reporter.id
       })`;
+    } else {
+      reportRecord.reason = 'User existed previously in Blocklist DB';
     }
+
     await api.addUser(reportRecord);
   }
 
