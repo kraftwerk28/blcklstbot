@@ -16,7 +16,7 @@ export class VotebanCooldown {
     const t = setTimeout(() => this.cds.delete(chatId), this.timeout);
     this.cds.set(chatId, t);
   }
-  
+
   has(chatId: number) {
     return this.cds.has(chatId);
   }

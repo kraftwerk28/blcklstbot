@@ -6,7 +6,7 @@ import { replicas as REPLICAS } from '../bot.config.json';
 import { VotebanCooldown } from './votebanCD';
 import { Report } from './bot';
 import * as db from './db';
-import { API } from './api';
+import { API, Banned } from './api';
 
 type CtxMW = Middleware<ContextMessageUpdate>;
 
@@ -61,7 +61,7 @@ declare module 'telegraf' {
     reportsChannelID: number;
     reportsChannelUsername: string;
     commands: Command[];
-}
+  }
   interface PollExtra {
     is_anonymous: boolean;
     type: PollType;
@@ -127,23 +127,27 @@ export const addChat: CtxMW = async (ctx, next) => {
   return next!();
 };
 
-export const onNewMember: CtxMW = async function (ctx) {
+export const onNewMember: CtxMW = async function(ctx) {
   const { message, telegram: tg, reply, chat, db, api } = ctx;
 
   if (!(message && chat)) return;
-  const me = await tg.getMe();
   const newMembers = message.new_chat_members;
   if (!newMembers?.length) return;
 
   // if someone joined
   const dbGroup = await db.getChat(chat);
   if (dbGroup && dbGroup.voteban_to_global) {
-    const blackList = await api
-      .getBlacklist()
-      .then((res) => res.map((m) => m.id));
-    const toBeBanned = newMembers.filter((memb) =>
-      blackList.some((id) => id === memb.id)
+    const banResults = await Promise.all(
+      newMembers.map(async (member) => [
+        member,
+        Boolean(await api.checkUser(member.id))
+      ] as [User, boolean])
     );
+
+    const toBeBanned = banResults
+      .filter(([_, ban]) => ban)
+      .map(([member]) => member);
+
     if (toBeBanned.length && !(await utils.iAmAdmin(ctx))) {
       reply(REPLICAS.i_am_not_admin);
       return;
@@ -151,16 +155,16 @@ export const onNewMember: CtxMW = async function (ctx) {
     if (toBeBanned.length) {
       await ctx.deleteMessageWeak(chat.id, message.message_id);
     }
-    toBeBanned.forEach(async ({ id }) => {
-      await tg.kickChatMember(chat.id, id);
-      // reply(REPLICAS.user_banned.replace(
-      //   /\$1/, username ? `@${username}` : first_name
-      // ))
-    });
+    await Promise.all(
+      // toBeBanned.map(({ id }) => tg.kickChatMember(chat.id, id))
+      toBeBanned.map((user) =>
+        utils.kickUser(ctx, chat, user, utils.BanReason.AUTOBAN, false)
+      )
+    );
   }
 };
 
-export const onLeftMember: CtxMW = async function (ctx) {
+export const onLeftMember: CtxMW = async function(ctx) {
   const {
     message,
     from,
@@ -168,7 +172,7 @@ export const onLeftMember: CtxMW = async function (ctx) {
   } = ctx;
 };
 
-export const onPoll: CtxMW = async function (ctx) {
+export const onPoll: CtxMW = async function(ctx) {
   const { poll, votebans, db } = ctx;
   if (!poll) return;
   const voteban = votebans.get(ctx.poll!.id);
@@ -192,10 +196,11 @@ export const onPoll: CtxMW = async function (ctx) {
         ctx,
         chat,
         reportedUser,
+        utils.BanReason.VOTEBAN,
+        voteban_to_global,
         reportMsg,
         reportedMsg,
-        voteban_to_global
-      )
+      ),
     );
   } else if (-diff >= voteban_threshold) {
     await utils.runAll(
@@ -205,21 +210,21 @@ export const onPoll: CtxMW = async function (ctx) {
   }
 };
 
-export const onText: CtxMW = async function (ctx, next) {
+export const onText: CtxMW = async function(ctx, next) {
   const { chat } = ctx;
   if (!chat) return;
   await utils.checkUser(ctx);
   return next!();
 };
 
-export const debugInfo: CtxMW = async function ({ message, reply }) {
+export const debugInfo: CtxMW = async function({ message, reply }) {
   return reply(`<code>${JSON.stringify(message, null, 2)}</code>`, {
     parse_mode: 'HTML',
     reply_to_message_id: message!.message_id,
   });
 };
 
-export const getByUsernameReply: CtxMW = async function ({
+export const getByUsernameReply: CtxMW = async function({
   message,
   chat,
   telegram,
@@ -232,7 +237,7 @@ export const getByUsernameReply: CtxMW = async function ({
   });
 };
 
-export const unbanAction: CtxMW = async function (ctx, next) {
+export const unbanAction: CtxMW = async function(ctx, next) {
   const { banned, callbackQuery: { message } = {}, api } = ctx;
   if (!message) return ctx.cbQueryError();
 
@@ -248,7 +253,7 @@ export const unbanAction: CtxMW = async function (ctx, next) {
   return ctx.answerCbQuery('✅ Unbanned.');
 };
 
-export const deleteMessageAction: CtxMW = async function (ctx, next) {
+export const deleteMessageAction: CtxMW = async function(ctx, next) {
   const { banned, callbackQuery: { message } = {} } = ctx;
   if (!message) return ctx.cbQueryError();
 
@@ -266,14 +271,19 @@ export const deleteMessageAction: CtxMW = async function (ctx, next) {
 /**
  * Checks if member (that reported) has admin status
  */
-export const adminPermission: CtxMW = async function (ctx, next) {
-  const { from } = ctx;
+export const adminPermission: CtxMW = async function(ctx, next) {
+  const { from, adminUID } = ctx;
   if (!from) return false;
   const cm = await ctx.getChatMember(from.id);
-  if (['administrator', 'creator'].includes(cm.status)) next!();
+  if (
+    ['administrator', 'creator'].includes(cm.status) ||
+    from.id === adminUID
+  ) {
+    next!();
+  }
 };
 
-export const adminPermissionCBQuery: CtxMW = async function (ctx, next: any) {
+export const adminPermissionCBQuery: CtxMW = async function(ctx, next: any) {
   const { from } = ctx;
   if (!from) return false;
   const cm = await ctx.getChatMember(from.id);
@@ -284,22 +294,29 @@ export const adminPermissionCBQuery: CtxMW = async function (ctx, next: any) {
 /**
  * Checks if bot can ban and delete messages
  */
-export const checkBotAdmin: CtxMW = async function (ctx, next) {
+export const checkBotAdmin: CtxMW = async function(ctx, next) {
   if (await utils.iAmAdmin(ctx)) return next!();
   return ctx.replyTo(REPLICAS.i_am_not_admin);
 };
 
-export const checkBotAdminWeak: CtxMW = async function (ctx, next) {
-  if (await utils.iAmAdmin(ctx)) return next!();
+export const checkBotAdminWeak: CtxMW = async function(ctx, next) {
+  try {
+    const admin = await utils.iAmAdmin(ctx);
+    if (admin) return next!();
+  } catch { }
 };
 
 /**
  * Checks if user has not reported admin of bot itself
  */
-export const safeBanReport: CtxMW = async function (ctx, next) {
+export const safeBanReport: CtxMW = async function(ctx, next) {
   const reported = utils.getReportedUser(ctx);
   if (!reported) return;
+  const me = await ctx.telegram.getMe();
   const cm = await ctx.getChatMember(reported.id);
 
-  if (!['administrator', 'creator'].includes(cm.status)) return next!();
+  if (
+    !['administrator', 'creator'].includes(cm.status) &&
+    reported.id !== me.id
+  ) return next!();
 };

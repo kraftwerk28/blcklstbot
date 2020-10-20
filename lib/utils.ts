@@ -1,9 +1,10 @@
 import fs from 'fs';
 import path from 'path';
-import { ContextMessageUpdate, Markup, Command } from 'telegraf';
+import { ContextMessageUpdate, Markup, Command, Button } from 'telegraf';
 import { User, Message, Chat } from 'telegraf/typings/telegram-types';
 import * as utils from './utils';
 import { BanInfo } from './api';
+import botConfig from '../bot.config.json';
 
 export function mention(u: User, link = false, includeLastName = true) {
   let text = '';
@@ -30,11 +31,11 @@ export async function runAll(...funcs: (Promise<any> | undefined)[]) {
   );
 }
 
-export async function iAmAdmin(ctx: ContextMessageUpdate) {
+export async function iAmAdmin(ctx: ContextMessageUpdate): Promise<boolean> {
   const { telegram: tg } = ctx;
   const { id } = await tg.getMe();
   const m = await tg.getChatMember(ctx.chat!.id, id);
-  return m.can_restrict_members && m.can_delete_messages;
+  return Boolean(m.can_restrict_members && m.can_delete_messages);
 }
 
 export async function checkAdmin(ctx: ContextMessageUpdate): Promise<boolean> {
@@ -51,20 +52,38 @@ export async function checkUser(ctx: ContextMessageUpdate) {
   const isBanned = await api.checkUser(from.id);
   if (isBanned) {
     await ctx.deleteMessageWeak(chat.id, message.message_id);
-    await utils.kickUser(ctx, chat, from, message, undefined, false);
+    await utils.kickUser(
+      ctx,
+      chat,
+      from,
+      BanReason.AUTOBAN,
+      false,
+      undefined,
+      message,
+    );
   }
+}
+
+export enum BanReason {
+  REPORT,
+  VOTEBAN,
+  AUTOBAN,
 }
 
 export async function kickUser(
   ctx: ContextMessageUpdate,
   chat: Chat,
   reportedUser: User,
-  reportMsg: Message,
+  reason: BanReason,
+  globalBanlist = true,
+  /** Usually a message with `/report` command */
+  reportMsg?: Message,
+  /** The message from user which has to be banned */
   reportedMsg?: Message,
-  globalBanlist = true
 ) {
   const { telegram: tg, banned, api } = ctx;
   const reporter = reportMsg?.from!;
+  const kickedUserMention = mention(reportedUser, true);
 
   if (globalBanlist) {
     const { id: telegram_id, first_name, last_name, username } = reportedUser;
@@ -76,14 +95,14 @@ export async function kickUser(
       username,
     } as BanInfo;
 
-    if (reportedMsg && reportedMsg.text) {
+    if (reportedMsg?.text) {
       reportRecord.message = reportedMsg.text;
     }
 
     if (reportMsg) {
       reportRecord.reason = `Reported by ${utils.mention(reporter)} (${
         reporter.id
-      })`;
+        })`;
     } else {
       reportRecord.reason = 'User existed previously in Blocklist DB';
     }
@@ -92,7 +111,10 @@ export async function kickUser(
   }
 
   const unbanMarkupBtns = [];
-  unbanMarkupBtns.push(Markup.callbackButton('⬅️ Undo', 'unban'));
+  unbanMarkupBtns.push(Markup.callbackButton('\u2b05\ufe0f Undo', 'unban'));
+
+  // If specified message had been reported,
+  // we add a button with link to it (to channel)
   if (reportedMsg) {
     const { reportsChannelUsername } = ctx;
     const fwd = await tg.forwardMessage(
@@ -100,23 +122,36 @@ export async function kickUser(
       chat.id,
       reportedMsg.message_id,
       { disable_notification: true }
-    );
-    unbanMarkupBtns.push(
-      Markup.urlButton(
-        '🗒 Message',
+    ).catch(() => null);
+
+    if (fwd) {
+      const refButton = Markup.urlButton(
+        '\u{1f5d2}\ufe0f Message',
         `https://t.me/${reportsChannelUsername}/${fwd.message_id}`
-      )
-    );
+      );
+      unbanMarkupBtns.push(refButton);
+    }
   }
-  unbanMarkupBtns.push(Markup.callbackButton('️❌ Delete', 'deleteMessage'));
+
+  // This button deletes report result message
+  unbanMarkupBtns.push(Markup.callbackButton('\u274c Delete', 'deleteMessage'));
 
   await tg
     .kickChatMember(chat.id, reportedUser.id, Date.now() + 15 * 6e4)
     .catch();
 
+  let reasonText = '';
+  if (reason === BanReason.AUTOBAN) {
+    reasonText = `Banned ${kickedUserMention} because they were previously reported.`;
+  } else if (reason === BanReason.VOTEBAN) {
+    reasonText = `Banned ${kickedUserMention} because of voting results.`;
+  } else if (reason === BanReason.REPORT) {
+    reasonText = `${mention(reporter)} banned ${kickedUserMention}.`;
+  }
+
   const banResultMsg = await tg.sendMessage(
     chat.id,
-    `Kicked ${mention(reportedUser, true)}.`,
+    reasonText,
     {
       reply_markup: Markup.inlineKeyboard(unbanMarkupBtns as any),
       parse_mode: 'HTML',
@@ -137,15 +172,18 @@ export function getReportedUser(ctx: ContextMessageUpdate): User | undefined {
 }
 
 export function parseCommands(): Command[] {
-  const commandsContent = fs.readFileSync(
-    path.resolve(__dirname, '../../commands.txt'),
-    'utf-8'
-  );
-  return commandsContent
-    .split('\n')
-    .filter((s) => s.trim().length)
-    .map((s) => {
-      const [command, description] = s.split('-').map((s) => s.trim());
-      return { command, description };
-    });
+  return Object
+    .entries(botConfig.commands)
+    .map(([command, description]) => ({ command, description }));
+  // const commandsContent = fs.readFileSync(
+  //   path.resolve(__dirname, '../commands.txt'),
+  //   'utf-8'
+  // );
+  // return commandsContent
+  //   .split('\n')
+  //   .filter((s) => s.trim().length)
+  //   .map((s) => {
+  //     const [command, description] = s.split('-').map((s) => s.trim());
+  //     return { command, description };
+  //   });
 }

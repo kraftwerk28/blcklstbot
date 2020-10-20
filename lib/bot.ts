@@ -11,6 +11,7 @@ import { VotebanCooldown } from './votebanCD';
 import {} from './commands';
 import { Message, Chat, User } from 'telegraf/typings/telegram-types';
 import { parseCommands } from './utils';
+import { version } from '../package.json';
 
 type Tf = Telegraf<ContextMessageUpdate>;
 
@@ -103,7 +104,8 @@ async function initBot() {
     )
     .action('unban', m.adminPermissionCBQuery, m.unbanAction)
     .action('deleteMessage', m.adminPermissionCBQuery, m.deleteMessageAction)
-    .help(m.adminPermission, c.help);
+    .help(m.adminPermission, c.help)
+  bot.catch((err: Error) => console.error(err));
 }
 
 async function runBot() {
@@ -113,6 +115,7 @@ async function runBot() {
     BOT_SECRET_PATH,
     BOT_URL,
   } = process.env;
+  console.log(`Version ${version}`);
   if (dev) {
     bot.startPolling();
     console.log('Started development bot.');

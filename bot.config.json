@@ -7,5 +7,14 @@
     "user_banned": "$1 have been banned. GG WP!",
     "self_report": "You are so smart...",
     "private_messsages_restriction": "I am only for groups and supergroups."
-  }
+  },
+  "commands": {
+    "report": "report user [admin]",
+    "voteban": "start voteban",
+    "cancel_voteban": "cancel last voteban",
+    "voteban_threshold": "get/set voteban threshold [admin]",
+    "stop": "set voteban cooldown (15min) [admin]",
+    "help": "manual [admin]"
+  },
+  "kick_message_delete_timeout": 120000
 }

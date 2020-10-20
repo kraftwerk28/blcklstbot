@@ -1,6 +1,6 @@
 {
   "name": "blcklstbot",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "main": "index.js",
   "author": "Vsevolod (@kraftwerk28) <kefirchik3@gmail.com>",
   "license": "MIT",
@@ -18,8 +18,7 @@
   "dependencies": {
     "dotenv": "^8.2.0",
     "knex": "^0.20.13",
-    "pg": "^7.18.2",
-    "pg-native": "^3.0.0",
+    "pg": "^8.4.0",
     "telegraf": "^3.37.0"
   },
   "devDependencies": {

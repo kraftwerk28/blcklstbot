@@ -35,13 +35,15 @@ export function rest<T>(
 
     const req = request(fullUrl, opts, (response) => {
       if (response.statusCode!.toString()[0] !== '2') {
+        console.info(`${method} ${fullUrl.pathname} -> ${response.statusCode}`);
         reject(
           'Bad Blocklist API response:' +
-            `${response.statusCode} ${response.statusMessage}`
+          `${response.statusCode} ${response.statusMessage}`
         );
         return;
       }
 
+      console.info(`${method} ${fullUrl.pathname} -> ${response.statusCode}`);
       const data = [] as any[];
       response
         .on('data', (ch) => data.push(ch))

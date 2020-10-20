@@ -5,36 +5,24 @@ import { Report } from './bot';
 
 type CtxMW = Middleware<ContextMessageUpdate>;
 
-export const report: CtxMW = async function (ctx) {
-  const { message, telegram: tg, chat, from, db } = ctx;
+export const report: CtxMW = async function(ctx) {
+  const { message, chat, from, db } = ctx;
   if (!(from && chat && message)) return;
-  const admins = await tg.getChatAdministrators(chat.id);
   const reportedMsg = message.reply_to_message;
   const reportedUser = utils.getReportedUser(ctx);
   const dbGroup = await db.getChat(chat);
-  const me = await tg.getMe();
 
   // check if command is replying
   if (!reportedMsg || !reportedUser) return;
-
-  // if someone reported myself or admin
-  if (
-    reportedMsg.from!.id === me.id ||
-    admins.some(({ user: { id } }) => id === reportedMsg.from!.id)
-  ) {
-    // reply(REPLICAS.self_report, {
-    //   reply_to_message_id: message.message_id
-    // });
-    return;
-  }
 
   await utils.kickUser(
     ctx,
     chat,
     reportedUser,
+    utils.BanReason.REPORT,
+    dbGroup && dbGroup.voteban_to_global,
     message,
-    reportedMsg.new_chat_members ? undefined : reportedMsg,
-    dbGroup && dbGroup.voteban_to_global
+    reportedMsg.new_chat_members ? undefined : reportedMsg
   );
 
   await utils.runAll(
@@ -43,21 +31,21 @@ export const report: CtxMW = async function (ctx) {
   );
 };
 
-export const help: CtxMW = async function (ctx) {
+export const help: CtxMW = async function(ctx) {
   const text = ctx.commands.reduce((acc, { command, description }) => {
     return acc + `/${command} - ${description}\n`;
   }, '');
   return ctx.replyTo(text);
 };
 
-export const stopVoteban: CtxMW = async function (ctx, next) {
+export const stopVoteban: CtxMW = async function(ctx, next) {
   const isAdminMsg = await utils.checkAdmin(ctx);
   if (!isAdminMsg) return next!();
 
   ctx.votebanCD.cd(ctx.chat!.id);
 };
 
-export const voteban: CtxMW = async function (ctx) {
+export const voteban: CtxMW = async function(ctx) {
   const { chat, message, from, telegram, votebans } = ctx;
   if (!(chat && message && from)) return;
   if (!message.reply_to_message) return;
@@ -76,7 +64,7 @@ export const voteban: CtxMW = async function (ctx) {
   const pollMsg = await telegram.sendPoll(
     chat!.id,
     `Ban ${utils.mention(reportedUser)}` +
-      ` (reported by ${utils.mention(from)})?`,
+    ` (reported by ${utils.mention(from)})?`,
     ['Yes.', 'No.']
   );
 
@@ -91,7 +79,7 @@ export const voteban: CtxMW = async function (ctx) {
   votebans.set(pollId, vb);
 };
 
-export const setVotebanThreshold: CtxMW = async function (ctx, next) {
+export const setVotebanThreshold: CtxMW = async function(ctx, next) {
   const { match, chat, db } = ctx;
   if (!(match && chat)) return;
   if (match[1]) {
@@ -106,7 +94,7 @@ export const setVotebanThreshold: CtxMW = async function (ctx, next) {
   return ctx.replyTo(`Current voteban threshold: ${th}.`);
 };
 
-export const cancelLastVoteban: CtxMW = async function (ctx, next) {
+export const cancelLastVoteban: CtxMW = async function(ctx, next) {
   const { telegram: tg, votebans, chat } = ctx;
   if (!chat) return;
   const vbArr = Array.from(votebans);

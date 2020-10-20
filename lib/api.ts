@@ -1,6 +1,6 @@
 import { rest } from './fetch';
 
-const BASE = 'https://bots.genix.space/rest-api/v1';
+const { API_BASE } = process.env;
 export const SUCCESS = 'success';
 export const ERROR = 'error';
 
@@ -18,10 +18,10 @@ export interface Banned {
 export type BanInfo = Omit<Banned, 'id' | 'date'>;
 
 export class API {
-  constructor(private token: string, private botID: number) {}
+  constructor(private token: string, private botID: number) { }
 
   private url(path: string) {
-    return `${BASE}${path}/`;
+    return `${API_BASE}${path}/`;
   }
 
   private headers(extraHeaders: Record<string, string> = {}) {
