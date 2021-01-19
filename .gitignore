@@ -67,3 +67,8 @@ dist/
 reports.json
 .env*
 deploy.sh
+
+
+#Added by cargo
+
+/target

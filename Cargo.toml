@@ -1,0 +1,20 @@
+[package]
+name = "blcklstbot"
+version = "0.1.0"
+authors = ["kraftwerk28 <kefirchik3@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+teloxide = "0.3"
+teloxide-macros = "0.3"
+log = "*"
+pretty_env_logger = "*"
+tokio = { version =  "0.2", features = ["rt-threaded", "macros"] }
+reqwest = "0.11.0"
+redis = { version = "0.19.0", features = ["tokio-comp"] }
+dotenv = "0.15.0"
+anyhow = "1.0.38"
+hyper = { version = "0.14.2", features = ["server"] }
+serde_json = "*"
