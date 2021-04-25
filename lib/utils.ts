@@ -1,62 +1,82 @@
-import fs from 'fs';
-import path from 'path';
-import { ContextMessageUpdate, Markup, Command, Button } from 'telegraf';
-import { User, Message, Chat } from 'telegraf/typings/telegram-types';
+import { User, Message, Chat, BotCommand } from 'typegram';
+import { Markup, Telegraf } from 'telegraf';
+
 import * as utils from './utils';
-import { BanInfo } from './api';
+import { Ctx, BanInfo } from './types';
+import { log } from './logger';
 import botConfig from '../bot.config.json';
-
-export function mention(u: User, link = false, includeLastName = true) {
-  let text = '';
-  if (u.username) {
-    text += `@${u.username}`;
-  } else {
-    text += u.first_name;
-    if (includeLastName && u.last_name) {
-      text += ` ${u.last_name}`;
-    }
-  }
-  text = escapeHtml(text);
-
-  return link ? `<a href="tg://user?id=${u.id}">${text}</a>` : text;
-}
 
 export function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/>/g, '&gt;').replace(/</g, '&lt;');
 }
 
-export async function runAll(...funcs: (Promise<any> | undefined)[]) {
-  return await (Promise as any).allSettled(
-    funcs.map((f) => f || Promise.resolve(f))
+export function anchorLink(url: string, text: string) {
+  return `<a href="${escapeHtml(url)}">${escapeHtml(text)}</a>`;
+}
+
+export function userFullName(user: User) {
+  return user.first_name + (user.last_name ? ` ${user.last_name}` : '');
+}
+
+export function userMention(user: User, disableUsername = false) {
+  if (user.username && !disableUsername) {
+    return `@${user.username}`;
+  } else {
+    return anchorLink(`tg://user?id=${user.id}`, userFullName(user));
+  }
+}
+
+// export function mention(u: User, link = false, includeLastName = true) {
+//   let text = '';
+//   if (u.username) {
+//     text += `@${u.username}`;
+//   } else {
+//     text += u.first_name;
+//     if (includeLastName && u.last_name) {
+//       text += ` ${u.last_name}`;
+//     }
+//   }
+//   text = escapeHtml(text);
+
+//   return link ? `<a href="tg://user?id=${u.id}">${text}</a>` : text;
+// }
+
+// export async function runAll(...funcs: (Promise<any> | undefined)[]) {
+//   return await (Promise as any).allSettled(
+//     funcs.map((f) => f || Promise.resolve(f))
+//   );
+// }
+
+export async function iAmAdmin(ctx: Ctx): Promise<boolean> {
+  const { tg } = ctx;
+  if (!ctx.chat) {
+    return false;
+  }
+  const meMember = await tg.getChatMember(ctx.chat.id, ctx.botInfo.id);
+  return Boolean(
+    meMember.can_restrict_members && meMember.can_delete_messages
   );
 }
 
-export async function iAmAdmin(ctx: ContextMessageUpdate): Promise<boolean> {
-  const { telegram: tg } = ctx;
-  const { id } = await tg.getMe();
-  const m = await tg.getChatMember(ctx.chat!.id, id);
-  return Boolean(m.can_restrict_members && m.can_delete_messages);
-}
-
-export async function checkAdmin(ctx: ContextMessageUpdate): Promise<boolean> {
+export async function checkAdmin(ctx: Ctx): Promise<boolean> {
   const { chat, from } = ctx;
   if (!(chat && from)) return false;
   const admins = await ctx.getChatAdministrators();
   return admins.some((cm) => cm.user.id === from.id);
 }
 
-export async function checkUser(ctx: ContextMessageUpdate) {
+export async function checkUser(ctx: Ctx) {
   const { chat, message, from, api } = ctx;
   if (!(chat && message && from)) return;
 
   const isBanned = await api.checkUser(from.id);
   if (isBanned) {
-    await ctx.deleteMessageWeak(chat.id, message.message_id);
+    await ctx.deleteMessage().catch();
     await utils.kickUser(
       ctx,
       chat,
       from,
-      BanReason.AUTOBAN,
+      BanReason.Autoban,
       false,
       undefined,
       message,
@@ -65,13 +85,13 @@ export async function checkUser(ctx: ContextMessageUpdate) {
 }
 
 export enum BanReason {
-  REPORT,
-  VOTEBAN,
-  AUTOBAN,
+  Report,
+  Voteban,
+  Autoban,
 }
 
 export async function kickUser(
-  ctx: ContextMessageUpdate,
+  ctx: Ctx,
   chat: Chat,
   reportedUser: User,
   reason: BanReason,
@@ -83,7 +103,7 @@ export async function kickUser(
 ) {
   const { telegram: tg, banned, api } = ctx;
   const reporter = reportMsg?.from!;
-  const kickedUserMention = mention(reportedUser, true);
+  const kickedUserMention = userMention(reportedUser);
 
   if (globalBanlist) {
     const { id: telegram_id, first_name, last_name, username } = reportedUser;
@@ -95,14 +115,13 @@ export async function kickUser(
       username,
     } as BanInfo;
 
-    if (reportedMsg?.text) {
+    if (reportedMsg && 'text' in reportedMsg) {
       reportRecord.message = reportedMsg.text;
     }
 
     if (reportMsg) {
-      reportRecord.reason = `Reported by ${utils.mention(reporter)} (${
-        reporter.id
-        })`;
+      reportRecord.reason = `Reported by ${userFullName(reporter)}` +
+        ` (${reporter.id})`;
     } else {
       reportRecord.reason = 'User existed previously in Blocklist DB';
     }
@@ -111,51 +130,52 @@ export async function kickUser(
   }
 
   const unbanMarkupBtns = [];
-  unbanMarkupBtns.push(Markup.callbackButton('\u2b05\ufe0f Undo', 'unban'));
+  unbanMarkupBtns.push(Markup.button.callback('\U2b05\Ufe0f Undo', 'unban'));
 
   // If specified message had been reported,
   // we add a button with link to it (to channel)
   if (reportedMsg) {
-    const { reportsChannelUsername } = ctx;
-    const fwd = await tg.forwardMessage(
-      ctx.reportsChannelID,
-      chat.id,
-      reportedMsg.message_id,
-      { disable_notification: true }
-    ).catch(() => null);
+    // const { reportsChannelUsername } = ctx;
+    // const fwd = await tg.forwardMessage(
+    //   ctx.reportsChannelID,
+    //   chat.id,
+    //   reportedMsg.message_id,
+    //   { disable_notification: true }
+    // ).catch(() => null);
 
-    if (fwd) {
-      const refButton = Markup.urlButton(
-        '\u{1f5d2}\ufe0f Message',
-        `https://t.me/${reportsChannelUsername}/${fwd.message_id}`
-      );
-      unbanMarkupBtns.push(refButton);
-    }
+    // if (fwd) {
+    //   const refButton = Markup.urlButton(
+    //     '\u{1f5d2}\ufe0f Message',
+    //     `https://t.me/${reportsChannelUsername}/${fwd.message_id}`
+    //   );
+    //   unbanMarkupBtns.push(refButton);
+    // }
   }
 
   // This button deletes report result message
-  unbanMarkupBtns.push(Markup.callbackButton('\u274c Delete', 'deleteMessage'));
+  unbanMarkupBtns.push(
+    Markup.button.callback('\U274c Delete', 'deleteMessage')
+  );
 
   await tg
     .kickChatMember(chat.id, reportedUser.id, Date.now() + 15 * 6e4)
     .catch();
 
   let reasonText = '';
-  if (reason === BanReason.AUTOBAN) {
+  if (reason === BanReason.Autoban) {
     reasonText = `Banned ${kickedUserMention} because they were previously reported.`;
-  } else if (reason === BanReason.VOTEBAN) {
+  } else if (reason === BanReason.Voteban) {
     reasonText = `Banned ${kickedUserMention} because of voting results.`;
-  } else if (reason === BanReason.REPORT) {
-    reasonText = `${mention(reporter)} banned ${kickedUserMention}.`;
+  } else if (reason === BanReason.Report) {
+    reasonText = `${userMention(reporter)} banned ${kickedUserMention}.`;
   }
+
+  const inlineKbd = Markup.inlineKeyboard(unbanMarkupBtns);
 
   const banResultMsg = await tg.sendMessage(
     chat.id,
     reasonText,
-    {
-      reply_markup: Markup.inlineKeyboard(unbanMarkupBtns as any),
-      parse_mode: 'HTML',
-    }
+    { reply_markup: inlineKbd.reply_markup, parse_mode: 'HTML' },
   );
 
   banned.set(banResultMsg.message_id, {
@@ -165,13 +185,16 @@ export async function kickUser(
   });
 }
 
-export function getReportedUser(ctx: ContextMessageUpdate): User | undefined {
-  const { message: { reply_to_message: r } = {} } = ctx;
-  if (!r) return;
-  return r.new_chat_members?.length ? r.new_chat_members[0] : r.from;
+export function getReportedUser(ctx: Ctx): User | undefined {
+  const reply = (ctx.message as Message.CommonMessage).reply_to_message;
+  if (reply) {
+    const newMembers = (reply as Message.NewChatMembersMessage)
+      .new_chat_members || [];
+    return newMembers.length ? newMembers[0] : reply.from;
+  }
 }
 
-export function parseCommands(): Command[] {
+export function parseCommands(): BotCommand[] {
   return Object
     .entries(botConfig.commands)
     .map(([command, description]) => ({ command, description }));
@@ -186,4 +209,35 @@ export function parseCommands(): Command[] {
   //     const [command, description] = s.split('-').map((s) => s.trim());
   //     return { command, description };
   //   });
+}
+
+export function isDev() {
+  return process.env.NODE_ENV === 'development';
+}
+
+export async function flushUpdates(bot: Telegraf<Ctx>) {
+  await bot.telegram.deleteWebhook();
+  let update = await bot.telegram.callApi('getUpdates', { offset: -1 });
+  console.log(update)
+  // let lastUpdateId = 0;
+  // while (true) {
+  //   const updates = await bot.telegram.callApi(
+  //     'getUpdates',
+  //     { offset: lastUpdateId },
+  //   );
+  //   if (updates.length > 0) {
+  //     lastUpdateId = updates.slice(-1)[0].update_id + 1;
+  //     log.info('Fetched old updates (%O)', lastUpdateId);
+  //   } else {
+  //     break;
+  //   }
+  // }
+}
+
+export function randInt(a: number, b?: number) {
+  if (b === undefined) {
+    return Math.floor(Math.random() * a);
+  } else {
+    return b + Math.floor(Math.random() * (b - a));
+  }
 }

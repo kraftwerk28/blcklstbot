@@ -1,99 +1,51 @@
-import { createServer, Server } from 'http';
-import { promisify } from 'util';
-import Telegraf, { ContextMessageUpdate } from 'telegraf';
+import { Telegraf } from 'telegraf';
 
-import { flushUpdates } from './flushUpdates';
 import * as m from './middlewares';
 import * as c from './commands';
-import * as db from './db';
-import { API } from './api';
-import { VotebanCooldown } from './votebanCD';
-import {} from './commands';
-import { Message, Chat, User } from 'telegraf/typings/telegram-types';
-import { parseCommands } from './utils';
+import { flushUpdates, isDev, parseCommands } from './utils';
 import { version } from '../package.json';
+import { PgClient } from './pg';
+import { RedisClient } from './redis';
+import { Ctx } from './types';
+import { log } from './logger';
+import { Api } from './blocklist-api';
 
-type Tf = Telegraf<ContextMessageUpdate>;
-
-let dev = false;
-let server: Server;
-let bot: Tf;
-
-export interface Report {
-  chat: Chat;
-  reportedUser: User;
-  reportedMsg?: Message;
-  pollMsg: Message;
-  reportMsg: Message;
-}
-
-async function extendCtx(bot: Tf) {
-  const {
-    ADMIN_UID,
-    REPORTS_CHANNEL_ID,
-    REPORTS_CHANNEL_USERNAME,
-    API_TOKEN,
-  } = process.env;
-
-  const { context } = bot;
-  context.votebanCD = new VotebanCooldown();
-  context.replyTo = async function (text, extra) {
-    const { message, chat, telegram } = this;
-    if (!(message && chat)) return null;
-    return telegram.sendMessage(chat.id, text, {
-      ...extra,
-      reply_to_message_id: message.message_id,
-    });
-  };
-  context.votebans = new Map();
-  context.banned = new Map();
-  context.cbQueryError = function (
-    text = 'An error occured',
-    showAlert = false
-  ) {
-    return this.answerCbQuery(text, showAlert);
-  };
-  context.deleteMessageWeak = function (chatId, messageId) {
-    return this.telegram.deleteMessage(chatId, messageId).catch(() => false);
-  };
-  context.db = db;
-
-  const api = new API(API_TOKEN!, await bot.telegram.getMe().then((u) => u.id));
-  context.api = api;
-
-  context.adminUID = +ADMIN_UID!;
-  context.reportsChannelID = +REPORTS_CHANNEL_ID!;
-  context.reportsChannelUsername = REPORTS_CHANNEL_USERNAME!;
-  context.commands = parseCommands();
-}
-
-async function initBot() {
-  const { NODE_ENV, BOT_TOKEN, BOT_USERNAME } = process.env;
-  dev = NODE_ENV === 'development';
-  bot = new Telegraf(BOT_TOKEN!, {
-    username: BOT_USERNAME,
-    telegram: { webhookReply: false },
+async function initBot(): Promise<Telegraf<Ctx>> {
+  const { BOT_TOKEN, API_TOKEN } = process.env;
+  const bot = new Telegraf<Ctx>(BOT_TOKEN!, {
+    telegram: { webhookReply: false }
   });
-  await extendCtx(bot);
+  const botMe = await bot.telegram.getMe();
+
+  bot.context.pg = new PgClient;
+  bot.context.redis = new RedisClient
+  bot.context.api = new Api(API_TOKEN!, botMe.id);
+  bot.context.banned = new Map;
+  bot.context.commands = parseCommands();
 
   await bot.telegram.setMyCommands(bot.context.commands);
 
   bot
-    .use(m.noPM)
+    // .use(m.noPM)
     .use(m.addChat)
     .on('poll' as any, m.onPoll)
     .on('text', m.onText)
-    .on('new_chat_members', m.checkBotAdminWeak, m.onNewMember)
-    .on('left_chat_member', m.checkBotAdminWeak, m.onLeftMember)
+    .on('new_chat_members', m.checkIfBotIsAdmin(false), m.onNewMember)
+    .on('left_chat_member', m.checkIfBotIsAdmin(false), m.onLeftMember)
     .command(
       'report',
-      m.safeBanReport,
-      m.checkBotAdmin,
+      m.checkIfBotIsAdmin(true),
+      m.validateReportCmd,
       m.adminPermission,
       c.report
     )
     .command('get_debug_info', m.debugInfo)
-    .command('voteban', m.safeBanReport, m.checkBotAdmin, c.voteban)
+    .command(
+      'voteban',
+      m.checkIfBotIsAdmin(false),
+      m.validateReportCmd,
+      c.voteban
+    )
     .command('get_user', m.getByUsernameReply)
     .command('stop', m.adminPermission, c.stopVoteban)
     .command('cancel_voteban', c.cancelLastVoteban)
@@ -105,61 +57,62 @@ async function initBot() {
     .action('unban', m.adminPermissionCBQuery, m.unbanAction)
     .action('deleteMessage', m.adminPermissionCBQuery, m.deleteMessageAction)
     .help(m.adminPermission, c.help)
-  bot.catch((err: Error) => console.error(err));
+    .catch((err) => { log.error(err) });
+
+  ['SIGINT', 'SIGTERM'].forEach((signal) => {
+    process.once(signal as any, async (code) => {
+      log.info(`\nCode: ${code}. Starting graceful shutdown.`);
+
+      await bot.telegram.deleteWebhook().then((didDelete) => {
+        log.info('Deleted webhook: %o', didDelete);
+      });
+
+      await bot.context.pg?.disconnect();
+      bot.stop(signal);
+
+      log.info('Finished graceful shutdown.');
+      process.exit(0);
+    });
+  });
+
+  return bot;
 }
 
-async function runBot() {
+async function runBot(bot: Telegraf<Ctx>) {
   const {
     BOT_HTTP_PORT,
+    BOT_WEBHOOK_HOST,
     BOT_WEBHOOK_PORT,
     BOT_SECRET_PATH,
-    BOT_URL,
   } = process.env;
-  console.log(`Version ${version}`);
-  if (dev) {
-    bot.startPolling();
-    console.log('Started development bot.');
+  log.info(`Starting blcklst bot v${version}.`);
+  if (isDev()) {
+    await bot.launch();
+    log.info('Long polling enabled.');
   } else {
-    const WEBHOOK_URL = `${BOT_URL}:${BOT_WEBHOOK_PORT}${BOT_SECRET_PATH}`;
-    const whSetResult = await bot.telegram.setWebhook(WEBHOOK_URL);
-    if (whSetResult) {
-      console.log(`Webhook set succsessfully on ${WEBHOOK_URL}.`);
-    } else {
-      console.error('Failed to set webhook. Exiting.');
-      process.exit(1);
-    }
-
-    server = createServer(bot.webhookCallback(BOT_SECRET_PATH!));
-    server.listen(BOT_HTTP_PORT, () => {
-      console.log(`Server listening on :${BOT_HTTP_PORT}.`);
+    await bot.launch({
+      webhook: {
+        domain: `${BOT_WEBHOOK_HOST}:${BOT_WEBHOOK_PORT}`,
+        hookPath: BOT_SECRET_PATH,
+        port: +BOT_HTTP_PORT!,
+      },
     });
+    log.info('Webhook enabled.');
   }
 }
 
-async function main() {
-  await initBot();
-  await flushUpdates(bot);
-  db.connect();
-  return runBot();
+(async () => {
+  try {
+    const bot = await initBot();
+    await flushUpdates(bot);
+    await runBot(bot);
+  } catch (err) {
+    log.error(err);
+  }
 }
-
-main();
-
-['SIGINT', 'SIGTERM'].forEach((signal) => {
-  process.on(signal as any, async (code) => {
-    console.log(`\nCode: ${code}. Starting graceful shutdown.`);
-    // await bot.stop();
-    if (!dev) {
-      await bot.telegram.deleteWebhook();
-      await promisify(server.close.bind(server))();
-    }
-    await db.disconnect();
-    console.log('Finished graceful shutdown.');
-    process.exit(0);
-  });
-});
+)();
 
 process.on('unhandledRejection', (reason) => {
-  console.error('UNHANDLED PROMISE REJECTION.');
-  console.error(reason);
+  log.error('UNHANDLED PROMISE REJECTION.');
+  log.error(reason);
 });

@@ -1,12 +1,12 @@
 import '../lib/api';
 import { config } from 'dotenv';
-import { API } from '../lib/api';
+import { Api } from '../lib/api';
 
 async function main() {
   config();
   console.log('Dotenv loaded');
   const UID = 12345678;
-  const api = new API(process.env.API_TOKEN!, 12345678);
+  const api = new Api(process.env.API_TOKEN!, 12345678);
 
   console.dir(await api.getBlacklist());
 
