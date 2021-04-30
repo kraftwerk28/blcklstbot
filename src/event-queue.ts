@@ -2,12 +2,17 @@ import { Redis } from 'ioredis';
 import { Telegram } from 'telegraf';
 import { DbStore } from './db-store';
 import {
-  BaseEvent, Callback, ExtractType, MaybePromise, PayloadByType } from './types';
+  BaseEvent,
+  Callback,
+  ExtractType,
+  MaybePromise,
+  PayloadByType,
+} from './types';
 
 export class EventQueue<Event extends BaseEvent> {
   private timerId: NodeJS.Timeout | null = null;
   private subscribers: Map<
-    string,
+    ExtractType<Event>,
     Callback<Event, ExtractType<Event>>[]
   > = new Map();
   private errorSubscribers: Set<(error: Error) => MaybePromise> = new Set;

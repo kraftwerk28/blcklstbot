@@ -1,7 +1,7 @@
 import { Chat, User } from 'typegram';
+import { CaptchaMode } from './captcha';
 import { DbOptional } from './utils';
 
-export type CaptchaMode = 'arighmetic' | 'choose-single-button';
 type LanguageCode = 'uk' | 'en';
 
 export type DbChat =

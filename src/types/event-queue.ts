@@ -8,8 +8,14 @@ export type PongEvent = BaseEvent<'pong', {
   messageId: number,
 }>;
 
+export type CaptchaTimeoutEvent = BaseEvent<'captcha_timeout', {
+  chatId: number,
+  userId: number,
+}>;
+
 export type EventQueueEvent =
-  | PongEvent;
+  | PongEvent
+  | CaptchaTimeoutEvent;
 
 export type BaseEvent<T extends string = any, P = unknown> = {
   type: T,

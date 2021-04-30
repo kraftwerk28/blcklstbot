@@ -5,6 +5,8 @@ import { extendBotContext } from './extend-context';
 import { initLogger, log } from './logger';
 
 import * as middleware from './middlewares';
+import * as commands from './commands';
+import { regexp } from './utils';
 
 async function main() {
   dotenv.config();
@@ -14,23 +16,12 @@ async function main() {
   const botInfo = await bot.telegram.getMe();
 
   bot
-    .on('chat_member', middleware.onNewChatMember)
-    .on('new_chat_members', middleware.onNewChatMember)
+    .on(['chat_member', 'new_chat_members'], middleware.onNewChatMember)
     .hears(
-      new RegExp(
-        String.raw`\/ping(?:@${botInfo.username})?\s+(\d+)(?:\s+(.+))?$`
-      ),
-      async (ctx, next) => {
-        const seconds = parseInt(ctx.match[1]);
-        const payload = {
-          chatId: ctx.chat.id,
-          text: ctx.match[2],
-          time: seconds,
-          messageId: ctx.message.message_id,
-        };
-        ctx.eventQueue.pushDelayed(seconds, 'pong', payload);
-      }
+      regexp`\/ping(?:@${botInfo.username})?\s+(\d+)(?:\s+(.+))?$`,
+      commands.ping,
     );
+  bot.command
 
   bot.context.eventQueue!
     .on('pong', async ({ telegram, payload }) => {
@@ -38,6 +29,12 @@ async function main() {
       await telegram.sendMessage(payload.chatId, text, {
         reply_to_message_id: payload.messageId
       });
+    })
+    .on('captcha_timeout', async ({ telegram, payload }) => {
+      await telegram.sendMessage(
+        payload.chatId,
+        `User ${payload.userId} must be banned because of missed captcha.`,
+      );
     });
 
   switch (process.env.NODE_ENV) {

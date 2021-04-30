@@ -6,9 +6,6 @@
     "outDir": "build/",
     "strict": true,
     "baseUrl": "./",
-    "paths": {
-      "~/*": ["src/*"]
-    },
     "esModuleInterop": true,
     "resolveJsonModule": true
   },

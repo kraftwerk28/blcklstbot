@@ -44,3 +44,7 @@ export function applyHtmlEntities(raw: string, entities: MessageEntity[]) {
   }
   return result;
 }
+
+export function regexp(parts: TemplateStringsArray, ...inBetweens: any[]) {
+  return new RegExp(String.raw(parts, ...inBetweens));
+}
