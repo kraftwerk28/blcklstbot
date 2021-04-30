@@ -1,5 +1,4 @@
 import { User } from 'typegram';
-
 import { replicas as REPLICAS } from '../bot.config.json';
 import * as utils from './utils';
 import { Ctx, Middleware, OnMiddleware } from './types';
@@ -42,8 +41,10 @@ export const addChat: Middleware = async (ctx, next) => {
 export const onNewMember: OnMiddleware<'new_chat_members'> = async function(ctx, next) {
   const { message, tg, reply, chat, api, pg } = ctx;
 
+  if (!message || !('new_chat_members' in message)) return next();
+
   const newMembers = message.new_chat_members;
-  if (!newMembers?.length || !chat) return;
+  if (!newMembers?.length || !chat) return next();
 
   // if someone joined
   const dbGroup = await pg.getChat(chat);

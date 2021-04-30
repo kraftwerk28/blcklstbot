@@ -7,10 +7,10 @@
   "scripts": {
     "start": "tsc -w --inlineSourceMap",
     "build": "tsc",
-    "nodemon": "NODE_ENV=development nodemon dist/",
-    "dev": "NODE_ENV=development node dist/",
+    "nodemon": "NODE_ENV=development nodemon build/",
+    "dev": "NODE_ENV=development node build/",
     "lint": "eslint --ignore-path .gitignore --fix .",
-    "clean": "rm -r dist/*",
+    "build:clean": "rm -r dist/*",
     "deploy-db": "psql -d blcklstbot -f ./db.sql",
     "build:test": "tsc --outDir test/dist/ --esModuleInterop true test/db.test.ts",
     "test": "NODE_ENV=development ts-node test/index.test.ts"

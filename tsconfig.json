@@ -1,14 +1,16 @@
 {
   "compilerOptions": {
-    "target": "ES2018",
+    "target": "ES2016",
     "module": "commonjs",
     "lib": ["ESNext"],
-    "outDir": "dist/",
+    "outDir": "build/",
     "strict": true,
+    "baseUrl": "./",
     "paths": {
-      "@src/*": ["src/*"]
+      "~/*": ["src/*"]
     },
     "esModuleInterop": true,
     "resolveJsonModule": true
-  }
+  },
+  "include": ["src/"]
 }

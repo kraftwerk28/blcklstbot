@@ -3,11 +3,26 @@
 const IORedis = require('ioredis');
 const { EventEmitter } = require('events')
 
-const client = new IORedis();
-const pubsubClient = new IORedis();
-pubsubClient.disconnect();
+async function f1() {
+  return Promise.resolve(42);
+}
+async function f2() {
+  throw new Error('oops');
+}
 
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+(async () => {
+  // for await (const res of await Promise.allSettled([f1(), f2()])) {
+  //   console.log(res)
+  // }
+  // const sett = await Promise.allSettled([f1(), f2()]);
+  // console.dir(await sett[0]);
+})();
+
+// const client = new IORedis();
+// const pubsubClient = new IORedis();
+// pubsubClient.disconnect();
+
+// const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // class PersistTimer extends EventEmitter {
 //   constructor(connection) {
@@ -48,4 +63,4 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
   console.log(await client.get('foo'))
 
   client.disconnect();
-})();
+});

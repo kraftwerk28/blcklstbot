@@ -3,7 +3,7 @@ import IoRedis from 'ioredis';
 import { config } from 'dotenv';
 
 import { EventQueue } from '@src/event-queue';
-import { BaseEvent, } from '@src/types';
+import { BaseEvent } from '@src/types';
 
 type PongEvent = BaseEvent<'pong', { chatId: number; messageId: number }>;
 type RemindEvent = BaseEvent<
@@ -15,12 +15,14 @@ type RemindEvent = BaseEvent<
   }
 >;
 
+type Event = PongEvent | RemindEvent;
+
 async function main() {
   config();
 
   const bot = new Telegraf(process.env.BOT_TOKEN!);
   const redisClient = new IoRedis();
-  const eventQueue = new EventQueue<PongEvent | RemindEvent>(
+  const eventQueue = new EventQueue<Event>(
     redisClient,
     bot.telegram,
   );
@@ -43,6 +45,7 @@ async function main() {
   const remindRegex = new RegExp(
     String.raw`^\/remind(?:@${botUser.username})?\s+(\d+)\s+(.+)\s*$`,
   );
+
   bot.hears(remindRegex, async (ctx, next) => {
     const seconds = parseInt(ctx.match[1]);
     const text = ctx.match[2];
@@ -56,21 +59,23 @@ async function main() {
     });
   });
 
-  eventQueue.on('pong', async ({ payload }) => {
-    await bot.telegram.sendMessage(payload.chatId, 'Pong', {
-      reply_to_message_id: payload.messageId,
-      allow_sending_without_reply: true,
+  eventQueue
+    .on('pong', async ({ payload }) => {
+      await bot.telegram.sendMessage(payload.chatId, 'Pong', {
+        reply_to_message_id: payload.messageId,
+        allow_sending_without_reply: true,
+      });
+    })
+    .on('remind', async ({ payload }) => {
+      const chatMember = await bot.telegram.getChatMember(
+        payload.chatId,
+        payload.userId,
+      );
+      const msgText = `@${chatMember.user.username} ${payload.text}`;
+      await bot.telegram.sendMessage(payload.chatId, msgText);
+    })
+    .onError(async (error) => {
     });
-  });
-
-  eventQueue.on('remind', async ({ payload }) => {
-    const chatMember = await bot.telegram.getChatMember(
-      payload.chatId,
-      payload.userId,
-    );
-    const msgText = `@${chatMember.user.username} ${payload.text}`;
-    return bot.telegram.sendMessage(payload.chatId, msgText);
-  });
 
   bot.launch();
 

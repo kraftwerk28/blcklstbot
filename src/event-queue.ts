@@ -1,6 +1,8 @@
 import { Redis } from 'ioredis';
 import { Telegram } from 'telegraf';
-import { BaseEvent, Callback, ExtractType, PayloadByType } from './types';
+import { DbStore } from './db-store';
+import {
+  BaseEvent, Callback, ExtractType, MaybePromise, PayloadByType } from './types';
 
 export class EventQueue<Event extends BaseEvent> {
   private timerId: NodeJS.Timeout | null = null;
@@ -8,15 +10,18 @@ export class EventQueue<Event extends BaseEvent> {
     string,
     Callback<Event, ExtractType<Event>>[]
   > = new Map();
+  private errorSubscribers: Set<(error: Error) => MaybePromise> = new Set;
+  private redisClient: Redis;
 
   constructor(
-    private redisClient: Redis,
     private telegram: Telegram,
+    private dbStore: DbStore,
     private sortedSetKey = 'evt_queue:zset',
     private pollTimeout = 500,
   ) {
     const callback = this.pollEvents.bind(this);
     this.timerId = setInterval(callback, this.pollTimeout);
+    this.redisClient = dbStore.redisClient;
   }
 
   dispose() {
@@ -32,16 +37,35 @@ export class EventQueue<Event extends BaseEvent> {
     } else {
       this.subscribers.set(type, [callback]);
     }
+    return this;
   }
 
-  private emit<T extends ExtractType<Event>>(
+  onError(callback: (error: Error) => MaybePromise) {
+    this.errorSubscribers.add(callback);
+    return this;
+  }
+
+  private async emit<T extends ExtractType<Event>>(
     type: T,
     payload: PayloadByType<Event, T>,
-  ) {
+  ): Promise<void> {
     const callbacks = this.subscribers.get(type);
+    const promises: Promise<void>[] = [];
+    const baseContext = { telegram: this.telegram, dbStore: this.dbStore };
     if (callbacks) {
+      const data = Object.assign({ type, payload }, baseContext);
       for (const callback of callbacks) {
-        callback({ type, payload, telegram: this.telegram });
+        const maybePromise = callback(data);
+        if (maybePromise instanceof Promise) {
+          promises.push(maybePromise);
+        }
+      }
+    }
+    for (const sett of await Promise.allSettled(promises)) {
+      if (sett.status === 'rejected') {
+        for (const callback of this.errorSubscribers) {
+          callback(sett.reason as Error);
+        }
       }
     }
   }
@@ -62,16 +86,17 @@ export class EventQueue<Event extends BaseEvent> {
     }
   }
 
-  pushDelayed<T extends ExtractType<Event>>(
+  async pushDelayed<T extends ExtractType<Event>>(
     seconds: number,
     type: T,
     payload: Extract<Event, { type: T }>['payload'],
   ) {
     const deadline = Date.now() + seconds * 1000;
-    return this.redisClient.zadd(
+    await this.redisClient.zadd(
       this.sortedSetKey,
       deadline,
       JSON.stringify({ type, payload }),
     );
+    return this;
   }
 }
