@@ -1,25 +1,44 @@
+import { Message, User } from 'typegram';
+
 import { runDangling } from '../utils';
 import { Ctx, OnMiddleware } from '../types';
-import { User } from 'typegram';
 import { Captcha } from '../utils/captcha';
+import { code, userMention } from '../utils/html';
 
 type Middleware = OnMiddleware<'new_chat_members' | 'chat_member'>;
 
 async function userCaptcha(ctx: Ctx, user: User) {
-  const captcha = new Captcha().generate();
+  const captcha = Captcha.generate();
   // TODO: put cahtcha to Redis store
-  switch (captcha.type) {
-    case 'arithmetic':
-      await ctx.reply(
-        `Please solve the following math example: ${captcha.expression}.`,
+  ctx.dbStore.addPendingCaptcha(ctx.chat!.id, user.id, captcha);
+  let captchaMessage: Message;
+
+  switch (captcha.mode) {
+    case 'arithmetic': {
+      captchaMessage = await ctx.replyWithHTML(
+        userMention(user) +
+        ', please solve the following math expression:\n' +
+        code(captcha.meta.expression),
         { reply_to_message_id: ctx.message!.message_id },
       );
       break;
+    }
+    case 'matrix-denom': {
+      const matrixText = captcha.meta.matrix
+        .map(row => '| ' + row.join(' ') + ' |').join('\n')
+      captchaMessage = await ctx.replyWithHTML(
+        userMention(user) +
+        ', please find the determinant of matrix below:\n' +
+        code(matrixText)
+      );
+      break;
+    }
   }
 
   ctx.eventQueue.pushDelayed(10, 'captcha_timeout', {
     chatId: ctx.chat!.id,
     userId: user.id,
+    captchaMessageId: captchaMessage.message_id,
   });
 }
 

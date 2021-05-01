@@ -21,7 +21,6 @@ async function main() {
       regexp`\/ping(?:@${botInfo.username})?\s+(\d+)(?:\s+(.+))?$`,
       commands.ping,
     );
-  bot.command
 
   bot.context.eventQueue!
     .on('pong', async ({ telegram, payload }) => {
@@ -35,6 +34,7 @@ async function main() {
         payload.chatId,
         `User ${payload.userId} must be banned because of missed captcha.`,
       );
+      await telegram.deleteMessage(payload.chatId, payload.captchaMessageId);
     });
 
   switch (process.env.NODE_ENV) {

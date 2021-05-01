@@ -6,8 +6,8 @@
     "outDir": "build/",
     "strict": true,
     "baseUrl": "./",
-    "esModuleInterop": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "esModuleInterop": true
   },
-  "include": ["src/"]
+  "include": ["src/", "tests/"]
 }

@@ -48,3 +48,13 @@ export function applyHtmlEntities(raw: string, entities: MessageEntity[]) {
 export function regexp(parts: TemplateStringsArray, ...inBetweens: any[]) {
   return new RegExp(String.raw(parts, ...inBetweens));
 }
+
+export function randInt(a: number, b?: number) {
+  if (typeof b === 'number') {
+    return Math.floor(Math.random() * (b - a)) + a;
+  } else {
+    return Math.floor(Math.random() * a);
+  }
+}
+
+export function randBool() { return Math.random() < 0.5 }

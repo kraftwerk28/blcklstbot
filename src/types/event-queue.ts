@@ -11,6 +11,7 @@ export type PongEvent = BaseEvent<'pong', {
 export type CaptchaTimeoutEvent = BaseEvent<'captcha_timeout', {
   chatId: number,
   userId: number,
+  captchaMessageId: number,
 }>;
 
 export type EventQueueEvent =
