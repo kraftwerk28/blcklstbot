@@ -1,9 +1,9 @@
 import { Telegraf } from 'telegraf';
 import dotenv from 'dotenv';
+
 import { Ctx } from './types';
 import { extendBotContext } from './extend-context';
 import { initLogger, log } from './logger';
-
 import * as middleware from './middlewares';
 import * as commands from './commands';
 import { regexp } from './utils';
@@ -11,16 +11,21 @@ import { regexp } from './utils';
 async function main() {
   dotenv.config();
   initLogger();
+
   const bot = new Telegraf<Ctx>(process.env.BOT_TOKEN!);
+  bot.telegram.webhookReply = false;
   await extendBotContext(bot);
-  const botInfo = await bot.telegram.getMe();
+  bot.botInfo = await bot.telegram.getMe();
+  const username = bot.botInfo.username;
 
   bot
     .on(['chat_member', 'new_chat_members'], middleware.onNewChatMember)
     .hears(
-      regexp`\/ping(?:@${botInfo.username})?\s+(\d+)(?:\s+(.+))?$`,
+      regexp`\/ping(?:${username})?\s+(\d+)(?:\s+(.+))?$`,
       commands.ping,
     );
+
+  await bot.telegram.setMyCommands(commands.publicCommands);
 
   bot.context.eventQueue!
     .on('pong', async ({ telegram, payload }) => {

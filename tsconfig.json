@@ -5,6 +5,7 @@
     "lib": ["ESNext"],
     "outDir": "build/",
     "strict": true,
+    "rootDir": "./",
     "baseUrl": "./",
     "resolveJsonModule": true,
     "esModuleInterop": true
