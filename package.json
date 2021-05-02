@@ -19,7 +19,7 @@
     "axios": "^0.21.1",
     "dotenv": "^8.2.0",
     "ioredis": "^4.27.1",
-    "knex": "^0.20.15",
+    "knex": "^0.95.4",
     "node-fetch": "^2.6.1",
     "pg": "^8.5.1",
     "telegraf": "^4.3.0",
@@ -27,6 +27,7 @@
   },
   "devDependencies": {
     "@types/ioredis": "^4.19.3",
+    "@types/knex": "^0.16.1",
     "@types/node-fetch": "^2.5.7",
     "@types/pg": "^7.14.7",
     "eslint": "^6.8.0",

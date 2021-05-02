@@ -15,18 +15,27 @@ export class EventQueue<Event extends BaseEvent> {
     ExtractType<Event>,
     Callback<Event, ExtractType<Event>>[]
   > = new Map();
-  private errorSubscribers: Set<(error: Error) => MaybePromise> = new Set;
+  private errorSubscribers: Set<(error: Error) => MaybePromise> = new Set();
   private redisClient: Redis;
 
   constructor(
-    private telegram: Telegram,
-    private dbStore: DbStore,
-    private sortedSetKey = 'evt_queue:zset',
+    private readonly telegram: Telegram,
+    private readonly dbStore: DbStore,
+    private readonly sortedSetKey = 'evt_queue:zset',
     private pollTimeout = 500,
   ) {
-    const callback = this.pollEvents.bind(this);
-    this.timerId = setInterval(callback, this.pollTimeout);
+    this.pollEvents = this.pollEvents.bind(this);
+    this.setPollTimeout(this.pollTimeout);
     this.redisClient = dbStore.redisClient;
+    this.pollTimeout = pollTimeout;
+  }
+
+  setPollTimeout(timeout: number) {
+    this.pollTimeout = timeout;
+    if (typeof this.timerId === 'number') {
+      clearInterval(this.timerId);
+    }
+    this.timerId = setInterval(this.pollEvents, timeout);
   }
 
   dispose() {

@@ -4,6 +4,7 @@ import { runDangling } from '../utils';
 import { Ctx, OnMiddleware } from '../types';
 import { Captcha } from '../utils/captcha';
 import { code, userMention } from '../utils/html';
+import { Composer } from 'telegraf';
 
 type Middleware = OnMiddleware<'new_chat_members' | 'chat_member'>;
 
@@ -42,16 +43,23 @@ async function userCaptcha(ctx: Ctx, user: User) {
   });
 }
 
-export const onNewChatMember: Middleware = async function(ctx, next) {
-  if (ctx.message?.new_chat_members?.length) {
-    const promises = ctx.message.new_chat_members.map(
-      cm => userCaptcha(ctx, cm)
-    );
-    runDangling(promises);
-    return;
-  } else if (ctx.chatMember) {
-    // TODO
-    return;
+export const onNewChatMember: Middleware = Composer.optional(
+  async (ctx) => {
+    if (ctx.from.id === ctx.botCreatorId) return false;
+    const cm = await ctx.getChatMember(ctx.from.id);
+    return cm.status === 'member';
+  },
+  async (ctx, next) => {
+    if (ctx.message?.new_chat_members?.length) {
+      const promises = ctx.message.new_chat_members.map(
+        cm => userCaptcha(ctx, cm)
+      );
+      runDangling(promises);
+      return;
+    } else if (ctx.chatMember) {
+      // TODO
+      return;
+    }
+    return next();
   }
-  return next();
-}
+);

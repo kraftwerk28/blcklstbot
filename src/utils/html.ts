@@ -8,7 +8,7 @@ export function italic(text: string) {
   return '<i>' + text + '</i>';
 }
 
-export function code(text: string) {
+export function code(text: string | number) {
   return '<code>' + text + '</code>'
 }
 

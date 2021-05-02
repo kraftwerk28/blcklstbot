@@ -11,14 +11,15 @@ import { regexp } from './utils';
 async function main() {
   dotenv.config();
   initLogger();
-
   const bot = new Telegraf<Ctx>(process.env.BOT_TOKEN!);
   bot.telegram.webhookReply = false;
   await extendBotContext(bot);
-  bot.botInfo = await bot.telegram.getMe();
-  const username = bot.botInfo.username;
+  const botInfo = await bot.telegram.getMe();
+  bot.botInfo ??= botInfo;
+  const username = botInfo.username;
 
   bot
+    .on('message', middleware.addChatToDatabase)
     .on(['chat_member', 'new_chat_members'], middleware.onNewChatMember)
     .hears(
       regexp`\/ping(?:${username})?\s+(\d+)(?:\s+(.+))?$`,

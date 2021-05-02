@@ -7,4 +7,5 @@ import { EventQueueEvent } from './event-queue';
 export interface Ctx extends TelegrafContext {
   dbStore: DbStore;
   eventQueue: EventQueue<EventQueueEvent>;
+  botCreatorId: number;
 }

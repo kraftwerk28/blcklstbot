@@ -58,3 +58,13 @@ export function randInt(a: number, b?: number) {
 }
 
 export function randBool() { return Math.random() < 0.5 }
+
+export function ensureEnvExists(name: string): string {
+  const value = process.env[name];
+  if (value === undefined) {
+    throw new Error(
+      `Environment variable ${name} is required, but not defined`
+    );
+  }
+  return value;
+}

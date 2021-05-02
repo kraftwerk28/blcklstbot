@@ -6,8 +6,8 @@ type LanguageCode = 'uk' | 'en';
 export type DbChat =
   Pick<Chat.GroupChat & Chat.UserNameChat, 'id' | 'title' | 'username'> &
   {
-    /** Bitmask of `CatchaMode` */
-    catcha_modes: number,
+    enable_captcha: boolean,
+    catcha_modes: string[],
     captcha_timeout: number,
     /** Which language should bot user for that chat (WIP) */
     language_code: LanguageCode,
