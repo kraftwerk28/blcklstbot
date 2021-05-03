@@ -9,7 +9,7 @@ import { Ctx } from './context';
 
 export type MaybePromise<T = any> = T | Promise<T>;
 
-export type DbOptional<T> = T | undefined;
+export type DbOptional<T> = T | null;
 
 /** Utility for typing `bot.on('foo', fooMiddleware)` */
 export type OnMiddleware<

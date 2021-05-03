@@ -14,9 +14,15 @@ export type CaptchaTimeoutEvent = BaseEvent<'captcha_timeout', {
   captchaMessageId: number,
 }>;
 
+export type DeleteMessageEvent = BaseEvent<'delete_message', {
+  chatId: number,
+  messageId: number,
+}>;
+
 export type EventQueueEvent =
   | PongEvent
-  | CaptchaTimeoutEvent;
+  | CaptchaTimeoutEvent
+  | DeleteMessageEvent;
 
 export type BaseEvent<
   T extends string = any,

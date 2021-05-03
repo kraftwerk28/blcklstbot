@@ -1,11 +1,7 @@
 import { randBool, randInt } from './';
 import { CaptchaMode, ExtractCaptchaMeta } from '../types';
 import { log } from '../logger';
-
-const DEFAULT_CAPCHA_MODES: CaptchaMode[] = [
-  'arithmetic',
-  'matrix-denom',
-];
+import { DEFAULT_CAPCHA_MODES } from '../constants';
 
 export class Captcha<Mode extends CaptchaMode = CaptchaMode> {
   constructor(

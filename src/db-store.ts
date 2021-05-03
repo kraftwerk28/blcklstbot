@@ -5,10 +5,7 @@ import { AbstractCaptcha, DbChat } from './types';
 import { Captcha } from './utils/captcha';
 
 export class DbStore {
-  constructor(
-    public readonly knex: Knex,
-    public readonly redisClient: Redis,
-  ) { }
+  constructor(public readonly knex: Knex, public readonly redisClient: Redis) { }
 
   private captchaRedisKey(chatId: number, userId: number) {
     return `captcha:${chatId}:${userId}`;
@@ -44,15 +41,17 @@ export class DbStore {
     prop: Prop,
     value: DbChat[Prop],
   ) {
-    return this
-      .knex(CHATS_TABLE_NAME)
+    return this.knex(CHATS_TABLE_NAME)
       .where({ id: chatId })
       .update({ [prop]: value });
   }
 
   async addChat(chat: Partial<Pick<DbChat, 'id' | 'title' | 'username'>>) {
-    const insertResult =
-      await this.knex(CHATS_TABLE_NAME).insert(chat).onConflict('id').ignore();
-    return insertResult.length > 0;
+    const insertQuery = this.knex(CHATS_TABLE_NAME).insert(chat);
+    const insertResult = await this.knex.raw(
+      '? on conflict(id) do update set id = excluded.id returning *',
+      [insertQuery],
+    );
+    return insertResult.rows[0] as DbChat;
   }
 }

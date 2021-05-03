@@ -9,7 +9,6 @@ export async function up(knex: Knex): Promise<any> {
     table.string('username').notNullable();
 
     // Internal data
-    table.boolean('enable_captcha').notNullable().defaultTo(false);
     table.specificType('captcha_modes', 'varchar[8]').defaultTo('{arithmetic}');
     table.integer('captcha_timeout').defaultTo(60).notNullable();
     table.string('language_code', 2).notNullable().defaultTo('en');

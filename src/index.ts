@@ -5,7 +5,7 @@ import { Ctx } from './types';
 import { extendBotContext } from './extend-context';
 import { initLogger, log } from './logger';
 import { regexp } from './utils';
-import * as middleware from './middlewares';
+import * as middlewares from './middlewares';
 import * as commands from './commands';
 
 async function main() {
@@ -20,15 +20,21 @@ async function main() {
   const username = botInfo.username;
 
   bot
-    .on('message', middleware.addChatToDatabase)
-    .on('text', middleware.checkCaptchaAnswer)
+    .on('message', middlewares.getDbChat)
+    .on('text', middlewares.checkCaptchaAnswer)
     .on(
       ['chat_member', 'new_chat_members'],
-      middleware.botHasSufficientPermissions,
-      middleware.onNewChatMember,
+      middlewares.botHasSufficientPermissions,
+      middlewares.onNewChatMember,
     )
-    .on('left_chat_member', middleware.leftChatMember)
-    .hears(regexp`\/ping(?:${username})?\s+(\d+)(?:\s+(.+))?$`, commands.ping);
+    .on('left_chat_member', middlewares.leftChatMember)
+    .hears(regexp`^\/ping(?:@${username})?\s+(\d+)(?:\s+(.+))?$`, commands.ping)
+    .hears(
+      regexp`^\/captcha(?:@${username})?((?:\s+[\w-]+)+)?\s*$`,
+      commands.captcha,
+    )
+    .command('rules', middlewares.senderIsAdmin, commands.rules)
+    .command('settings', middlewares.senderIsAdmin, commands.groupSettings);
 
   await bot.telegram.setMyCommands(commands.publicCommands);
 
@@ -45,6 +51,9 @@ async function main() {
         `User ${payload.userId} must be banned because of missed captcha.`,
       );
       await telegram.deleteMessage(payload.chatId, payload.captchaMessageId);
+    })
+    .on('delete_message', async ({ telegram, payload }) => {
+      await telegram.deleteMessage(payload.chatId, payload.messageId).catch();
     });
 
   bot.catch((err) => {
