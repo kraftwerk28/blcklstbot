@@ -16,6 +16,9 @@ export const onNewChatMember: Middleware = Composer.optional(
     return cm.status === 'member';
   },
   async function(ctx, next) {
+    if (!ctx.dbChat.captcha_modes.length) {
+      return next();
+    }
     if (ctx.message?.new_chat_members?.length) {
       const promises = ctx.message.new_chat_members.map(
         cm => userCaptcha(ctx, cm)
@@ -31,7 +34,7 @@ export const onNewChatMember: Middleware = Composer.optional(
 );
 
 async function userCaptcha(ctx: Ctx, user: User) {
-  const captcha = Captcha.generate();
+  const captcha = Captcha.generate(ctx.dbChat.captcha_modes);
   // TODO: get property from DbChat
   const captchaTimeout = 20;
   ctx.dbStore.addPendingCaptcha(ctx.chat!.id, user.id, captcha, captchaTimeout);

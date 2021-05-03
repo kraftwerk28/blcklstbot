@@ -1,4 +1,6 @@
 import { Chat, User } from 'typegram';
+
+import { CaptchaMode } from './';
 import { DbOptional } from './utils';
 
 type LanguageCode = 'uk' | 'en';
@@ -6,7 +8,7 @@ type LanguageCode = 'uk' | 'en';
 export type DbChat =
   Pick<Chat.GroupChat & Chat.UserNameChat, 'id' | 'title' | 'username'> &
   {
-    captcha_modes: string[],
+    captcha_modes: CaptchaMode[],
     captcha_timeout: number,
     /** Which language should bot user for that chat (WIP) */
     language_code: LanguageCode,

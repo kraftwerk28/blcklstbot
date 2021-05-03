@@ -34,7 +34,10 @@ async function main() {
       commands.captcha,
     )
     .command('rules', middlewares.senderIsAdmin, commands.rules)
-    .command('settings', middlewares.senderIsAdmin, commands.groupSettings);
+    .command('settings', middlewares.senderIsAdmin, commands.groupSettings)
+    .catch((err) => {
+      log.error('Error in `bot.catch`:', err);
+    });
 
   await bot.telegram.setMyCommands(commands.publicCommands);
 
@@ -55,10 +58,6 @@ async function main() {
     .on('delete_message', async ({ telegram, payload }) => {
       await telegram.deleteMessage(payload.chatId, payload.messageId).catch();
     });
-
-  bot.catch((err) => {
-    log.error('Error in `bot.catch`:', err);
-  });
 
   switch (process.env.NODE_ENV) {
     case 'development':
