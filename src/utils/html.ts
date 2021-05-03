@@ -17,7 +17,7 @@ export function link(url: string, text: string) {
 }
 
 export function escape(text: string): string {
-  return text.replace('&', '&amp').replace('<', '&lt;').replace('>', '&gt;');
+  return text.replace(/&/g, '&amp').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 export function userMention(user: User, preferUsername = true) {

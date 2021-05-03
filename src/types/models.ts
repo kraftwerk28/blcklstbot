@@ -13,6 +13,7 @@ export type DbChat =
     language_code: LanguageCode,
     /** Message with chat rules */
     rules_message_id: DbOptional<number>,
+    delete_slash_commands: boolean,
   };
 
 export type DbUser = Pick<

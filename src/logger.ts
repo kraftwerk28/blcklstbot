@@ -8,14 +8,19 @@ const consoleConfig: transports.ConsoleTransportOptions = {
     format.timestamp({ format: 'DD.MM.YYYY HH:mm:ss' }),
     format.splat(),
     format.colorize(),
-    format.printf(({ message, timestamp, level, label }) => {
-      const text = typeof message === 'object'
-        ? util.inspect(message, { colors: true })
-        : message;
-      return `[${timestamp}]${label ? ' ' + label : ''} ${level} ${text}`;
+    format.printf((info) => {
+      const { message, stack, timestamp, level, label } = info;
+      let text;
+      if (stack) {
+        text = message + '\n' + stack;
+      } else if (typeof message === 'object') {
+        text = util.inspect(message, { colors: true });
+      } else {
+        text = message;
+      }
+      return `[${timestamp}]${label ? (' ' + label) : ''} ${level} ${text}`;
     })
   ),
-  handleExceptions: true,
 };
 
 export function initLogger() {

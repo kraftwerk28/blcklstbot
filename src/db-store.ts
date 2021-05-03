@@ -1,8 +1,7 @@
 import { Redis } from 'ioredis';
-import { Chat } from 'typegram';
 import { Knex } from 'knex';
 import { CHATS_TABLE_NAME } from './constants';
-import { DbChat } from './types';
+import { AbstractCaptcha, DbChat } from './types';
 import { Captcha } from './utils/captcha';
 
 export class DbStore {
@@ -15,11 +14,16 @@ export class DbStore {
     return `captcha:${chatId}:${userId}`;
   }
 
-  async addPendingCaptcha(chatId: number, userId: number, captcha: Captcha) {
+  async addPendingCaptcha(
+    chatId: number,
+    userId: number,
+    captcha: AbstractCaptcha,
+    timeoutSeconds: number,
+  ) {
     const key = this.captchaRedisKey(chatId, userId);
     await this.redisClient.set(key, captcha.serialize());
     // TODO: editable expire time
-    await this.redisClient.expire(key, 60 * 5);
+    await this.redisClient.expire(key, timeoutSeconds);
   }
 
   async hasPendingCaptcha(

@@ -68,3 +68,8 @@ export function ensureEnvExists(name: string): string {
   }
   return value;
 }
+
+export function idGenerator(initial = 0) {
+  let id = initial;
+  return () => id++;
+}

@@ -4,13 +4,14 @@ import dotenv from 'dotenv';
 import { Ctx } from './types';
 import { extendBotContext } from './extend-context';
 import { initLogger, log } from './logger';
+import { regexp } from './utils';
 import * as middleware from './middlewares';
 import * as commands from './commands';
-import { regexp } from './utils';
 
 async function main() {
   dotenv.config();
   initLogger();
+
   const bot = new Telegraf<Ctx>(process.env.BOT_TOKEN!);
   bot.telegram.webhookReply = false;
   await extendBotContext(bot);
@@ -20,19 +21,22 @@ async function main() {
 
   bot
     .on('message', middleware.addChatToDatabase)
-    .on(['chat_member', 'new_chat_members'], middleware.onNewChatMember)
-    .hears(
-      regexp`\/ping(?:${username})?\s+(\d+)(?:\s+(.+))?$`,
-      commands.ping,
-    );
+    .on('text', middleware.checkCaptchaAnswer)
+    .on(
+      ['chat_member', 'new_chat_members'],
+      middleware.botHasSufficientPermissions,
+      middleware.onNewChatMember,
+    )
+    .on('left_chat_member', middleware.leftChatMember)
+    .hears(regexp`\/ping(?:${username})?\s+(\d+)(?:\s+(.+))?$`, commands.ping);
 
   await bot.telegram.setMyCommands(commands.publicCommands);
 
-  bot.context.eventQueue!
-    .on('pong', async ({ telegram, payload }) => {
+  bot.context
+    .eventQueue!.on('pong', async ({ telegram, payload }) => {
       let text = payload.text ?? 'Pong';
       await telegram.sendMessage(payload.chatId, text, {
-        reply_to_message_id: payload.messageId
+        reply_to_message_id: payload.messageId,
       });
     })
     .on('captcha_timeout', async ({ telegram, payload }) => {
@@ -42,6 +46,10 @@ async function main() {
       );
       await telegram.deleteMessage(payload.chatId, payload.captchaMessageId);
     });
+
+  bot.catch((err) => {
+    log.error('Error in `bot.catch`:', err);
+  });
 
   switch (process.env.NODE_ENV) {
     case 'development':
@@ -72,4 +80,6 @@ async function main() {
   }
 }
 
-main();
+main().catch((err) => {
+  log.error('Error in `main`:', err);
+});

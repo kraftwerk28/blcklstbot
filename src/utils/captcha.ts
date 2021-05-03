@@ -1,21 +1,18 @@
 import { randBool, randInt } from './';
 import { CaptchaMode, ExtractCaptchaMeta } from '../types';
-
-// export enum CaptchaMode {
-//   Arithmetic = 1 << 0,
-//   ChooseButton = 1 << 1,
-// }
+import { log } from '../logger';
 
 const DEFAULT_CAPCHA_MODES: CaptchaMode[] = [
   'arithmetic',
   'matrix-denom',
 ];
 
-export class Captcha<Mode extends CaptchaMode = any> {
+export class Captcha<Mode extends CaptchaMode = CaptchaMode> {
   constructor(
     public mode: Mode,
     public meta: ExtractCaptchaMeta<Mode>,
-  ) { }
+  ) {
+  }
 
   private static arithmeticCapcha(): Captcha<'arithmetic'> {
     const multiplier = randInt(2, 10);
@@ -55,12 +52,17 @@ export class Captcha<Mode extends CaptchaMode = any> {
   static generate(allowedCaptchaTypes: CaptchaMode[] = DEFAULT_CAPCHA_MODES) {
     const nthCatcha = randInt(allowedCaptchaTypes.length);
     const type = allowedCaptchaTypes[nthCatcha];
+    let captcha;
     switch (type) {
       case 'arithmetic':
-        return this.arithmeticCapcha();
+        captcha = this.arithmeticCapcha();
+        break;
       case 'matrix-denom':
-        return this.matrixDenomCaptcha();
+        captcha = this.matrixDenomCaptcha();
+        break;
     }
+    log.info('New captcha: %o', captcha);
+    return captcha;
   }
 
   serialize(): string {
@@ -71,6 +73,21 @@ export class Captcha<Mode extends CaptchaMode = any> {
   }
 
   static deserialize(raw: string) {
-    return JSON.parse(raw) as Captcha;
+    try {
+      const { mode, meta } = JSON.parse(raw);
+      return new Captcha(mode, meta);
+    } catch {
+      return null;
+    }
+  }
+
+  checkAnswer(input: string): boolean {
+    switch (this.mode) {
+      case 'arithmetic':
+      case 'matrix-denom':
+        return parseInt(input) === this.meta.answer;
+      default:
+        return true;
+    }
   }
 }

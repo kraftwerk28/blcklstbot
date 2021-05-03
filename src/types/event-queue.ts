@@ -18,15 +18,28 @@ export type EventQueueEvent =
   | PongEvent
   | CaptchaTimeoutEvent;
 
-export type BaseEvent<T extends string = any, P = unknown> = {
-  type: T,
-  payload: P,
-};
+export type BaseEvent<
+  T extends string = any,
+  P extends Record<string | number, any> = any,
+  Pk = (keyof P)[],
+  > = {
+    /** Event type */
+    type: T,
+    /** Event payload */
+    payload: P,
+    /** Keys used to hash this event for further ability
+     * to remove then from queue
+     */
+    pkArray: Pk,
+  };
 
 export type ExtractType<E extends BaseEvent> = E['type'];
 
 export type PayloadByType<E extends BaseEvent, T extends ExtractType<E>> =
   Extract<E, { type: T }>['payload'];
+
+export type EventPrimaryKeys<E extends BaseEvent, T extends ExtractType<E>> =
+  Extract<E, { type: T }>['pkArray'];
 
 export type Context<
   Event extends BaseEvent,
@@ -39,3 +52,7 @@ export type Context<
 export type Callback<E extends BaseEvent, T extends ExtractType<E>> = (
   ctx: Context<E, T>,
 ) => MaybePromise<void>;
+
+export type IgnorePredicate<
+  E extends BaseEvent, T extends ExtractType<E>
+  > = (payload: PayloadByType<E, T>) => boolean;

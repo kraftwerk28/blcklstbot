@@ -14,6 +14,7 @@ export async function up(knex: Knex): Promise<any> {
     table.integer('captcha_timeout').defaultTo(60).notNullable();
     table.string('language_code', 2).notNullable().defaultTo('en');
     table.integer('rules_message_id').nullable();
+    table.integer('delete_slash_commands').notNullable().defaultTo(false);
   });
 
   await knex.schema.createTable(USERS_TABLE_NAME, (table) => {

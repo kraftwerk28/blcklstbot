@@ -1,17 +1,40 @@
 import { Message, User } from 'typegram';
+import { Composer } from 'telegraf';
 
 import { runDangling } from '../utils';
 import { Ctx, OnMiddleware } from '../types';
 import { Captcha } from '../utils/captcha';
 import { code, userMention } from '../utils/html';
-import { Composer } from 'telegraf';
+import { captchaHash } from '../utils/event-queue';
 
 type Middleware = OnMiddleware<'new_chat_members' | 'chat_member'>;
 
+export const onNewChatMember: Middleware = Composer.optional(
+  async function(ctx) {
+    if (ctx.from.id === ctx.botCreatorId) return false;
+    const cm = await ctx.getChatMember(ctx.from.id);
+    return cm.status === 'member';
+  },
+  async function(ctx, next) {
+    if (ctx.message?.new_chat_members?.length) {
+      const promises = ctx.message.new_chat_members.map(
+        cm => userCaptcha(ctx, cm)
+      );
+      runDangling(promises);
+      return;
+    } else if (ctx.chatMember) {
+      // TODO
+      return;
+    }
+    return next();
+  }
+);
+
 async function userCaptcha(ctx: Ctx, user: User) {
   const captcha = Captcha.generate();
-  // TODO: put cahtcha to Redis store
-  ctx.dbStore.addPendingCaptcha(ctx.chat!.id, user.id, captcha);
+  // TODO: get property from DbChat
+  const captchaTimeout = 20;
+  ctx.dbStore.addPendingCaptcha(ctx.chat!.id, user.id, captcha, captchaTimeout);
   let captchaMessage: Message;
 
   switch (captcha.mode) {
@@ -36,30 +59,14 @@ async function userCaptcha(ctx: Ctx, user: User) {
     }
   }
 
-  ctx.eventQueue.pushDelayed(10, 'captcha_timeout', {
-    chatId: ctx.chat!.id,
-    userId: user.id,
-    captchaMessageId: captchaMessage.message_id,
-  });
+  await ctx.eventQueue.pushDelayed(
+    captchaTimeout,
+    'captcha_timeout',
+    {
+      chatId: ctx.chat!.id,
+      userId: user.id,
+      captchaMessageId: captchaMessage.message_id,
+    },
+    captchaHash(ctx.chat!.id, user.id),
+  );
 }
-
-export const onNewChatMember: Middleware = Composer.optional(
-  async (ctx) => {
-    if (ctx.from.id === ctx.botCreatorId) return false;
-    const cm = await ctx.getChatMember(ctx.from.id);
-    return cm.status === 'member';
-  },
-  async (ctx, next) => {
-    if (ctx.message?.new_chat_members?.length) {
-      const promises = ctx.message.new_chat_members.map(
-        cm => userCaptcha(ctx, cm)
-      );
-      runDangling(promises);
-      return;
-    } else if (ctx.chatMember) {
-      // TODO
-      return;
-    }
-    return next();
-  }
-);
