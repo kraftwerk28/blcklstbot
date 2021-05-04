@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 import { Ctx } from './types';
 import { extendBotContext } from './extend-context';
 import { initLogger, log } from './logger';
-import { regexp } from './utils';
+import { regexp, runDangling } from './utils';
 import * as middlewares from './middlewares';
 import * as commands from './commands';
 
@@ -38,6 +38,7 @@ async function main() {
       regexp`^\/captcha_timeout(?:@${username})?\s+(\d+)$`,
       commands.captchaTimeout,
     )
+    .command('del', commands.delMessage)
     .catch((err) => {
       log.error('Error in `bot::catch`:', err);
     });
@@ -50,11 +51,18 @@ async function main() {
       });
     })
     .on('captcha_timeout', async ({ telegram, payload }) => {
-      const { chatId, userId, captchaMessageId, newChatMemberMessageId } = payload;
-      const kickMessage = await telegram.kickChatMember(chatId, userId);
-      await telegram.unbanChatMember(chatId, userId);
-      await telegram.deleteMessage(chatId, captchaMessageId);
-      await telegram.deleteMessage(chatId, newChatMemberMessageId);
+      const {
+        chatId,
+        userId,
+        captchaMessageId,
+        newChatMemberMessageId,
+      } = payload;
+      runDangling([
+        telegram.kickChatMember(chatId, userId),
+        telegram.unbanChatMember(chatId, userId),
+        telegram.deleteMessage(chatId, captchaMessageId),
+        telegram.deleteMessage(chatId, newChatMemberMessageId),
+      ]);
     })
     .on('delete_message', async ({ telegram, payload }) => {
       await telegram.deleteMessage(payload.chatId, payload.messageId).catch();
