@@ -54,4 +54,8 @@ export class DbStore {
     );
     return insertResult.rows[0] as DbChat;
   }
+
+  shutdown() {
+    return Promise.all([this.redisClient.quit(), this.knex.destroy()]);
+  }
 }

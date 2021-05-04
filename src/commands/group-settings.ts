@@ -1,4 +1,5 @@
 import { Composer } from 'telegraf';
+
 import { BOT_MESSAGE_TIMEOUT, DEFAULT_CAPCHA_MODES } from '../constants';
 import { bold } from '../utils/html';
 import { CommandMiddleware } from '../types';
@@ -8,13 +9,15 @@ import { all } from '../utils';
 export const groupSettings: CommandMiddleware = Composer.optional(
   all(senderIsAdmin, isGroupChat),
   async function(ctx) {
-    const rows = [bold('Settings:')];
+    const rows = [];
+    rows.push(bold('Settings:'));
     rows.push('Captcha modes:');
     rows.push(
       ...DEFAULT_CAPCHA_MODES.map((mode) =>
-        ctx.dbChat.captcha_modes.includes(mode)
-          ? '  \u2705 ' + mode
-          : '  \u26d4 ' + mode,
+        '  ' +
+        (ctx.dbChat.captcha_modes.includes(mode) ? '\u2705' : '\u26d4') +
+        ' ' +
+        mode,
       ),
     );
     rows.push(

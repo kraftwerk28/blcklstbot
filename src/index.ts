@@ -1,11 +1,10 @@
-import { Composer, Telegraf } from 'telegraf';
+import { Telegraf } from 'telegraf';
 import dotenv from 'dotenv';
 
 import { Ctx } from './types';
 import { extendBotContext } from './extend-context';
 import { initLogger, log } from './logger';
 import { regexp } from './utils';
-import * as guards from './guards';
 import * as middlewares from './middlewares';
 import * as commands from './commands';
 
@@ -87,6 +86,20 @@ async function main() {
       log.error('NODE_ENV must be defined');
       process.exit(1);
   }
+
+  async function shutdownHandler(signal: NodeJS.Signals) {
+    log.info(`Handling ${signal}...`);
+    try {
+      await bot.context.dbStore?.shutdown();
+      process.exit(0);
+    } catch (err) {
+      log.error(err);
+      process.exit(1);
+    }
+  }
+
+  process.on('SIGTERM', shutdownHandler);
+  process.on('SIGINT', shutdownHandler);
 }
 
 main().catch((err) => {
