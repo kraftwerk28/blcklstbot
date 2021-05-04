@@ -21,6 +21,7 @@ async function main() {
 
   bot
     .use(middlewares.getDbChat)
+    .on('message', middlewares.removeMessagesUnderCaptcha)
     .on('text', middlewares.checkCaptchaAnswer)
     .on(['chat_member', 'new_chat_members'], middlewares.onNewChatMember)
     .on('left_chat_member', middlewares.leftChatMember)
@@ -32,15 +33,14 @@ async function main() {
     .command('rules', commands.rules)
     .command('settings', commands.groupSettings)
     .command('help', commands.help)
+    .command('beautify_code', commands.beautifyCode)
     .hears(
-      regexp`^\/captcha_timeout(?:@${username})?\s+()`,
+      regexp`^\/captcha_timeout(?:@${username})?\s+(\d+)$`,
       commands.captchaTimeout,
     )
     .catch((err) => {
-      log.error('Error in `bot.catch`:', err);
+      log.error('Error in `bot::catch`:', err);
     });
-
-  await bot.telegram.setMyCommands(commands.publicCommands);
 
   bot.context
     .eventQueue!.on('pong', async ({ telegram, payload }) => {
@@ -50,14 +50,17 @@ async function main() {
       });
     })
     .on('captcha_timeout', async ({ telegram, payload }) => {
-      const { chatId, userId, captchaMessageId } = payload;
-      await telegram.kickChatMember(chatId, userId);
+      const { chatId, userId, captchaMessageId, newChatMemberMessageId } = payload;
+      const kickMessage = await telegram.kickChatMember(chatId, userId);
       await telegram.unbanChatMember(chatId, userId);
       await telegram.deleteMessage(chatId, captchaMessageId);
+      await telegram.deleteMessage(chatId, newChatMemberMessageId);
     })
     .on('delete_message', async ({ telegram, payload }) => {
       await telegram.deleteMessage(payload.chatId, payload.messageId).catch();
     });
+
+  await bot.telegram.setMyCommands(commands.publicCommands);
 
   switch (process.env.NODE_ENV) {
     case 'development':
@@ -103,5 +106,5 @@ async function main() {
 }
 
 main().catch((err) => {
-  log.error('Error in `main`:', err);
+  log.error('Error in `::main`:', err);
 });

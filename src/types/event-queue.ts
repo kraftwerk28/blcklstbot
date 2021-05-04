@@ -12,6 +12,7 @@ export type CaptchaTimeoutEvent = BaseEvent<'captcha_timeout', {
   chatId: number,
   userId: number,
   captchaMessageId: number,
+  newChatMemberMessageId: number,
 }>;
 
 export type DeleteMessageEvent = BaseEvent<'delete_message', {

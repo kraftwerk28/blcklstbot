@@ -15,6 +15,7 @@ export type DbChat =
     /** Message with chat rules */
     rules_message_id: DbOptional<number>,
     delete_slash_commands: boolean,
+    replace_code_with_pic: boolean,
   };
 
 export type DbUser = Pick<

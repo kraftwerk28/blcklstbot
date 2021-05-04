@@ -39,10 +39,10 @@ export const onNewChatMember: Middleware = Composer.optional(
 
 async function userCaptcha(ctx: Ctx, user: User) {
   const captcha = Captcha.generate(ctx.dbChat.captcha_modes);
-  // TODO: get property from DbChat
-  const captchaTimeout = 20;
+  const captchaTimeout = ctx.dbChat.captcha_timeout;
   ctx.dbStore.addPendingCaptcha(ctx.chat!.id, user.id, captcha, captchaTimeout);
   let captchaMessage: Message;
+  const replyOptions = { reply_to_message_id: ctx.message!.message_id };
 
   switch (captcha.mode) {
     case CaptchaMode.Arithmetic: {
@@ -51,7 +51,7 @@ async function userCaptcha(ctx: Ctx, user: User) {
         ', please solve the following math expression:\n' +
         code(captcha.meta.expression) +
         `\nyou have ${ctx.dbChat.captcha_timeout} seconds.`,
-        { reply_to_message_id: ctx.message!.message_id },
+        replyOptions,
       );
       break;
     }
@@ -61,7 +61,9 @@ async function userCaptcha(ctx: Ctx, user: User) {
       captchaMessage = await ctx.replyWithHTML(
         userMention(user) +
         ', please find the determinant of matrix below (a×d-b×c):\n' +
-        code(matrixText) + `\nyou have${ctx.dbChat.captcha_timeout} seconds.`,
+        code(matrixText) +
+        `\nyou have ${ctx.dbChat.captcha_timeout} seconds.`,
+        replyOptions,
       );
       break;
     }
@@ -74,6 +76,7 @@ async function userCaptcha(ctx: Ctx, user: User) {
       chatId: ctx.chat!.id,
       userId: user.id,
       captchaMessageId: captchaMessage.message_id,
+      newChatMemberMessageId: ctx.message!.message_id,
     },
     captchaHash(ctx.chat!.id, user.id),
   );
