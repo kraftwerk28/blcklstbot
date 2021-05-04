@@ -1,20 +1,24 @@
 import { Message, User } from 'typegram';
 import { Composer } from 'telegraf';
 
-import { runDangling } from '../utils';
-import { Ctx, OnMiddleware } from '../types';
+import { all, runDangling } from '../utils';
+import { CaptchaMode, Ctx, OnMiddleware } from '../types';
 import { Captcha } from '../utils/captcha';
 import { code, userMention } from '../utils/html';
 import { captchaHash } from '../utils/event-queue';
+import { botHasSufficientPermissions } from '../guards';
 
 type Middleware = OnMiddleware<'new_chat_members' | 'chat_member'>;
 
 export const onNewChatMember: Middleware = Composer.optional(
-  async function(ctx) {
-    if (ctx.from.id === ctx.botCreatorId) return false;
-    const cm = await ctx.getChatMember(ctx.from.id);
-    return cm.status === 'member';
-  },
+  all(
+    async function(ctx) {
+      if (ctx.from?.id === ctx.botCreatorId) return false;
+      const cm = await ctx.getChatMember(ctx.from!.id);
+      return cm.status === 'member';
+    },
+    botHasSufficientPermissions,
+  ),
   async function(ctx, next) {
     if (!ctx.dbChat.captcha_modes.length) {
       return next();
@@ -30,7 +34,7 @@ export const onNewChatMember: Middleware = Composer.optional(
       return;
     }
     return next();
-  }
+  } as Middleware,
 );
 
 async function userCaptcha(ctx: Ctx, user: User) {
@@ -41,22 +45,23 @@ async function userCaptcha(ctx: Ctx, user: User) {
   let captchaMessage: Message;
 
   switch (captcha.mode) {
-    case 'arithmetic': {
+    case CaptchaMode.Arithmetic: {
       captchaMessage = await ctx.replyWithHTML(
         userMention(user) +
         ', please solve the following math expression:\n' +
-        code(captcha.meta.expression),
+        code(captcha.meta.expression) +
+        `\nyou have ${ctx.dbChat.captcha_timeout} seconds.`,
         { reply_to_message_id: ctx.message!.message_id },
       );
       break;
     }
-    case 'matrix-denom': {
+    case CaptchaMode.Matrix: {
       const matrixText = captcha.meta.matrix
         .map(row => '| ' + row.join(' ') + ' |').join('\n')
       captchaMessage = await ctx.replyWithHTML(
         userMention(user) +
-        ', please find the determinant of matrix below:\n' +
-        code(matrixText)
+        ', please find the determinant of matrix below (a×d-b×c):\n' +
+        code(matrixText) + `\nyou have${ctx.dbChat.captcha_timeout} seconds.`,
       );
       break;
     }

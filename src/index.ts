@@ -1,10 +1,11 @@
-import { Telegraf } from 'telegraf';
+import { Composer, Telegraf } from 'telegraf';
 import dotenv from 'dotenv';
 
 import { Ctx } from './types';
 import { extendBotContext } from './extend-context';
 import { initLogger, log } from './logger';
 import { regexp } from './utils';
+import * as guards from './guards';
 import * as middlewares from './middlewares';
 import * as commands from './commands';
 
@@ -20,21 +21,22 @@ async function main() {
   const username = botInfo.username;
 
   bot
-    .on('message', middlewares.getDbChat)
+    .use(middlewares.getDbChat)
     .on('text', middlewares.checkCaptchaAnswer)
-    .on(
-      ['chat_member', 'new_chat_members'],
-      middlewares.botHasSufficientPermissions,
-      middlewares.onNewChatMember,
-    )
+    .on(['chat_member', 'new_chat_members'], middlewares.onNewChatMember)
     .on('left_chat_member', middlewares.leftChatMember)
     .hears(regexp`^\/ping(?:@${username})?\s+(\d+)(?:\s+(.+))?$`, commands.ping)
     .hears(
       regexp`^\/captcha(?:@${username})?((?:\s+[\w-]+)+)?\s*$`,
       commands.captcha,
     )
-    .command('rules', middlewares.senderIsAdmin, commands.rules)
-    .command('settings', middlewares.senderIsAdmin, commands.groupSettings)
+    .command('rules', commands.rules)
+    .command('settings', commands.groupSettings)
+    .command('help', commands.help)
+    .hears(
+      regexp`^\/captcha_timeout(?:@${username})?\s+()`,
+      commands.captchaTimeout,
+    )
     .catch((err) => {
       log.error('Error in `bot.catch`:', err);
     });
@@ -49,11 +51,10 @@ async function main() {
       });
     })
     .on('captcha_timeout', async ({ telegram, payload }) => {
-      await telegram.sendMessage(
-        payload.chatId,
-        `User ${payload.userId} must be banned because of missed captcha.`,
-      );
-      await telegram.deleteMessage(payload.chatId, payload.captchaMessageId);
+      const { chatId, userId, captchaMessageId } = payload;
+      await telegram.kickChatMember(chatId, userId);
+      await telegram.unbanChatMember(chatId, userId);
+      await telegram.deleteMessage(chatId, captchaMessageId);
     })
     .on('delete_message', async ({ telegram, payload }) => {
       await telegram.deleteMessage(payload.chatId, payload.messageId).catch();

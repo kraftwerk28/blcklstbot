@@ -10,7 +10,7 @@ export class Captcha<Mode extends CaptchaMode = CaptchaMode> {
   ) {
   }
 
-  private static arithmeticCapcha(): Captcha<'arithmetic'> {
+  private static arithmeticCapcha() {
     const multiplier = randInt(2, 10);
     const isSum = randBool();
     let answer, expression;
@@ -26,11 +26,11 @@ export class Captcha<Mode extends CaptchaMode = CaptchaMode> {
       expression = `${multiplier} * (${term1} - ${term2})`;
       answer = multiplier * (term1 - term2);
     }
-    return new Captcha('arithmetic', { expression, answer });
+    return new Captcha(CaptchaMode.Arithmetic, { expression, answer });
   }
 
-  private static matrixDenomCaptcha(): Captcha<'matrix-denom'> {
-    let [a, b, c, d] = Array.from({ length: 4 }, () => randInt(10));
+  private static matrixDenomCaptcha() {
+    let [a, b, c, d] = Array.from({ length: 4 }, () => randInt(7));
     let answer = a * d - c * b;
     if (answer < 0) {
       if (Math.random() < 0.5) {
@@ -39,10 +39,8 @@ export class Captcha<Mode extends CaptchaMode = CaptchaMode> {
         d *= -1;
       }
     }
-    return new Captcha('matrix-denom', {
-      matrix: [[a, b], [c, d]],
-      answer
-    });
+    const matrix = [[a, b], [c, d]];
+    return new Captcha(CaptchaMode.Matrix, { matrix, answer });
   }
 
   static generate(allowedCaptchaTypes: CaptchaMode[] = DEFAULT_CAPCHA_MODES) {
@@ -50,10 +48,10 @@ export class Captcha<Mode extends CaptchaMode = CaptchaMode> {
     const type = allowedCaptchaTypes[nthCatcha];
     let captcha;
     switch (type) {
-      case 'arithmetic':
+      case CaptchaMode.Arithmetic:
         captcha = this.arithmeticCapcha();
         break;
-      case 'matrix-denom':
+      case CaptchaMode.Matrix:
         captcha = this.matrixDenomCaptcha();
         break;
     }
@@ -79,8 +77,8 @@ export class Captcha<Mode extends CaptchaMode = CaptchaMode> {
 
   checkAnswer(input: string): boolean {
     switch (this.mode) {
-      case 'arithmetic':
-      case 'matrix-denom':
+      case CaptchaMode.Arithmetic:
+      case CaptchaMode.Matrix:
         return parseInt(input) === this.meta.answer;
       default:
         return true;

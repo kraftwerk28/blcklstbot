@@ -1,9 +1,10 @@
+import { Composer } from 'telegraf';
+
 import { captchaHash } from '../utils/event-queue';
 import { OnMiddleware } from '../types';
+import { isGroupChat } from '../guards';
 
-type Middleware = OnMiddleware<'text'>;
-
-export const checkCaptchaAnswer: Middleware = async function(ctx, next) {
+const checkCaptchaAnswerMw: OnMiddleware<'text'> = async function(ctx, next) {
   const captcha = await ctx.dbStore.hasPendingCaptcha(ctx.chat.id, ctx.from.id);
   if (!captcha) {
     return next();
@@ -17,4 +18,9 @@ export const checkCaptchaAnswer: Middleware = async function(ctx, next) {
       await ctx.telegram.deleteMessage(ctx.chat.id, payload.captchaMessageId);
     }
   }
-};
+}
+
+export const checkCaptchaAnswer = Composer.optional(
+  isGroupChat,
+  checkCaptchaAnswerMw,
+);

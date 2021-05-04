@@ -1,4 +1,6 @@
+import { Context as TelegrafContext } from 'telegraf';
 export * as html from './html';
+import { Ctx, GuardPredicate } from '../types';
 import { log } from '../logger';
 
 /** Run Promise(s) w/o awaiting and log errors, if any */
@@ -39,4 +41,12 @@ export function ensureEnvExists(name: string): string {
 export function idGenerator(initial = 0) {
   let id = initial;
   return () => id++;
+}
+
+export function all<C extends TelegrafContext = Ctx>(
+  ...predicates: GuardPredicate<C>[]
+) {
+  return (ctx: C) => Promise
+    .all(predicates.map(p => p(ctx)))
+    .then(results => results.every(Boolean))
 }

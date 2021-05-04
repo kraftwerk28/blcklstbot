@@ -1,23 +1,30 @@
 import { Captcha } from '../utils/captcha';
 
-export type CaptchaMode =
-  | 'arithmetic'
-  | 'matrix-denom';
+export enum CaptchaMode {
+  Arithmetic = 'arithmetic',
+  Matrix = 'matrix',
+}
+
+export type ArithmeticCaptcha = CaptchaMeta<CaptchaMode.Arithmetic, {
+  expression: string,
+  answer: number,
+}>;
+
+type Person = {
+  _id: number,
+  name: string,
+  age: number
+};
+
+export type MatrixDenomCaptcha = CaptchaMeta<CaptchaMode.Matrix, {
+  matrix: number[][],
+  answer: number,
+}>;
 
 type CaptchaMeta<Mode extends CaptchaMode, Meta extends Record<string, any>> = {
   mode: Mode,
   meta: Meta,
 };
-
-export type ArithmeticCaptcha = CaptchaMeta<'arithmetic', {
-  expression: string,
-  answer: number,
-}>;
-
-export type MatrixDenomCaptcha = CaptchaMeta<'matrix-denom', {
-  matrix: number[][],
-  answer: number,
-}>;
 
 type Captchas =
   | ArithmeticCaptcha

@@ -23,6 +23,10 @@ export type CommandMiddleware<C extends TelegrafContext = Ctx>
 export type HearsMiddleware<C extends TelegrafContext = Ctx>
   = Middleware<MatchedContext<C & { match: RegExpExecArray }, 'text'>>;
 
+export type GuardPredicate<C extends TelegrafContext = Ctx> =
+  | ((ctx: C) => boolean)
+  | ((ctx: C) => Promise<boolean>);
+
 export type MatchedContext<
   C extends TelegrafContext,
   T extends UpdateType | MessageSubType
