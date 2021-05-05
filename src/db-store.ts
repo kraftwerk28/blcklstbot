@@ -1,7 +1,6 @@
 import { Redis } from 'ioredis';
 import { Knex } from 'knex';
 import { CHATS_TABLE_NAME } from './constants';
-import { log } from './logger';
 import { AbstractCaptcha, DbChat } from './types';
 import { Captcha } from './utils/captcha';
 
@@ -77,8 +76,6 @@ export class DbStore {
       return;
     }
     await this.redisClient.sadd(key, messageId);
-    log.info(key);
-    log.info(await this.redisClient.smembers(key));
   }
 
   async getTrackedMessages(chatId: number, userId: number) {

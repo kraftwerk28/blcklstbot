@@ -11,7 +11,7 @@ import { ensureEnvExists } from './utils';
 
 export async function extendBotContext(bot: Telegraf<Ctx>) {
   const ctx = bot.context;
-  const redisClient = new IORedis();
+  const redisClient = new IORedis({ host: process.env.REDIS_HOST });
   const knex = createKnex({
     client: 'pg',
     connection: {

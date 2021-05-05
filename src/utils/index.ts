@@ -52,6 +52,8 @@ export function all<C extends TelegrafContext = Ctx>(
     .then(results => results.every(Boolean))
 }
 
+export const dev = process.env.NODE_ENV === 'development';
+
 // export function getUserFromAnyMessage(message: Message): User | null {
 //   if (message.new
 // }
