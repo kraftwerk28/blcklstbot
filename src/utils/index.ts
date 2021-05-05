@@ -2,6 +2,7 @@ import { Context as TelegrafContext } from 'telegraf';
 export * as html from './html';
 import { Ctx, GuardPredicate } from '../types';
 import { log } from '../logger';
+import { Message, User } from 'typegram';
 
 /** Run Promise(s) w/o awaiting and log errors, if any */
 export function runDangling(args: Promise<any> | Promise<any>[]): void {
@@ -50,3 +51,7 @@ export function all<C extends TelegrafContext = Ctx>(
     .all(predicates.map(p => p(ctx)))
     .then(results => results.every(Boolean))
 }
+
+// export function getUserFromAnyMessage(message: Message): User | null {
+//   if (message.new
+// }

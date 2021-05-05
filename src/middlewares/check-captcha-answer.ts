@@ -1,12 +1,10 @@
-import { Composer } from 'telegraf';
-
+import { Composer } from '../composer';
 import { captchaHash } from '../utils/event-queue';
 import { OnMiddleware } from '../types';
 import { botHasSufficientPermissions, isGroupChat } from '../guards';
-import { all } from '../utils';
 
-export const checkCaptchaAnswer = Composer.optional(
-  all(isGroupChat, botHasSufficientPermissions),
+export const checkCaptchaAnswer = Composer.guardAll(
+  [isGroupChat, botHasSufficientPermissions],
   async function(ctx, next) {
     const captcha = await ctx.dbStore.hasPendingCaptcha(
       ctx.chat.id,

@@ -1,5 +1,4 @@
-import { Composer } from 'telegraf';
-
+import { Composer } from '../composer';
 import { captchaHash } from '../utils/event-queue';
 import { OnMiddleware } from '../types';
 import { botHasSufficientPermissions } from '../guards';

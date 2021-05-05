@@ -1,6 +1,7 @@
 import { Telegraf } from 'telegraf';
 import dotenv from 'dotenv';
 
+import { Composer } from './composer';
 import { Ctx } from './types';
 import { extendBotContext } from './extend-context';
 import { initLogger, log } from './logger';
@@ -18,10 +19,14 @@ async function main() {
   const botInfo = await bot.telegram.getMe();
   bot.botInfo ??= botInfo;
   const username = botInfo.username;
+  const composer2 = new Composer();
 
   bot
+    .use(composer2)
     .use(middlewares.getDbChat)
+    .on('text', middlewares.substitute)
     .on('message', middlewares.removeMessagesUnderCaptcha)
+    .on('text', middlewares.highlightCode)
     .on('text', middlewares.checkCaptchaAnswer)
     .on(['chat_member', 'new_chat_members'], middlewares.onNewChatMember)
     .on('left_chat_member', middlewares.leftChatMember)
@@ -30,15 +35,17 @@ async function main() {
       regexp`^\/captcha(?:@${username})?((?:\s+[\w-]+)+)?\s*$`,
       commands.captcha,
     )
-    .command('rules', commands.rules)
-    .command('settings', commands.groupSettings)
-    .command('help', commands.help)
-    .command('beautify_code', commands.beautifyCode)
     .hears(
       regexp`^\/captcha_timeout(?:@${username})?\s+(\d+)$`,
       commands.captchaTimeout,
     )
+    .hears(regexp`^\/report(?:@${username})?(?:\s+(.+))?$`, commands.report)
+    .command('rules', commands.rules)
+    .command('settings', commands.groupSettings)
+    .command('help', commands.help)
+    .command('beautify_code', commands.beautifyCode)
     .command('del', commands.delMessage)
+    .action(/^undo_ban:([\d-]+):([\d-]+)$/, middlewares.undoBan)
     .catch((err) => {
       log.error('Error in `bot::catch`:', err);
     });

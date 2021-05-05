@@ -19,6 +19,7 @@ export async function extendBotContext(bot: Telegraf<Ctx>) {
     },
   });
   const dbStore = new DbStore(knex, redisClient);
+
   ctx.dbStore = dbStore;
   ctx.eventQueue = new EventQueue(bot.telegram, dbStore);
   ctx.botCreatorId = parseInt(ensureEnvExists('KRAFTWERK28_UID'));

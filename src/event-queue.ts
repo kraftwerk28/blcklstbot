@@ -111,8 +111,7 @@ export class EventQueue<
     const rawPayload = JSON.stringify({ type, payload });
     await this.redisClient.zadd(this.sortedSetKey, deadline, rawPayload);
     hash ??= rawPayload;
-    await this.redisClient.set(hash, deadline);
-    await this.redisClient.expire(hash, seconds);
+    await this.redisClient.set(hash, deadline, 'EX', seconds);
     return this;
   }
 

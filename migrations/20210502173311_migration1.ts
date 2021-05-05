@@ -29,7 +29,7 @@ export async function up(knex: Knex): Promise<any> {
     table.boolean('approved').notNullable().defaultTo(false);
     table.integer('warnings_count').notNullable().defaultTo(0);
     table.boolean('banned').notNullable().defaultTo(0);
-    table.string('banned_reason').nullable();
+    table.string('warn_ban_reason').nullable();
   });
 }
 

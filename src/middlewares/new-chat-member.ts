@@ -1,7 +1,7 @@
 import { Message, User } from 'typegram';
-import { Composer } from 'telegraf';
 
-import { all, runDangling } from '../utils';
+import { Composer } from '../composer';
+import { runDangling } from '../utils';
 import { CaptchaMode, Ctx, OnMiddleware } from '../types';
 import { Captcha } from '../utils/captcha';
 import { code, userMention } from '../utils/html';
@@ -10,15 +10,15 @@ import { botHasSufficientPermissions } from '../guards';
 
 type Middleware = OnMiddleware<'new_chat_members' | 'chat_member'>;
 
-export const onNewChatMember: Middleware = Composer.optional(
-  all(
+export const onNewChatMember: Middleware = Composer.guardAll(
+  [
     async function(ctx) {
       if (ctx.from?.id === ctx.botCreatorId) return false;
       const cm = await ctx.getChatMember(ctx.from!.id);
       return cm.status === 'member';
     },
     botHasSufficientPermissions,
-  ),
+  ],
   async function(ctx, next) {
     if (!ctx.dbChat.captcha_modes.length) {
       return next();

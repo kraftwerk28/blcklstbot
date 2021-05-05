@@ -8,6 +8,7 @@ export * from './help';
 export * from './captcha-timeout';
 export * from './beautify-code';
 export * from './del-message';
+export * from './report';
 
 export const publicCommands: BotCommand[] = [
   { command: 'ping', description: 'Ping myself after n seconds' },

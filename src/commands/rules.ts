@@ -1,4 +1,4 @@
-import { Composer } from 'telegraf';
+import { Composer } from '../composer';
 import { senderIsAdmin } from '../guards';
 import { CommandMiddleware } from '../types';
 

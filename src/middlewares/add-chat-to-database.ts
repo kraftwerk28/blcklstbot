@@ -1,13 +1,13 @@
-import { Composer } from 'telegraf';
+import { Composer } from '../composer';
 import { Chat } from 'typegram';
-
 import { code } from '../utils/html';
 import { DbChat, OnMiddleware } from '../types';
+import { isGroupChat } from '../guards';
 
 type Middleware = OnMiddleware<'message'>;
 
 export const addChatToDatabase: Middleware = Composer.optional(
-  ctx => ctx.chat.type === 'group' || ctx.chat.type === 'supergroup',
+  isGroupChat,
   async function(ctx, next) {
     const chat = ctx.chat as Chat.GroupChat & Chat.UserNameChat;
     const dbChat: Partial<DbChat> = {
@@ -25,4 +25,5 @@ export const addChatToDatabase: Middleware = Composer.optional(
       );
     }
     return next();
-  });
+  }
+);

@@ -1,6 +1,6 @@
 import { HearsMiddleware } from '../types';
 
-export const ping: HearsMiddleware = async (ctx, next) => {
+export const ping: HearsMiddleware = async (ctx) => {
   const seconds = parseInt(ctx.match[1]);
   const payload = {
     chatId: ctx.chat.id,

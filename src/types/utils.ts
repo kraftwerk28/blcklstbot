@@ -2,8 +2,8 @@ import {
   Context as TelegrafContext,
   NarrowedContext,
   Middleware,
+  Types,
 } from 'telegraf';
-import { MessageSubType, UpdateType } from 'telegraf/typings/telegram-types';
 import { Update } from 'typegram';
 import { Ctx } from './context';
 
@@ -13,15 +13,21 @@ export type DbOptional<T> = T | null;
 
 /** Utility for typing `bot.on('foo', fooMiddleware)` */
 export type OnMiddleware<
-  U extends UpdateType | MessageSubType,
+  U extends Types.UpdateType | Types.MessageSubType,
   C extends TelegrafContext = Ctx
-  > = Middleware<MatchedContext<C, U>>;
+> = Middleware<MatchedContext<C, U>>;
 
-export type CommandMiddleware<C extends TelegrafContext = Ctx>
-  = Middleware<MatchedContext<C, 'text'>>;
+export type ActionMiddleware<C extends TelegrafContext = Ctx> = Middleware<
+  MatchedContext<C & { match: RegExpExecArray }, 'callback_query'>
+>;
 
-export type HearsMiddleware<C extends TelegrafContext = Ctx>
-  = Middleware<MatchedContext<C & { match: RegExpExecArray }, 'text'>>;
+export type CommandMiddleware<C extends TelegrafContext = Ctx> = Middleware<
+  MatchedContext<C, 'text'>
+>;
+
+export type HearsMiddleware<C extends TelegrafContext = Ctx> = Middleware<
+  MatchedContext<C & { match: RegExpExecArray }, 'text'>
+>;
 
 export type GuardPredicate<C extends TelegrafContext = Ctx> =
   | ((ctx: C) => boolean)
@@ -29,14 +35,17 @@ export type GuardPredicate<C extends TelegrafContext = Ctx> =
 
 export type MatchedContext<
   C extends TelegrafContext,
-  T extends UpdateType | MessageSubType
-  > = NarrowedContext<C, MountMap[T]>
+  T extends Types.UpdateType | Types.MessageSubType
+> = NarrowedContext<C, MountMap[T]>;
 
-type MountMap =
-  { [T in UpdateType]: Extract<Update, Record<T, object>> } &
+type MountMap = {
+  [T in Types.UpdateType]: Extract<Update, Record<T, object>>;
+} &
   {
-    [T in MessageSubType]: {
-      message: Extract<Update.MessageUpdate['message'], Record<T, unknown>>
-      update_id: number
-    }
-  }
+    [T in Types.MessageSubType]: {
+      message: Extract<Update.MessageUpdate['message'], Record<T, unknown>>;
+      update_id: number;
+    };
+  };
+
+export type NonemptyReadonlyArray<T> = readonly [T, ...T[]];

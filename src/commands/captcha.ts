@@ -1,4 +1,4 @@
-import { Composer } from 'telegraf';
+import { Composer } from '../composer';
 import { DEFAULT_CAPCHA_MODES } from '../constants';
 import { CaptchaMode, HearsMiddleware } from '../types';
 import { senderIsAdmin } from '../guards';
