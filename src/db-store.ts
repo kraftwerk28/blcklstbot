@@ -37,6 +37,10 @@ export class DbStore {
     return value ? Captcha.deserialize(value) : null;
   }
 
+  async deletePendingCaptcha(chatId: number, userId: number) {
+    await this.redisClient.del(this.captchaRedisKey(chatId, userId));
+  }
+
   async getChat(chatId: number): Promise<DbChat | null> {
     return this.knex(CHATS_TABLE_NAME).where({ id: chatId }).first();
   }
@@ -81,7 +85,7 @@ export class DbStore {
     const key = this.messageTrackRedisKey(chatId, userId);
     const result = await this.redisClient.smembers(key);
     await this.redisClient.del(key);
-    return result.map(it => parseInt(it));
+    return result.map((it) => parseInt(it));
   }
 
   shutdown() {

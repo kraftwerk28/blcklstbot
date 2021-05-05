@@ -30,15 +30,9 @@ export class Captcha<Mode extends CaptchaMode = CaptchaMode> {
   }
 
   private static matrixDenomCaptcha() {
-    let [a, b, c, d] = Array.from({ length: 4 }, () => randInt(7));
+    const [a, d] = [randInt(10), randInt(8)];
+    const [b, c] = [randInt(4), randInt(7)];
     let answer = a * d - c * b;
-    if (answer < 0) {
-      if (Math.random() < 0.5) {
-        b *= -1;
-      } else {
-        d *= -1;
-      }
-    }
     const matrix = [[a, b], [c, d]];
     return new Captcha(CaptchaMode.Matrix, { matrix, answer });
   }

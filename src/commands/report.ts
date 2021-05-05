@@ -6,12 +6,18 @@ import { Composer } from '../composer';
 import {
   botHasSufficientPermissions,
   messageIsReply,
+  repliedMessageIsFromMember,
   senderIsAdmin,
 } from '../guards';
 import { bold, userMention, escape } from '../utils/html';
 
 export const report = Composer.guardAll(
-  [botHasSufficientPermissions, senderIsAdmin, messageIsReply],
+  [
+    botHasSufficientPermissions,
+    senderIsAdmin,
+    messageIsReply,
+    repliedMessageIsFromMember,
+  ],
   async function (ctx, next) {
     const reply = ctx.message.reply_to_message!;
     let reportedUser: User;
@@ -38,7 +44,7 @@ export const report = Composer.guardAll(
       ctx.chat.id,
       reportedUser.id,
     );
-    const deleteMessagePromise = Promise.all(
+    const deleteMessagePromise = Promise.allSettled(
       allMessageIds.map(async (id) => {
         if (id >= 0) await ctx.deleteMessage(id);
       }),
