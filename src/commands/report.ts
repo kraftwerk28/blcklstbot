@@ -12,7 +12,7 @@ import { bold, userMention, escape } from '../utils/html';
 
 export const report = Composer.guardAll(
   [botHasSufficientPermissions, senderIsAdmin, messageIsReply],
-  async function(ctx, next) {
+  async function (ctx, next) {
     const reply = ctx.message.reply_to_message!;
     let reportedUser: User;
 
@@ -34,12 +34,22 @@ export const report = Composer.guardAll(
     if (reason) {
       text += `\n${bold('Reason')}: ${escape(reason)}.`;
     }
+    const allMessageIds = await ctx.dbStore.getTrackedMessages(
+      ctx.chat.id,
+      reportedUser.id,
+    );
+    const deleteMessagePromise = Promise.all(
+      allMessageIds.map(async (id) => {
+        if (id >= 0) await ctx.deleteMessage(id);
+      }),
+    );
 
     // TODO: remove messages by user
     return Promise.all([
       ctx.kickChatMember(reportedUser.id),
       ctx.deleteMessage(),
       ctx.replyWithHTML(text, { reply_markup: inlineKbd.reply_markup }),
+      deleteMessagePromise,
     ]);
   } as HearsMiddleware,
 );

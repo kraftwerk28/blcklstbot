@@ -10,6 +10,10 @@ import { botHasSufficientPermissions } from '../guards';
 
 type Middleware = OnMiddleware<'new_chat_members' | 'chat_member'>;
 
+/**
+ * Creates capthca.
+ * Also registers user in Redis for messages tracking
+ */
 export const onNewChatMember: Middleware = Composer.guardAll(
   [
     async function(ctx) {
@@ -20,6 +24,7 @@ export const onNewChatMember: Middleware = Composer.guardAll(
     botHasSufficientPermissions,
   ],
   async function(ctx, next) {
+    await ctx.dbStore.startMemberTracking(ctx.chat.id, ctx.from.id);
     if (!ctx.dbChat.captcha_modes.length) {
       return next();
     }

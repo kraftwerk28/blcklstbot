@@ -6,3 +6,4 @@ export * from './remove-messages-under-captcha';
 export * from './substitute';
 export * from './undo-ban';
 export * from './highlight-code';
+export * from './track-member-messages';

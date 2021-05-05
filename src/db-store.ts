@@ -1,6 +1,7 @@
 import { Redis } from 'ioredis';
 import { Knex } from 'knex';
 import { CHATS_TABLE_NAME } from './constants';
+import { log } from './logger';
 import { AbstractCaptcha, DbChat } from './types';
 import { Captcha } from './utils/captcha';
 
@@ -9,6 +10,10 @@ export class DbStore {
 
   private captchaRedisKey(chatId: number, userId: number) {
     return `captcha:${chatId}:${userId}`;
+  }
+
+  private messageTrackRedisKey(chatId: number, userId: number) {
+    return `tracked_messages:${chatId}:${userId}`;
   }
 
   async addPendingCaptcha(
@@ -53,6 +58,30 @@ export class DbStore {
       [insertQuery],
     );
     return insertResult.rows[0] as DbChat;
+  }
+
+  async startMemberTracking(chatId: number, userId: number) {
+    const key = this.messageTrackRedisKey(chatId, userId);
+    await this.redisClient.sadd(key, -1);
+    await this.redisClient.expire(key, 24 * 60 * 60);
+  }
+
+  async trackMessage(chatId: number, userId: number, messageId: number) {
+    const key = this.messageTrackRedisKey(chatId, userId);
+    const existingKeys = await this.redisClient.keys(key);
+    if (!existingKeys.length) {
+      return;
+    }
+    await this.redisClient.sadd(key, messageId);
+    log.info(key);
+    log.info(await this.redisClient.smembers(key));
+  }
+
+  async getTrackedMessages(chatId: number, userId: number) {
+    const key = this.messageTrackRedisKey(chatId, userId);
+    const result = await this.redisClient.smembers(key);
+    await this.redisClient.del(key);
+    return result.map(it => parseInt(it));
   }
 
   shutdown() {

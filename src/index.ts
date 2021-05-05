@@ -26,6 +26,7 @@ async function main() {
     .use(middlewares.getDbChat)
     .on('text', middlewares.substitute)
     .on('message', middlewares.removeMessagesUnderCaptcha)
+    .on('message', middlewares.trackMemberMessages)
     .on('text', middlewares.highlightCode)
     .on('text', middlewares.checkCaptchaAnswer)
     .on(['chat_member', 'new_chat_members'], middlewares.onNewChatMember)
