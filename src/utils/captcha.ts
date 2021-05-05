@@ -49,7 +49,7 @@ export class Captcha<Mode extends CaptchaMode = CaptchaMode> {
         captcha = this.matrixDenomCaptcha();
         break;
     }
-    log.info('New captcha: %o', captcha);
+    log.info('New captcha: %O', captcha);
     return captcha;
   }
 
