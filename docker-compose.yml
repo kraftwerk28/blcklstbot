@@ -4,11 +4,14 @@ services:
     build: ./
     image: kraftwerk28/blcklstbot
     environment:
-      NODE_ENV: 'production'
-    env_file: ./.env.prod
+      NODE_ENV: 'development'
+    # env_file: ./.env.prod
+    env_file: .env
     ports:
       - 1490:1490
     restart: always
+  redis:
+    image: redis
 
 networks:
   default:

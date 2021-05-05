@@ -7,25 +7,32 @@
   "scripts": {
     "start": "tsc -w --inlineSourceMap",
     "build": "tsc",
-    "nodemon": "NODE_ENV=development nodemon dist/",
-    "dev": "NODE_ENV=development node dist/",
+    "nodemon": "NODE_ENV=development nodemon build/",
+    "dev": "NODE_ENV=development node build/src/",
     "lint": "eslint --ignore-path .gitignore --fix .",
-    "clean": "rm -r dist/*",
+    "build:clean": "rm -r dist/*",
     "deploy-db": "psql -d blcklstbot -f ./db.sql",
     "build:test": "tsc --outDir test/dist/ --esModuleInterop true test/db.test.ts",
     "test": "NODE_ENV=development ts-node test/index.test.ts"
   },
   "dependencies": {
+    "axios": "^0.21.1",
     "dotenv": "^8.2.0",
-    "knex": "^0.20.13",
-    "pg": "^8.4.0",
-    "telegraf": "^3.37.0"
+    "ioredis": "^4.27.1",
+    "knex": "^0.95.4",
+    "node-fetch": "^2.6.1",
+    "pg": "^8.5.1",
+    "telegraf": "^4.3.0",
+    "winston": "^3.3.3"
   },
   "devDependencies": {
-    "@types/pg": "^7.14.3",
+    "@types/ioredis": "^4.19.3",
+    "@types/node-fetch": "^2.5.7",
+    "@types/pg": "^7.14.7",
     "eslint": "^6.8.0",
-    "nodemon": "^2.0.3",
+    "nodemon": "^2.0.7",
     "ts-node": "^8.10.2",
-    "typescript": "^3.8.3"
+    "typegram": "^3.1.4",
+    "typescript": "^4.1.3"
   }
 }

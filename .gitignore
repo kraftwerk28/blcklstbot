@@ -67,3 +67,5 @@ dist/
 reports.json
 .env*
 deploy.sh
+
+build/
