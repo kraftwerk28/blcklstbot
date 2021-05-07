@@ -1,7 +1,7 @@
 import {
   Context as TelegrafContext,
   NarrowedContext,
-  Middleware,
+  Middleware as TMiddleware,
   Types,
 } from 'telegraf';
 import { Update } from 'typegram';
@@ -15,17 +15,17 @@ export type DbOptional<T> = T | null;
 export type OnMiddleware<
   U extends Types.UpdateType | Types.MessageSubType,
   C extends TelegrafContext = Ctx
-> = Middleware<MatchedContext<C, U>>;
+> = TMiddleware<MatchedContext<C, U>>;
 
-export type ActionMiddleware<C extends TelegrafContext = Ctx> = Middleware<
+export type ActionMiddleware<C extends TelegrafContext = Ctx> = TMiddleware<
   MatchedContext<C & { match: RegExpExecArray }, 'callback_query'>
 >;
 
-export type CommandMiddleware<C extends TelegrafContext = Ctx> = Middleware<
+export type CommandMiddleware<C extends TelegrafContext = Ctx> = TMiddleware<
   MatchedContext<C, 'text'>
 >;
 
-export type HearsMiddleware<C extends TelegrafContext = Ctx> = Middleware<
+export type HearsMiddleware<C extends TelegrafContext = Ctx> = TMiddleware<
   MatchedContext<C & { match: RegExpExecArray }, 'text'>
 >;
 

@@ -15,6 +15,7 @@ export async function up(knex: Knex): Promise<any> {
     table.integer('rules_message_id').nullable();
     table.boolean('delete_slash_commands').notNullable().defaultTo(false);
     table.boolean('replace_code_with_pic').notNullable().defaultTo(false);
+    table.boolean('delete_joins').notNullable().defaultTo(false);
   });
 
   await knex.schema.createTable(USERS_TABLE_NAME, (table) => {

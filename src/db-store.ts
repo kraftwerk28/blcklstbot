@@ -1,7 +1,14 @@
 import { Redis } from 'ioredis';
 import { Knex } from 'knex';
-import { CHATS_TABLE_NAME } from './constants';
-import { AbstractCaptcha, DbChat } from './types';
+import { Chat } from 'typegram';
+import { CHATS_TABLE_NAME, KEEP_TRACKED_MESSAGES_TIMEOUT, USERS_TABLE_NAME } from './constants';
+import {
+  AbstractCaptcha,
+  DbChat,
+  DbChatFromTg,
+  DbUser,
+  DbUserFromTg,
+} from './types';
 import { Captcha } from './utils/captcha';
 
 export class DbStore {
@@ -44,29 +51,62 @@ export class DbStore {
     return this.knex(CHATS_TABLE_NAME).where({ id: chatId }).first();
   }
 
+  private async genericUpdateProp<T extends { id: number }, K extends keyof T>(
+    table: string,
+    id: number,
+    prop: K,
+    value: T[K],
+  ) {
+    return this.knex(table).where({ id }).update({ [prop]: value });
+  }
+
+  private async genericUpdate<T extends { id: number }>(
+    table: string,
+    partial: Partial<T> & { id: number },
+  ) {
+    return this.knex(table).where({ id: partial.id }).update(partial);
+  }
+
+  private async genericInsert<T extends { id: number }, U extends T>(
+    entity: T,
+    table: string,
+  ): Promise<U> {
+    const insertQuery = this.knex(table).insert(entity);
+    const insertResult = await this.knex.raw(
+      '? on conflict(id) do update set id = excluded.id returning *',
+      [insertQuery],
+    );
+    return insertResult.rows[0] as U;
+  }
+
   async updateChatProp<Prop extends keyof DbChat>(
     chatId: number,
     prop: Prop,
     value: DbChat[Prop],
   ) {
-    return this.knex(CHATS_TABLE_NAME)
-      .where({ id: chatId })
-      .update({ [prop]: value });
+    return this.genericUpdateProp(CHATS_TABLE_NAME, chatId, prop, value);
   }
 
-  async addChat(chat: Partial<Pick<DbChat, 'id' | 'title' | 'username'>>) {
-    const insertQuery = this.knex(CHATS_TABLE_NAME).insert(chat);
-    const insertResult = await this.knex.raw(
-      '? on conflict(id) do update set id = excluded.id returning *',
-      [insertQuery],
-    );
-    return insertResult.rows[0] as DbChat;
+  async addChat(chat: DbChatFromTg): Promise<DbChat> {
+    return this.genericInsert(chat, CHATS_TABLE_NAME);
+  }
+
+  async addUser(user: DbUserFromTg): Promise<DbUser> {
+    return this.genericInsert(user, USERS_TABLE_NAME);
+  }
+
+  async getUser(userId: number): Promise<DbUser> {
+    return this.knex(USERS_TABLE_NAME).where({ id: userId }).first();
+  }
+
+  async updateUser(partialUser: Partial<DbUser> & { id: number }) {
+    return this.genericUpdate(USERS_TABLE_NAME, partialUser);
   }
 
   async startMemberTracking(chatId: number, userId: number) {
     const key = this.messageTrackRedisKey(chatId, userId);
     await this.redisClient.sadd(key, -1);
-    await this.redisClient.expire(key, 24 * 60 * 60);
+    await this.redisClient.expire(key, KEEP_TRACKED_MESSAGES_TIMEOUT);
   }
 
   async trackMessage(chatId: number, userId: number, messageId: number) {
@@ -82,7 +122,7 @@ export class DbStore {
     const key = this.messageTrackRedisKey(chatId, userId);
     const result = await this.redisClient.smembers(key);
     await this.redisClient.del(key);
-    return result.map((it) => parseInt(it));
+    return result.map((it) => parseInt(it, 10)).filter(id => id >= 0);
   }
 
   shutdown() {

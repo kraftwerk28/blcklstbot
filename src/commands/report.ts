@@ -10,6 +10,8 @@ import {
   senderIsAdmin,
 } from '../guards';
 import { bold, userMention, escape } from '../utils/html';
+import { addRepliedUserToDatabase } from '../middlewares';
+import { MAX_WARNINGS } from '../constants';
 
 export const report = Composer.guardAll(
   [
@@ -18,9 +20,12 @@ export const report = Composer.guardAll(
     messageIsReply,
     repliedMessageIsFromMember,
   ],
-  async function (ctx, next) {
+  addRepliedUserToDatabase,
+  async function(ctx, next) {
     const reply = ctx.message.reply_to_message!;
     let reportedUser: User;
+    await ctx.deleteMessage().catch();
+    const isLastWarn = ctx.reportedUser.warnings_count === MAX_WARNINGS;
 
     // TODO: handle `chat_member`
     if ('new_chat_members' in reply) {
@@ -31,7 +36,9 @@ export const report = Composer.guardAll(
       return next();
     }
 
-    const reason = ctx.match[1];
+    const reason = isLastWarn
+      ? ctx.reportedUser.warn_ban_reason
+      : ctx.match[1];
     const callbackData = `undo_ban:${ctx.from.id}:${reportedUser.id}`;
     const inlineKbd = Markup.inlineKeyboard([
       Markup.button.callback('\u2b05\ufe0f Undo', callbackData),
@@ -40,22 +47,24 @@ export const report = Composer.guardAll(
     if (reason) {
       text += `\n${bold('Reason')}: ${escape(reason)}.`;
     }
-    const allMessageIds = await ctx.dbStore.getTrackedMessages(
+
+    const allUserMessageIds = await ctx.dbStore.getTrackedMessages(
       ctx.chat.id,
       reportedUser.id,
     );
-    const deleteMessagePromise = Promise.allSettled(
-      allMessageIds.map(async (id) => {
-        if (id >= 0) await ctx.deleteMessage(id);
-      }),
-    );
 
-    // TODO: remove messages by user
     return Promise.all([
       ctx.kickChatMember(reportedUser.id),
-      ctx.deleteMessage(),
       ctx.replyWithHTML(text, { reply_markup: inlineKbd.reply_markup }),
-      deleteMessagePromise,
+      Promise.allSettled(
+        allUserMessageIds.map(async (id) => await ctx.deleteMessage(id)),
+      ),
+      ctx.dbStore.updateUser({
+        id: reportedUser.id,
+        banned: true,
+        warn_ban_reason: reason,
+      }),
     ]);
+
   } as HearsMiddleware,
 );

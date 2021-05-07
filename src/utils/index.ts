@@ -57,3 +57,16 @@ export const dev = process.env.NODE_ENV === 'development';
 // export function getUserFromAnyMessage(message: Message): User | null {
 //   if (message.new
 // }
+export function getCodeFromMessage(msg: Message.TextMessage): string | null {
+  if (!msg.entities) return null;
+  const codeEntities = msg.entities.filter(
+    (e) => e.type === 'pre' || e.type === 'code',
+  );
+  if (codeEntities.length !== 1) {
+    // TODO:  Need to merge multiple entities into one
+    return null;
+  }
+  const { length, offset } = codeEntities[0];
+  const codeSource = msg.text.slice(offset, offset + length);
+  return codeSource;
+}
