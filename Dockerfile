@@ -1,8 +1,3 @@
-# FROM node:alpine AS base-image
-# ENV DEPS="make gcc g++ python3 postgresql-dev"
-# RUN apk add --no-cache $DEPS
-# RUN npm install -g node-gyp
-
 FROM node:alpine AS dev-deps
 WORKDIR /opt/build
 COPY package.json package-lock.json ./
@@ -21,5 +16,7 @@ RUN npm run build
 FROM prod-deps AS app
 WORKDIR /opt/app
 COPY --from=build /opt/build/build/ ./
+COPY migrations/ migrations/
+COPY knexfile.js knexfile.js
 COPY bot.config.json ./
-CMD ["node", "./src/"]
+CMD ["node", "src/index.js"]

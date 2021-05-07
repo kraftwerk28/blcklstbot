@@ -8,3 +8,4 @@ export * from './undo-ban';
 export * from './highlight-code';
 export * from './track-member-messages';
 export * from './add-replied-user-to-database';
+export * from './delete-message';
