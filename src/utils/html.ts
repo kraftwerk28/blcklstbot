@@ -25,7 +25,7 @@ export function userMention(user: User, preferUsername = true) {
     return '@' + user.username;
   }
   let text = user.first_name + (user.last_name ? ` ${user.last_name}` : '');
-  return link(`tg://user?id="${user.id}"`, text);
+  return link(`tg://user?id=${user.id}`, text);
 }
 
 
