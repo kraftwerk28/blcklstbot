@@ -110,28 +110,6 @@ export class DbStore {
     return this.genericUpdate(USERS_TABLE_NAME, partialUser);
   }
 
-  async startMemberTracking(chatId: number, userId: number) {
-    const key = this.messageTrackRedisKey(chatId, userId);
-    await this.redisClient.sadd(key, -1);
-    await this.redisClient.expire(key, KEEP_TRACKED_MESSAGES_TIMEOUT);
-  }
-
-  async trackMessage(chatId: number, userId: number, messageId: number) {
-    const key = this.messageTrackRedisKey(chatId, userId);
-    const existingKeys = await this.redisClient.keys(key);
-    if (!existingKeys.length) {
-      return;
-    }
-    await this.redisClient.sadd(key, messageId);
-  }
-
-  async getTrackedMessages(chatId: number, userId: number) {
-    const key = this.messageTrackRedisKey(chatId, userId);
-    const result = await this.redisClient.smembers(key);
-    await this.redisClient.del(key);
-    return result.map((it) => parseInt(it, 10)).filter((id) => id >= 0);
-  }
-
   async addUserMessage(message: Message) {
     return this.knex('user_messages').insert({
       chat_id: message.chat.id,

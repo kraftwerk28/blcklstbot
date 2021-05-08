@@ -2,7 +2,6 @@ import { Composer } from '../composer';
 import { captchaHash } from '../utils/event-queue';
 import { OnMiddleware } from '../types';
 import { botHasSufficientPermissions, isGroupChat } from '../guards';
-import { safePromiseAll } from '../utils';
 
 export const checkCaptchaAnswer = Composer.guardAll(
   [isGroupChat, botHasSufficientPermissions],
@@ -20,10 +19,7 @@ export const checkCaptchaAnswer = Composer.guardAll(
         captchaHash(chatId, userId),
       );
       if (!payload) return;
-      await safePromiseAll([
-        ctx.telegram.deleteMessage(chatId, payload.captchaMessageId),
-        ctx.telegram.deleteMessage(chatId, payload.newChatMemberMessageId),
-      ]);
+      await ctx.telegram.deleteMessage(chatId, payload.captchaMessageId);
     }
   } as OnMiddleware<'text'>,
 );

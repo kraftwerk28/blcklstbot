@@ -27,9 +27,15 @@ export const groupSettings: CommandMiddleware = Composer.branchAll(
     rows.push(
       'Rules message: ' + booleanEmoji(ctx.dbChat.rules_message_id !== null),
     );
+    // TODO:
+    // rows.push(
+    //   'Beautify code: ' + booleanEmoji(ctx.dbChat.replace_code_with_pic),
+    // );
     rows.push(
-      'Beautify code: ' + booleanEmoji(ctx.dbChat.replace_code_with_pic),
+      'Delete "*user* joined the group" messages: ' +
+        booleanEmoji(ctx.dbChat.delete_joins),
     );
+
     await ctx.deleteItSoon()(ctx.message);
     rows.push(`Captcha timeout: ${ctx.dbChat.captcha_timeout}s.`);
     await ctx

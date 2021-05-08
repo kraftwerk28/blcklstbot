@@ -11,6 +11,7 @@ export * from './del-message';
 export * from './report';
 export * from './warn';
 export * from './code-pic';
+export * from './delete-joins';
 
 export const publicCommands: BotCommand[] = [
   { command: 'ping', description: 'Ping myself after n seconds' },

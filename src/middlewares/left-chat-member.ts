@@ -9,7 +9,6 @@ type Middleware = OnMiddleware<'left_chat_member' | 'chat_member'>;
 export const leftChatMember = Composer.optional(
   botHasSufficientPermissions,
   async function(ctx, next) {
-    await ctx.dbStore.getTrackedMessages(ctx.chat.id, ctx.from.id);
     if (!ctx.message) return next();
     await ctx.deleteMessage().catch();
     if (ctx.message.left_chat_member) {

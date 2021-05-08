@@ -19,6 +19,8 @@ export type DbChat = DbChatFromTg & {
   rules_message_id: DbOptional<number>;
   delete_slash_commands: boolean;
   replace_code_with_pic: boolean;
+  /** Delete "*User* joined" messages */
+  delete_joins: boolean;
 };
 
 export type DbUserFromTg = Pick<

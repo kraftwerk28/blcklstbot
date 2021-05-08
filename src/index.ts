@@ -49,6 +49,7 @@ async function main() {
     .command('help', commands.help)
     .command('beautify_code', commands.beautifyCode)
     .command('del', commands.delMessage)
+    .command('delete_joins', commands.deleteJoins)
     .action(/^undo_ban:([\d-]+):([\d-]+)$/, middlewares.undoBan)
     .catch((err, ctx) => {
       log.error(
