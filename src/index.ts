@@ -5,12 +5,14 @@ import { Composer } from './composer';
 import { Ctx } from './types';
 import { extendBotContext } from './extend-context';
 import { initLogger, log } from './logger';
-import { regexp, runDangling } from './utils';
+import { regexp, safePromiseAll } from './utils';
 import * as middlewares from './middlewares';
 import * as commands from './commands';
 
 async function main() {
-  dotenv.config();
+  if (process.env.NODE_ENV === 'development') {
+    dotenv.config();
+  }
   initLogger();
 
   const bot = new Telegraf<Ctx>(process.env.BOT_TOKEN!);
@@ -24,14 +26,14 @@ async function main() {
   bot
     .use(composer2)
     .use(middlewares.getDbChat)
-    .on('text', middlewares.substitute)
-    .on('message', middlewares.removeMessagesUnderCaptcha)
     .on('message', middlewares.trackMemberMessages)
+    .on('text', middlewares.substitute)
     .on('text', middlewares.highlightCode)
     .on('text', middlewares.checkCaptchaAnswer)
     .on(['chat_member', 'new_chat_members'], middlewares.onNewChatMember)
     .on('left_chat_member', middlewares.leftChatMember)
     .hears(regexp`^\/ping(?:@${username})?\s+(\d+)(?:\s+(.+))?$`, commands.ping)
+    .hears(regexp`^\/codepic(?:@${username})?\s+(\w+)$`, commands.codePic)
     .hears(
       regexp`^\/captcha(?:@${username})?((?:\s+[\w-]+)+)?\s*$`,
       commands.captcha,
@@ -41,14 +43,20 @@ async function main() {
       commands.captchaTimeout,
     )
     .hears(regexp`^\/report(?:@${username})?(?:\s+(.+))?$`, commands.report)
+    .hears(regexp`^\/warn(?:@${username})?(?:\s+(.+))?$`, commands.warn)
     .command('rules', commands.rules)
     .command('settings', commands.groupSettings)
     .command('help', commands.help)
     .command('beautify_code', commands.beautifyCode)
     .command('del', commands.delMessage)
+    .command('delete_joins', commands.deleteJoins)
     .action(/^undo_ban:([\d-]+):([\d-]+)$/, middlewares.undoBan)
-    .catch((err) => {
-      log.error('Error in `bot::catch`:', err);
+    .catch((err, ctx) => {
+      log.error(
+        'Error in `bot::catch`\nUpdate: %O\nError: %O',
+        ctx.update,
+        err,
+      );
     });
 
   bot.context
@@ -65,7 +73,7 @@ async function main() {
         captchaMessageId,
         newChatMemberMessageId,
       } = payload;
-      runDangling([
+      safePromiseAll([
         telegram.kickChatMember(chatId, userId),
         telegram.unbanChatMember(chatId, userId),
         telegram.deleteMessage(chatId, captchaMessageId),
@@ -110,6 +118,7 @@ async function main() {
     log.info(`Handling ${signal}...`);
     try {
       await bot.context.dbStore?.shutdown();
+      bot.context.eventQueue?.dispose();
       process.exit(0);
     } catch (err) {
       log.error(err);

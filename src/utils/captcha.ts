@@ -10,24 +10,24 @@ export class Captcha<Mode extends CaptchaMode = CaptchaMode> {
   ) {
   }
 
-  private static arithmeticCapcha() {
-    const multiplier = randInt(2, 10);
-    const isSum = randBool();
-    let answer, expression;
-    let term1, term2;
-    if (isSum) {
-      term1 = randInt(2, 5);
-      term2 = randInt(3, 7);
-      expression = `${multiplier} * (${term1} + ${term2})`;
-      answer = multiplier * (term1 + term2);
-    } else {
-      term1 = randInt(4, 10);
-      term2 = randInt(2, term1);
-      expression = `${multiplier} * (${term1} - ${term2})`;
-      answer = multiplier * (term1 - term2);
-    }
-    return new Captcha(CaptchaMode.Arithmetic, { expression, answer });
+private static arithmeticCapcha() {
+  const multiplier = randInt(2, 10);
+  const isSum = randBool();
+  let answer, expression;
+  let term1, term2;
+  if (isSum) {
+    term1 = randInt(2, 5);
+    term2 = randInt(3, 7);
+    expression = `${multiplier} × (${term1} + ${term2})`;
+    answer = multiplier * (term1 + term2);
+  } else {
+    term1 = randInt(4, 10);
+    term2 = randInt(2, term1);
+    expression = `${multiplier} × (${term1} - ${term2})`;
+    answer = multiplier * (term1 - term2);
   }
+  return new Captcha(CaptchaMode.Arithmetic, { expression, answer });
+}
 
   private static matrixDenomCaptcha() {
     const [a, d] = [randInt(10), randInt(8)];
@@ -49,7 +49,7 @@ export class Captcha<Mode extends CaptchaMode = CaptchaMode> {
         captcha = this.matrixDenomCaptcha();
         break;
     }
-    log.info('New captcha: %o', captcha);
+    log.info('New captcha: %O', captcha);
     return captcha;
   }
 

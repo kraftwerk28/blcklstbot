@@ -14,3 +14,6 @@ export const MAX_CAPTCHA_TIMEOUT = 5 * 60;
  * Currently this value is used for `ctx.deleteItSoon()`
  */
 export const BOT_SERVICE_MESSAGES_TIMEOUT = 30;
+
+export const MAX_WARNINGS = 3;
+export const KEEP_TRACKED_MESSAGES_TIMEOUT = 24 * 60 * 60;

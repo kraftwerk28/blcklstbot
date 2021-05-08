@@ -1,11 +1,23 @@
 import { Redis } from 'ioredis';
 import { Knex } from 'knex';
-import { CHATS_TABLE_NAME } from './constants';
-import { AbstractCaptcha, DbChat } from './types';
+import { Chat, Message } from 'typegram';
+import {
+  CHATS_TABLE_NAME,
+  KEEP_TRACKED_MESSAGES_TIMEOUT,
+  USERS_TABLE_NAME,
+} from './constants';
+import {
+  AbstractCaptcha,
+  DbChat,
+  DbChatFromTg,
+  DbUser,
+  DbUserFromTg,
+  DbUserMessage,
+} from './types';
 import { Captcha } from './utils/captcha';
 
 export class DbStore {
-  constructor(public readonly knex: Knex, public readonly redisClient: Redis) { }
+  constructor(public readonly knex: Knex, public readonly redisClient: Redis) {}
 
   private captchaRedisKey(chatId: number, userId: number) {
     return `captcha:${chatId}:${userId}`;
@@ -44,45 +56,73 @@ export class DbStore {
     return this.knex(CHATS_TABLE_NAME).where({ id: chatId }).first();
   }
 
+  private async genericUpdateProp<T extends { id: number }, K extends keyof T>(
+    table: string,
+    id: number,
+    prop: K,
+    value: T[K],
+  ) {
+    return this.knex(table)
+      .where({ id })
+      .update({ [prop]: value });
+  }
+
+  private async genericUpdate<T extends { id: number }>(
+    table: string,
+    partial: Partial<T> & { id: number },
+  ) {
+    return this.knex(table).where({ id: partial.id }).update(partial);
+  }
+
+  private async genericInsert<T extends { id: number }, U extends T>(
+    entity: T,
+    table: string,
+  ): Promise<U> {
+    const insertQuery = this.knex(table).insert(entity);
+    const insertResult = await this.knex.raw(
+      '? on conflict(id) do update set id = excluded.id returning *',
+      [insertQuery],
+    );
+    return insertResult.rows[0] as U;
+  }
+
   async updateChatProp<Prop extends keyof DbChat>(
     chatId: number,
     prop: Prop,
     value: DbChat[Prop],
   ) {
-    return this.knex(CHATS_TABLE_NAME)
-      .where({ id: chatId })
-      .update({ [prop]: value });
+    return this.genericUpdateProp(CHATS_TABLE_NAME, chatId, prop, value);
   }
 
-  async addChat(chat: Partial<Pick<DbChat, 'id' | 'title' | 'username'>>) {
-    const insertQuery = this.knex(CHATS_TABLE_NAME).insert(chat);
-    const insertResult = await this.knex.raw(
-      '? on conflict(id) do update set id = excluded.id returning *',
-      [insertQuery],
-    );
-    return insertResult.rows[0] as DbChat;
+  async addChat(chat: DbChatFromTg): Promise<DbChat> {
+    return this.genericInsert(chat, CHATS_TABLE_NAME);
   }
 
-  async startMemberTracking(chatId: number, userId: number) {
-    const key = this.messageTrackRedisKey(chatId, userId);
-    await this.redisClient.sadd(key, -1);
-    await this.redisClient.expire(key, 24 * 60 * 60);
+  async addUser(user: DbUserFromTg): Promise<DbUser> {
+    return this.genericInsert(user, USERS_TABLE_NAME);
   }
 
-  async trackMessage(chatId: number, userId: number, messageId: number) {
-    const key = this.messageTrackRedisKey(chatId, userId);
-    const existingKeys = await this.redisClient.keys(key);
-    if (!existingKeys.length) {
-      return;
-    }
-    await this.redisClient.sadd(key, messageId);
+  async getUser(userId: number): Promise<DbUser> {
+    return this.knex(USERS_TABLE_NAME).where({ id: userId }).first();
   }
 
-  async getTrackedMessages(chatId: number, userId: number) {
-    const key = this.messageTrackRedisKey(chatId, userId);
-    const result = await this.redisClient.smembers(key);
-    await this.redisClient.del(key);
-    return result.map((it) => parseInt(it));
+  async updateUser(partialUser: Partial<DbUser> & { id: number }) {
+    return this.genericUpdate(USERS_TABLE_NAME, partialUser);
+  }
+
+  async addUserMessage(message: Message) {
+    return this.knex('user_messages').insert({
+      chat_id: message.chat.id,
+      user_id: message.from?.id,
+      message_id: message.message_id,
+      timestamp: new Date(message.date * 1000),
+    });
+  }
+
+  async getUserMessages(chatId: number, userId: number): Promise<number[]> {
+    return this.knex<DbUserMessage>('user_messages')
+      .where({ chat_id: chatId, user_id: userId })
+      .del('message_id');
   }
 
   shutdown() {

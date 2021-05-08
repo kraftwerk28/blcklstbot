@@ -1,9 +1,10 @@
+import { deleteMessage } from '../middlewares';
 import { Composer } from '../composer';
 import { senderIsAdmin } from '../guards';
 import { CommandMiddleware } from '../types';
 
-export const rules: CommandMiddleware = Composer.optional(
-  senderIsAdmin,
+export const rules: CommandMiddleware = Composer.branchAll(
+  [senderIsAdmin],
   async function(ctx) {
     const reply = ctx.message.reply_to_message;
     if (ctx.message.text.match(/^\/rules(@\w+)?\s+del(ete)?$/)) {
@@ -27,4 +28,5 @@ export const rules: CommandMiddleware = Composer.optional(
       await ctx.deleteMessage();
     }
   } as CommandMiddleware,
+  deleteMessage,
 );

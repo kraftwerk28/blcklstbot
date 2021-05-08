@@ -1,23 +1,24 @@
-import { Knex } from 'knex';
-import { CHATS_TABLE_NAME, USERS_TABLE_NAME } from '../src/constants';
+'use strict';
 
-export async function up(knex: Knex): Promise<any> {
-  await knex.schema.createTable(CHATS_TABLE_NAME, (table) => {
+/** @param {import('knex').Knex} knex */
+exports.up = async function(knex) {
+  await knex.schema.createTable('chats', (table) => {
     // Telegram data
     table.bigInteger('id').notNullable().primary();
     table.string('title').notNullable();
     table.string('username').notNullable();
 
     // Internal data
-    table.specificType('captcha_modes', 'varchar[8]').defaultTo('{arithmetic}');
+    table.specificType('captcha_modes', 'varchar[8]').defaultTo('{}');
     table.integer('captcha_timeout').defaultTo(60).notNullable();
     table.string('language_code', 2).notNullable().defaultTo('en');
     table.integer('rules_message_id').nullable();
     table.boolean('delete_slash_commands').notNullable().defaultTo(false);
     table.boolean('replace_code_with_pic').notNullable().defaultTo(false);
+    table.boolean('delete_joins').notNullable().defaultTo(false);
   });
 
-  await knex.schema.createTable(USERS_TABLE_NAME, (table) => {
+  await knex.schema.createTable('users', (table) => {
     // Telegram data
     table.bigInteger('id').notNullable().primary();
     table.string('username').nullable();
@@ -33,9 +34,8 @@ export async function up(knex: Knex): Promise<any> {
   });
 }
 
-
-export async function down(knex: Knex): Promise<any> {
-  await knex.schema.dropTable(CHATS_TABLE_NAME);
-  await knex.schema.dropTable(USERS_TABLE_NAME);
+/** @param {import('knex').Knex} knex */
+exports.down = async function(knex) {
+  await knex.schema.dropTable('chats');
+  await knex.schema.dropTable('users');
 }
-
