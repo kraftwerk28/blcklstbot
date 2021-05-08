@@ -66,7 +66,7 @@ export const warn = Composer.branchAll(
       } else {
         text += bold(`(${newWarningsCount} / ${MAX_WARNINGS})`);
       }
-      text += `\n${bold('Reason')}: ${escape(warnReason)}.`;
+      text += `\n${bold('Reason')}: ${escape(warnReason)}`;
 
       // TODO: remove messages by user
       return Promise.all([

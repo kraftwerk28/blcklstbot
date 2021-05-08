@@ -33,3 +33,10 @@ export type DbUser = DbUserFromTg & {
   banned: boolean;
   warn_ban_reason: DbOptional<string>;
 };
+
+export type DbUserMessage = {
+  chat_id: number,
+  user_id: number,
+  message_id: number,
+  timestamp: number
+};

@@ -16,6 +16,6 @@ export interface Ctx extends TelegrafContext {
    * Delete message after some time
    * Usage: await ctx.reply(...).then(ctx.deleteItSoon);
    */
-  deleteItSoon(): (message: Message) => Message;
+  deleteItSoon(): (message: Message) => Promise<Message>;
   tryDeleteMsg(messageId?: number): Promise<true>;
 }

@@ -33,11 +33,11 @@ export async function extendBotContext(bot: Telegraf<Ctx>) {
   ctx.eventQueue = new EventQueue(bot.telegram, dbStore);
   ctx.botCreatorId = parseInt(ensureEnvExists('KRAFTWERK28_UID'));
   ctx.deleteItSoon = function(this: Partial<Ctx>) {
-    return (msg: Message) => {
+    return async (msg: Message) => {
       if (!this.chat) {
         return msg;
       }
-      this.eventQueue?.pushDelayed(
+      await this.eventQueue?.pushDelayed(
         BOT_SERVICE_MESSAGES_TIMEOUT,
         'delete_message',
         {

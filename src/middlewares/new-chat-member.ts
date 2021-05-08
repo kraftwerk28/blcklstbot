@@ -1,7 +1,7 @@
 import { Message, User } from 'typegram';
 
 import { Composer } from '../composer';
-import { runDangling } from '../utils';
+import { safePromiseAll } from '../utils';
 import { CaptchaMode, Ctx, OnMiddleware } from '../types';
 import { Captcha } from '../utils/captcha';
 import { code, userMention } from '../utils/html';
@@ -32,7 +32,7 @@ export const onNewChatMember: Middleware = Composer.guardAll(
       const promises = ctx.message.new_chat_members.map(
         cm => userCaptcha(ctx, cm)
       );
-      runDangling(promises);
+      safePromiseAll(promises);
       return;
     } else if (ctx.chatMember) {
       // TODO

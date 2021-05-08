@@ -1,11 +1,12 @@
 import { Composer } from '../composer';
 import { DEFAULT_CAPCHA_MODES } from '../constants';
 import { CaptchaMode, HearsMiddleware } from '../types';
-import { senderIsAdmin } from '../guards';
+import { senderIsAdmin, isGroupChat } from '../guards';
+import { deleteMessage } from '../middlewares';
 
-export const captcha = Composer.optional(
-  senderIsAdmin,
-  async function(ctx) {
+export const captcha = Composer.branchAll(
+  [senderIsAdmin, isGroupChat],
+  async function (ctx) {
     let modeList: string[] = [];
     if (ctx.match[1]) {
       modeList = ctx.match[1].split(/\s+/).map((s) => s.toLowerCase());
@@ -25,5 +26,6 @@ export const captcha = Composer.optional(
       ),
       ctx.deleteMessage(),
     ]);
-  } as HearsMiddleware
+  } as HearsMiddleware,
+  deleteMessage,
 );

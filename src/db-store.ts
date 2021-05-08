@@ -1,18 +1,23 @@
 import { Redis } from 'ioredis';
 import { Knex } from 'knex';
-import { Chat } from 'typegram';
-import { CHATS_TABLE_NAME, KEEP_TRACKED_MESSAGES_TIMEOUT, USERS_TABLE_NAME } from './constants';
+import { Chat, Message } from 'typegram';
+import {
+  CHATS_TABLE_NAME,
+  KEEP_TRACKED_MESSAGES_TIMEOUT,
+  USERS_TABLE_NAME,
+} from './constants';
 import {
   AbstractCaptcha,
   DbChat,
   DbChatFromTg,
   DbUser,
   DbUserFromTg,
+  DbUserMessage,
 } from './types';
 import { Captcha } from './utils/captcha';
 
 export class DbStore {
-  constructor(public readonly knex: Knex, public readonly redisClient: Redis) { }
+  constructor(public readonly knex: Knex, public readonly redisClient: Redis) {}
 
   private captchaRedisKey(chatId: number, userId: number) {
     return `captcha:${chatId}:${userId}`;
@@ -57,7 +62,9 @@ export class DbStore {
     prop: K,
     value: T[K],
   ) {
-    return this.knex(table).where({ id }).update({ [prop]: value });
+    return this.knex(table)
+      .where({ id })
+      .update({ [prop]: value });
   }
 
   private async genericUpdate<T extends { id: number }>(
@@ -122,7 +129,22 @@ export class DbStore {
     const key = this.messageTrackRedisKey(chatId, userId);
     const result = await this.redisClient.smembers(key);
     await this.redisClient.del(key);
-    return result.map((it) => parseInt(it, 10)).filter(id => id >= 0);
+    return result.map((it) => parseInt(it, 10)).filter((id) => id >= 0);
+  }
+
+  async addUserMessage(message: Message) {
+    return this.knex('user_messages').insert({
+      chat_id: message.chat.id,
+      user_id: message.from?.id,
+      message_id: message.message_id,
+      timestamp: new Date(message.date * 1000),
+    });
+  }
+
+  async getUserMessages(chatId: number, userId: number): Promise<number[]> {
+    return this.knex<DbUserMessage>('user_messages')
+      .where({ chat_id: chatId, user_id: userId })
+      .del('message_id');
   }
 
   shutdown() {

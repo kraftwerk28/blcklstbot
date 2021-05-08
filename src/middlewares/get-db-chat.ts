@@ -6,7 +6,7 @@ type C = (Chat.GroupChat | Chat.SupergroupChat) & Chat.UserNameChat;
 
 export const getDbChat: Middleware<Ctx> = Composer.chatType(
   ['group', 'supergroup'],
-  async function(ctx, next) {
+  async function (ctx, next) {
     const chat = ctx.chat as C;
     if (!chat) return next();
     const inserted = await ctx.dbStore.addChat({
@@ -16,4 +16,5 @@ export const getDbChat: Middleware<Ctx> = Composer.chatType(
     });
     ctx.dbChat = inserted;
     return next();
-  });
+  },
+);

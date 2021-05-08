@@ -28,6 +28,7 @@ export const help = Composer.branchAll(
         'Code highlighting server',
       ),
     ].join('\n');
+    await ctx.deleteItSoon()(ctx.message);
     return ctx
       .replyWithHTML(text, {
         reply_to_message_id: ctx.message.message_id,

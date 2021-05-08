@@ -1,5 +1,6 @@
 'use strict';
 
+/** @param {import('knex').Knex} knex */
 exports.up = async function(knex) {
   await knex.schema.createTable('chats', (table) => {
     // Telegram data
@@ -33,6 +34,7 @@ exports.up = async function(knex) {
   });
 }
 
+/** @param {import('knex').Knex} knex */
 exports.down = async function(knex) {
   await knex.schema.dropTable('chats');
   await knex.schema.dropTable('users');

@@ -8,7 +8,6 @@ export const addRepliedUserToDatabase: Mw = async function(ctx, next) {
   if (ctx.callbackQuery && 'data' in ctx.callbackQuery && ctx.match) {
     const userId = parseInt(ctx.match[2], 10);
     ctx.reportedUser = await ctx.dbStore.getUser(userId);
-    return next();
   } else if (ctx.message) {
     if (!('reply_to_message' in ctx.message)) return next();
     const user = ctx.message.reply_to_message?.from;
@@ -22,6 +21,6 @@ export const addRepliedUserToDatabase: Mw = async function(ctx, next) {
       language_code,
     });
     ctx.reportedUser = addedUser;
-    return next();
   }
+  return next();
 };

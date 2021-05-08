@@ -46,10 +46,10 @@ export const report = Composer.branchAll(
       ]);
       let text = `${userMention(ctx.from)} banned ${userMention(reportedUser)}`;
       if (reason) {
-        text += `\n${bold('Reason')}: ${escape(reason)}.`;
+        text += `\n${bold('Reason')}: ${escape(reason)}`;
       }
 
-      const allUserMessageIds = await ctx.dbStore.getTrackedMessages(
+      const allUserMessageIds = await ctx.dbStore.getUserMessages(
         ctx.chat.id,
         reportedUser.id,
       );

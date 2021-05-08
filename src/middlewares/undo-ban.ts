@@ -8,21 +8,22 @@ export const undoBan = Composer.branch(
   senderIsAdmin,
   Composer.compose([
     addRepliedUserToDatabase,
-    async function(ctx) {
+    async function (ctx) {
       const [, reporterUserId, reportedUserId] = ctx.match.map((n) =>
         parseInt(n),
       );
       await ctx.unbanChatMember(reportedUserId);
       if (ctx.callbackQuery.message) {
-        await ctx.deleteMessage(ctx.callbackQuery.message.message_id);
+        await ctx.deleteMessage(ctx.callbackQuery.message.message_id).catch();
       }
       const [reporterUser, reportedUser] = await Promise.all([
         ctx.getChatMember(reporterUserId),
         ctx.getChatMember(reportedUserId),
       ]);
-      await ctx.reply(
-        `${userMention(reporterUser.user)} pardoned` +
-        ` ${userMention(reportedUser.user)}.`,
+      await ctx.answerCbQuery();
+      await ctx.replyWithHTML(
+        `${userMention(reporterUser.user)} forgived` +
+          ` ${userMention(reportedUser.user)}.`,
       );
       await ctx.dbStore.updateUser({
         id: reportedUserId,
@@ -32,7 +33,7 @@ export const undoBan = Composer.branch(
       });
     } as ActionMiddleware,
   ]),
-  async function(ctx) {
+  async function (ctx) {
     return ctx.answerCbQuery("You don't have permission to pardon user", {
       show_alert: true,
     });

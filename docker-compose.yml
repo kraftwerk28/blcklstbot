@@ -6,7 +6,6 @@ services:
     environment:
       NODE_ENV: 'production'
     env_file: .env.prod
-    # env_file: .env
     ports:
       - 1490:1490
     restart: always
@@ -15,6 +14,7 @@ services:
       - redis
   redis:
     image: redis:alpine
+    restart: always
 
 networks:
   default:
