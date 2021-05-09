@@ -8,6 +8,7 @@ import { initLogger, log } from './logger';
 import { regexp, safePromiseAll } from './utils';
 import * as middlewares from './middlewares';
 import * as commands from './commands';
+import util from 'util';
 
 async function main() {
   if (process.env.NODE_ENV === 'development') {
@@ -53,8 +54,8 @@ async function main() {
     .action(/^undo_ban:([\d-]+):([\d-]+)$/, middlewares.undoBan)
     .catch((err, ctx) => {
       log.error(
-        'Error in `bot::catch`\nUpdate: %O\nError: %O',
-        ctx.update,
+        'Error in `bot::catch`\nUpdate: %s\nError: %O',
+        util.inspect(ctx.update, { colors: true, depth: null }),
         err,
       );
     });

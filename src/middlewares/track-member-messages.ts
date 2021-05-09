@@ -1,4 +1,4 @@
-import { Composer } from 'telegraf';
+import { Composer } from '../composer';
 import { OnMiddleware } from '../types';
 import { isGroupChat } from '../guards';
 

@@ -17,6 +17,7 @@ export const help = Composer.branchAll(
       '/captcha_timeout <seconds> - set captcha timeout (admins only, must be between 10 seconds and 5 minutes)',
       '/captcha <type> [type]... - set captcha that will be randomly selected (admins only, pass "all" to select all types)',
       '/delete_joins <type> [type]... - delete messages "*user* joined the group"',
+      '/propagate_reports - toggle report propagation, i.e. banned user will be banned in other chats also',
       // '/codepic <language> - highlight code with image (must be reply to message w/ code',
     ];
     const text = [

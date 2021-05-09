@@ -1,7 +1,7 @@
 import { Composer } from '../composer';
 import { Chat } from 'typegram';
 import { code } from '../utils/html';
-import { DbChat, OnMiddleware } from '../types';
+import { OnMiddleware } from '../types';
 import { isGroupChat } from '../guards';
 
 type Middleware = OnMiddleware<'message'>;

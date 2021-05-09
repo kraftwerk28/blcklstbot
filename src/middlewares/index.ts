@@ -7,5 +7,5 @@ export * from './substitute';
 export * from './undo-ban';
 export * from './highlight-code';
 export * from './track-member-messages';
-export * from './add-replied-user-to-database';
+export * from './get-db-user-from-reply';
 export * from './delete-message';

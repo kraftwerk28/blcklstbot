@@ -9,7 +9,7 @@ export function italic(text: string) {
 }
 
 export function code(text: string | number) {
-  return '<code>' + text + '</code>'
+  return '<code>' + text + '</code>';
 }
 
 export function link(url: string, text: string) {
@@ -20,14 +20,16 @@ export function escape(text: string): string {
   return text.replace(/&/g, '&amp').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-export function userMention(user: User, preferUsername = true) {
+export function userMention(
+  user: Pick<User, 'id' | 'username' | 'first_name' | 'last_name'>,
+  preferUsername = true,
+) {
   if (preferUsername && user.username) {
     return '@' + user.username;
   }
   let text = user.first_name + (user.last_name ? ` ${user.last_name}` : '');
   return link(`tg://user?id=${user.id}`, text);
 }
-
 
 const ENTITY_TYPE_TAGS: { [K in MessageEntity['type']]?: string } = {
   bold: 'b',
@@ -36,7 +38,7 @@ const ENTITY_TYPE_TAGS: { [K in MessageEntity['type']]?: string } = {
   strikethrough: 's',
   code: 'code',
   pre: 'pre',
-}
+};
 
 export function applyHtmlEntities(raw: string, entities: MessageEntity[]) {
   let result = raw;
@@ -54,9 +56,12 @@ export function applyHtmlEntities(raw: string, entities: MessageEntity[]) {
       continue;
     }
     const { offset, length } = entity;
-    result = result.slice(0, offset) + tagStart +
+    result =
+      result.slice(0, offset) +
+      tagStart +
       result.slice(offset, offset + length) +
-      tagEnd + result.slice(offset + length);
+      tagEnd +
+      result.slice(offset + length);
   }
   return result;
 }

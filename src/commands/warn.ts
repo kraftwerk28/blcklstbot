@@ -8,9 +8,10 @@ import {
 } from '../guards';
 import { Composer } from '../composer';
 import { bold, userMention, escape } from '../utils/html';
-import { addRepliedUserToDatabase, deleteMessage } from '../middlewares';
+import { getDbUserFromReply, deleteMessage } from '../middlewares';
 import { MAX_WARNINGS } from '../constants';
 import { report } from './report';
+import { safePromiseAll } from '../utils';
 
 export const warn = Composer.branchAll(
   [
@@ -20,47 +21,35 @@ export const warn = Composer.branchAll(
     repliedMessageIsFromMember,
   ],
   Composer.compose([
-    addRepliedUserToDatabase,
+    getDbUserFromReply,
     async function (ctx, next) {
-      const reply = ctx.message.reply_to_message!;
-      const reportedUserFromDb = ctx.reportedUser;
-      let reportedUser: User;
+      const reportedUser = ctx.reportedUser;
       let warnReason: string;
 
-      if (reportedUserFromDb.warnings_count === MAX_WARNINGS) {
+      if (reportedUser.warnings_count === MAX_WARNINGS) {
         return report(ctx, next);
       }
       await ctx.deleteMessage().catch();
 
       const reasonFromCommand = ctx.match[1];
-      if (reportedUserFromDb.warnings_count === 0) {
+      if (reportedUser.warnings_count === 0) {
         if (reasonFromCommand) {
           warnReason = reasonFromCommand;
         } else {
           return next();
         }
       } else {
-        warnReason = reportedUserFromDb.warn_ban_reason!;
+        warnReason = reportedUser.warn_ban_reason!;
         if (reasonFromCommand) {
-          warnReason += '\n' + reasonFromCommand;
+          warnReason += `, ${reasonFromCommand}`;
         }
       }
 
-      // TODO: handle `chat_member`
-      if ('new_chat_members' in reply) {
-        reportedUser = reply.new_chat_members[0];
-      } else if (reply.from) {
-        reportedUser = reply.from;
-      } else {
-        return next();
-      }
-
-      const newWarningsCount = reportedUserFromDb.warnings_count + 1;
+      const newWarningsCount = reportedUser.warnings_count + 1;
       const isLastWarn = newWarningsCount === MAX_WARNINGS;
 
-      let text = `${userMention(ctx.from)} warned ${userMention(
-        reportedUser,
-      )} `;
+      let text =
+        `${userMention(ctx.from)} warned ` + `${userMention(reportedUser)} `;
       if (isLastWarn) {
         text += bold('(last warning!)');
       } else {
@@ -69,7 +58,7 @@ export const warn = Composer.branchAll(
       text += `\n${bold('Reason')}: ${escape(warnReason)}`;
 
       // TODO: remove messages by user
-      return Promise.all([
+      return safePromiseAll([
         ctx.replyWithHTML(text),
         ctx.dbStore.updateUser({
           id: reportedUser.id,

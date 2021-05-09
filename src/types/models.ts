@@ -21,6 +21,7 @@ export type DbChat = DbChatFromTg & {
   replace_code_with_pic: boolean;
   /** Delete "*User* joined" messages */
   delete_joins: boolean;
+  propagate_bans: boolean;
 };
 
 export type DbUserFromTg = Pick<

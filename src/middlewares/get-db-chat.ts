@@ -1,4 +1,5 @@
-import { Composer, Middleware } from 'telegraf';
+import { Middleware } from 'telegraf';
+import { Composer } from '../composer';
 import { Chat } from 'typegram';
 import { Ctx } from '../types';
 
