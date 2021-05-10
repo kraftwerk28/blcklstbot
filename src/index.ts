@@ -27,6 +27,7 @@ async function main() {
   bot
     .use(composer2)
     .use(middlewares.getDbChat)
+    .on('message', middlewares.addUserToDatabase)
     .on('message', middlewares.trackMemberMessages)
     .on('text', middlewares.substitute)
     .on('text', middlewares.highlightCode)

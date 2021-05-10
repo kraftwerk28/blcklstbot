@@ -66,7 +66,7 @@ export class DbStore {
     return this.knex(table).where({ id: partial.id }).update(partial);
   }
 
-  private async genericInsert<T extends { id: number }, U extends T>(
+  private async genericInsert<T extends { id: number }, U extends T = T>(
     entity: T,
     table: string,
   ): Promise<U> {
@@ -90,16 +90,38 @@ export class DbStore {
     return this.genericInsert(chat, CHATS_TABLE_NAME);
   }
 
-  async addUser(user: DbUserFromTg): Promise<DbUser> {
-    return this.genericInsert(user, USERS_TABLE_NAME);
+  async addUser(user: DbUserFromTg, chatId: number): Promise<DbUser> {
+    const { id, first_name, last_name, language_code, username } = user;
+    const insertQuery = this.knex(USERS_TABLE_NAME).insert({
+      id,
+      chat_id: chatId,
+      first_name,
+      last_name,
+      language_code,
+      username,
+    });
+    const insertResult = await this.knex.raw(
+      '? on conflict(id, chat_id) do update ' +
+        'set id = excluded.id, chat_id = excluded.chat_id returning *',
+      [insertQuery],
+    );
+    return insertResult.rows[0];
   }
 
-  async getUser(userId: number): Promise<DbUser> {
-    return this.knex(USERS_TABLE_NAME).where({ id: userId }).first();
+  async getUser(chatId: number, userId: number): Promise<DbUser> {
+    return this.knex(USERS_TABLE_NAME)
+      .where({ id: userId, chat_id: chatId })
+      .first();
   }
 
-  async updateUser(partialUser: Partial<DbUser> & { id: number }) {
-    return this.genericUpdate(USERS_TABLE_NAME, partialUser);
+  async updateUser(
+    partialUser: Partial<DbUser> & { id: number; chat_id?: number },
+  ) {
+    const whereClause: Record<string, number> = { id: partialUser.id };
+    if (typeof partialUser.chat_id === 'number') {
+      whereClause.chat_id = partialUser.chat_id;
+    }
+    return this.knex(USERS_TABLE_NAME).where(whereClause).update(partialUser);
   }
 
   async addUserMessage(message: Message) {

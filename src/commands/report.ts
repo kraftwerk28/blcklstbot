@@ -44,22 +44,28 @@ export const report = Composer.branchAll(
         ctx.chat.id,
         reportedUser.id,
       );
+      await Promise.allSettled(
+        allUserMessageIds.map((id) => ctx.deleteMessage(id)),
+      );
 
       if (ctx.dbChat.propagate_bans) {
-        // TODO: ban in other chats
+        ctx.dbStore.updateUser({
+          id: reportedUser.id,
+          banned: true,
+          warn_ban_reason: reason,
+        });
+      } else {
+        ctx.dbStore.updateUser({
+          chat_id: ctx.chat.id,
+          id: reportedUser.id,
+          banned: true,
+          warn_ban_reason: reason,
+        });
       }
 
       return safePromiseAll([
         ctx.kickChatMember(reportedUser.id),
         ctx.replyWithHTML(text, { reply_markup: inlineKbd.reply_markup }),
-        Promise.allSettled(
-          allUserMessageIds.map(async (id) => await ctx.deleteMessage(id)),
-        ),
-        ctx.dbStore.updateUser({
-          id: reportedUser.id,
-          banned: true,
-          warn_ban_reason: reason,
-        }),
       ]);
     } as HearsMiddleware,
   ]),

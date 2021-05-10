@@ -24,6 +24,7 @@ export const warn = Composer.branchAll(
     getDbUserFromReply,
     async function (ctx, next) {
       const reportedUser = ctx.reportedUser;
+      const chatId = ctx.chat.id;
       let warnReason: string;
 
       if (reportedUser.warnings_count === MAX_WARNINGS) {
@@ -57,11 +58,11 @@ export const warn = Composer.branchAll(
       }
       text += `\n${bold('Reason')}: ${escape(warnReason)}`;
 
-      // TODO: remove messages by user
       return safePromiseAll([
         ctx.replyWithHTML(text),
         ctx.dbStore.updateUser({
           id: reportedUser.id,
+          chat_id: chatId,
           warnings_count: newWarningsCount,
           warn_ban_reason: warnReason,
         }),

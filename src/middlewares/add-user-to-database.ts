@@ -5,14 +5,7 @@ import { isGroupChat } from '../guards';
 export const addUserToDatabase: OnMiddleware<'message'> = Composer.optional(
   isGroupChat,
   async function (ctx, next) {
-    const { id, first_name, last_name, username, language_code } = ctx.from;
-    await ctx.dbStore.addUser({
-      id,
-      first_name,
-      last_name,
-      username,
-      language_code,
-    });
+    await ctx.dbStore.addUser(ctx.from, ctx.chat.id);
     return next();
   } as OnMiddleware<'message'>,
 );

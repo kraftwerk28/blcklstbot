@@ -1,20 +1,24 @@
 import { Chat, User } from 'typegram';
-
 import { CaptchaMode } from './';
 import { DbOptional } from './utils';
 
-type LanguageCode = 'uk' | 'en';
+type ChatLanguageCode = 'uk' | 'en';
 
 export type DbChatFromTg = Pick<
   Chat.GroupChat & Chat.UserNameChat,
   'id' | 'title' | 'username'
 >;
 
+export type DbUserFromTg = Pick<
+  User,
+  'id' | 'first_name' | 'last_name' | 'username' | 'language_code'
+>;
+
 export type DbChat = DbChatFromTg & {
   captcha_modes: CaptchaMode[];
   captcha_timeout: number;
   /** Which language should bot user for that chat (WIP) */
-  language_code: LanguageCode;
+  language_code: ChatLanguageCode;
   /** Message with chat rules */
   rules_message_id: DbOptional<number>;
   delete_slash_commands: boolean;
@@ -24,12 +28,9 @@ export type DbChat = DbChatFromTg & {
   propagate_bans: boolean;
 };
 
-export type DbUserFromTg = Pick<
-  User,
-  'id' | 'first_name' | 'last_name' | 'username' | 'language_code'
->;
-
+/** Non-normalized version of User with primary key of (id, chat_id) */
 export type DbUser = DbUserFromTg & {
+  chat_id: number;
   /** User already passed captcha in some chat */
   approved: boolean;
   warnings_count: number;
@@ -38,8 +39,8 @@ export type DbUser = DbUserFromTg & {
 };
 
 export type DbUserMessage = {
-  chat_id: number,
-  user_id: number,
-  message_id: number,
-  timestamp: number
+  chat_id: number;
+  user_id: number;
+  message_id: number;
+  timestamp: number;
 };
