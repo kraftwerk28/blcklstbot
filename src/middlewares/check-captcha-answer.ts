@@ -2,16 +2,17 @@ import { Composer } from '../composer';
 import { captchaHash } from '../utils/event-queue';
 import { OnMiddleware } from '../types';
 import { botHasSufficientPermissions, isGroupChat } from '../guards';
+import { checkCaptchaAnswer as checkAnswer } from '../captcha';
 
 export const checkCaptchaAnswer = Composer.guardAll(
   [isGroupChat, botHasSufficientPermissions],
-  async function(ctx, next) {
+  async function (ctx, next) {
     const chatId = ctx.chat.id;
     const userId = ctx.from.id;
 
     const captcha = await ctx.dbStore.hasPendingCaptcha(chatId, userId);
     if (!captcha) return next();
-    const correct = captcha.checkAnswer(ctx.message.text);
+    const correct = checkAnswer(ctx, captcha);
     await ctx.deleteMessage().catch();
     if (correct) {
       await ctx.dbStore.deletePendingCaptcha(chatId, userId);

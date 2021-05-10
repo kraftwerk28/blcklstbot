@@ -1,11 +1,7 @@
 import { Redis } from 'ioredis';
 import { Knex } from 'knex';
-import { Chat, Message } from 'typegram';
-import {
-  CHATS_TABLE_NAME,
-  KEEP_TRACKED_MESSAGES_TIMEOUT,
-  USERS_TABLE_NAME,
-} from './constants';
+import { Message } from 'typegram';
+import { CHATS_TABLE_NAME, USERS_TABLE_NAME } from './constants';
 import {
   AbstractCaptcha,
   DbChat,
@@ -14,17 +10,13 @@ import {
   DbUserFromTg,
   DbUserMessage,
 } from './types';
-import { Captcha } from './utils/captcha';
+import { deserializeCaptcha, serializeCaptcha } from './captcha';
 
 export class DbStore {
   constructor(public readonly knex: Knex, public readonly redisClient: Redis) {}
 
   private captchaRedisKey(chatId: number, userId: number) {
     return `captcha:${chatId}:${userId}`;
-  }
-
-  private messageTrackRedisKey(chatId: number, userId: number) {
-    return `tracked_messages:${chatId}:${userId}`;
   }
 
   async addPendingCaptcha(
@@ -34,7 +26,7 @@ export class DbStore {
     timeoutSeconds: number,
   ) {
     const key = this.captchaRedisKey(chatId, userId);
-    await this.redisClient.set(key, captcha.serialize());
+    await this.redisClient.set(key, serializeCaptcha(captcha));
     // TODO: editable expire time
     await this.redisClient.expire(key, timeoutSeconds);
   }
@@ -42,10 +34,10 @@ export class DbStore {
   async hasPendingCaptcha(
     chatId: number,
     userId: number,
-  ): Promise<Captcha | null> {
+  ): Promise<AbstractCaptcha | null> {
     const key = this.captchaRedisKey(chatId, userId);
     const value = await this.redisClient.get(key);
-    return value ? Captcha.deserialize(value) : null;
+    return value ? deserializeCaptcha(value) : null;
   }
 
   async deletePendingCaptcha(chatId: number, userId: number) {
