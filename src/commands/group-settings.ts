@@ -34,8 +34,12 @@ export const groupSettings = Composer.branchAll(
         booleanEmoji(dbChat.delete_joins),
     );
     rows.push(
-      'Propagate reports to sibling chats' +
+      'Propagate reports to sibling chats: ' +
         booleanEmoji(dbChat.propagate_bans),
+    );
+    rows.push(
+      'Upload huge code messages to GitHub Gist: ' +
+        booleanEmoji(dbChat.upload_to_gist),
     );
 
     await ctx.deleteItSoon()(ctx.message);

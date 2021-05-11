@@ -18,6 +18,7 @@ export const help = Composer.branchAll(
       '/captcha <type> [type]... - set captcha that will be randomly selected (admins only, pass "all" to select all types)',
       '/delete_joins <type> [type]... - delete messages "*user* joined the group"',
       '/propagate_reports - toggle report propagation, i.e. banned user will be banned in other chats also',
+      '/replace_code - toggle automatic code uploading to GitHub Gist (admins only)',
       // '/codepic <language> - highlight code with image (must be reply to message w/ code',
     ];
     const text = [

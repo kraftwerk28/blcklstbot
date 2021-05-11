@@ -32,10 +32,11 @@ async function main() {
     .on('text', middlewares.substitute)
     .on('text', middlewares.highlightCode)
     .on('text', middlewares.checkCaptchaAnswer)
+    .on('text', middlewares.uploadToGistOrHighlight)
     .on(['chat_member', 'new_chat_members'], middlewares.onNewChatMember)
     .on('left_chat_member', middlewares.leftChatMember)
     .hears(regexp`^\/ping(?:@${username})?\s+(\d+)(?:\s+(.+))?$`, commands.ping)
-    .hears(regexp`^\/codepic(?:@${username})?\s+(\w+)$`, commands.codePic)
+    .hears(regexp`^\/codepic(?:@${username})?(?:\s+(\w+))?$`, commands.codePic)
     .hears(
       regexp`^\/captcha(?:@${username})?((?:\s+[\w-]+)+)?\s*$`,
       commands.captcha,
@@ -52,6 +53,7 @@ async function main() {
     .command('beautify_code', commands.beautifyCode)
     .command('del', commands.delMessage)
     .command('delete_joins', commands.deleteJoins)
+    .command('replace_code', commands.replaceCode)
     .action(/^undo_ban:([\d-]+):([\d-]+)$/, middlewares.undoBan)
     .catch((err, ctx) => {
       log.error(

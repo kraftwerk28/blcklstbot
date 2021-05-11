@@ -1,4 +1,4 @@
-FROM node:alpine AS dev-deps
+FROM node:alpine-16.0.0 AS dev-deps
 WORKDIR /opt/build
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit
@@ -19,4 +19,4 @@ COPY --from=build /opt/build/build/ ./
 COPY migrations/ migrations/
 COPY knexfile.js knexfile.js
 COPY bot.config.json ./
-CMD ["node", "src/index.js"]
+ENTRYPOINT ["node", "src/index.js"]

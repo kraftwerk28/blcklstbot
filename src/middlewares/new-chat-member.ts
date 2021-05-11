@@ -3,7 +3,7 @@ import { Message, User } from 'typegram';
 import { Composer } from '../composer';
 import { safePromiseAll } from '../utils';
 import { Ctx, OnMiddleware, CaptchaMode } from '../types';
-import {generateCaptcha} from '../captcha';
+import { generateCaptcha } from '../captcha';
 // import { Captcha } from '../utils/captcha';
 import { code, userMention } from '../utils/html';
 import { captchaHash } from '../utils/event-queue';
@@ -13,12 +13,13 @@ type Middleware = OnMiddleware<'new_chat_members' | 'chat_member'>;
 
 /**
  * Creates capthca.
- * Also registers user in Redis for messages tracking
+ * Also registers user in DB for messages tracking
  */
 export const onNewChatMember: Middleware = Composer.guardAll(
   [
     async function (ctx) {
-      if (ctx.from?.id === ctx.botCreatorId) return false;
+      // `/me` also wants to pass captcha so ima about to comment dis :)
+      // if (ctx.from?.id === ctx.botCreatorId) return false;
       const cm = await ctx.getChatMember(ctx.from!.id);
       return cm.status === 'member';
     },
