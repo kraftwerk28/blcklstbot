@@ -79,8 +79,12 @@ export function getCodeFromMessage(msg: Message.TextMessage): string | null {
     return null;
   }
   const { length, offset } = codeEntities[0];
-  const codeSource = msg.text.slice(offset, offset + length);
-  return codeSource;
+  // Return only if the whole message is code
+  if (offset === 0 && length === msg.text.length) {
+    const codeSource = msg.text.slice(offset, offset + length);
+    return codeSource;
+  }
+  return null;
 }
 
 const OUT_OF_CHAT_STATUS: ChatMember['status'][] = ['left', 'kicked'];
