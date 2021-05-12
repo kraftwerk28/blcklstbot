@@ -91,7 +91,7 @@ async function main() {
         captchaMessageId,
         newChatMemberMessageId,
       } = payload;
-      safePromiseAll([
+      return safePromiseAll([
         telegram.kickChatMember(chatId, userId),
         telegram.unbanChatMember(chatId, userId),
         telegram.deleteMessage(chatId, captchaMessageId),
