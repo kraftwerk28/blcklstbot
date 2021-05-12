@@ -1,9 +1,9 @@
-FROM node:alpine-16.0.0 AS dev-deps
+FROM node:16.0.0-alpine AS dev-deps
 WORKDIR /opt/build
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit
 
-FROM node:alpine AS prod-deps
+FROM node:16.0.0-alpine AS prod-deps
 WORKDIR /opt/app
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --only prod

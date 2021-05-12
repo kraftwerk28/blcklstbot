@@ -5,16 +5,20 @@ services:
     image: kraftwerk28/blcklstbot
     environment:
       NODE_ENV: 'production'
+      # NODE_ENV: 'development'
+    # env_file: .env
     env_file: .env.prod
     ports:
       - 1490:1490
     restart: always
-    # network_mode: host
     depends_on:
       - redis
   redis:
     image: redis:alpine
     restart: always
+
+  enry-server:
+    image: kraftwerk28/enry-server
 
 networks:
   default:

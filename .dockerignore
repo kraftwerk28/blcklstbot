@@ -6,5 +6,5 @@ node_modules/
 .gitignore/
 .vscode/
 dist/
-*.env
+*.env*
 *.dump

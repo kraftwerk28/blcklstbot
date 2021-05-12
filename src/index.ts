@@ -15,8 +15,22 @@ async function main() {
     dotenv.config();
   }
   initLogger();
-
   const bot = new Telegraf<Ctx>(process.env.BOT_TOKEN!);
+
+  async function shutdownHandler(signal: NodeJS.Signals) {
+    log.info(`Handling ${signal}...`);
+    try {
+      await bot.context.dbStore?.shutdown();
+      bot.context.eventQueue?.dispose();
+      process.exit(0);
+    } catch (err) {
+      log.error(err);
+      process.exit(1);
+    }
+  }
+  process.on('SIGTERM', shutdownHandler);
+  process.on('SIGINT', shutdownHandler);
+
   bot.telegram.webhookReply = false;
   await extendBotContext(bot);
   const botInfo = await bot.telegram.getMe();
@@ -117,21 +131,6 @@ async function main() {
       log.error('NODE_ENV must be defined');
       process.exit(1);
   }
-
-  async function shutdownHandler(signal: NodeJS.Signals) {
-    log.info(`Handling ${signal}...`);
-    try {
-      await bot.context.dbStore?.shutdown();
-      bot.context.eventQueue?.dispose();
-      process.exit(0);
-    } catch (err) {
-      log.error(err);
-      process.exit(1);
-    }
-  }
-
-  process.on('SIGTERM', shutdownHandler);
-  process.on('SIGINT', shutdownHandler);
 }
 
 main().catch((err) => {
