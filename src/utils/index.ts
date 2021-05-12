@@ -3,6 +3,10 @@ import { ChatMember, Message, Update, User } from 'typegram';
 export * as html from './html';
 import { Ctx, GuardPredicate } from '../types';
 import { log } from '../logger';
+import fetch from 'node-fetch';
+import { URL } from 'url';
+import crypto from 'crypto';
+import { LANGUAGE_TO_EXT } from '../constants';
 
 /** Run Promise(s) w/o awaiting and log errors, if any */
 export async function safePromiseAll(
@@ -30,6 +34,10 @@ export function randInt(a: number, b?: number) {
 
 export function randBool() {
   return Math.random() < 0.5;
+}
+
+export function csIdGen(len = 8): string {
+  return crypto.randomBytes(len).toString('hex');
 }
 
 export function ensureEnvExists(name: string): string {
@@ -71,8 +79,12 @@ export function getCodeFromMessage(msg: Message.TextMessage): string | null {
     return null;
   }
   const { length, offset } = codeEntities[0];
-  const codeSource = msg.text.slice(offset, offset + length);
-  return codeSource;
+  // Return only if the whole message is code
+  if (offset === 0 && length === msg.text.length) {
+    const codeSource = msg.text.slice(offset, offset + length);
+    return codeSource;
+  }
+  return null;
 }
 
 const OUT_OF_CHAT_STATUS: ChatMember['status'][] = ['left', 'kicked'];
@@ -122,6 +134,66 @@ export function getLeftMemberFromUpdate(
   } else if ('left_chat_member' in update.message) {
     return update.message.left_chat_member;
   } else {
+    return null;
+  }
+}
+
+export async function runTreeSitterHighlight(
+  lang: string,
+  code: string,
+): Promise<NodeJS.ReadableStream | null> {
+  const hlServerUrl = new URL(process.env.TREE_SITTER_SERVER_HOST!);
+  hlServerUrl.searchParams.append('lang', lang);
+  const response = await fetch(hlServerUrl, {
+    method: 'POST',
+    body: code,
+  });
+  if (response.status === 200) {
+    return response.body;
+  }
+  return null;
+}
+
+export async function runEnry(code: string): Promise<string> {
+  const response = await fetch(process.env.ENRY_SERVER_HOST!, {
+    method: 'POST',
+    body: code,
+  });
+  return response.text();
+}
+
+export async function updloadToGist(
+  lang: string,
+  code: string,
+): Promise<string | null> {
+  const url = new URL(
+    `${process.env.GITHUB_API_HOST}/gists/${process.env.GITHUB_GIST_ID}`,
+  );
+  const headers = {
+    Authorization: `token ${process.env.GITHUB_API_KEY}`,
+  };
+  const fileStem = csIdGen();
+  const fileExt = LANGUAGE_TO_EXT[lang];
+  const body = {
+    files: {
+      [`${fileStem}.${fileExt}`]: {
+        language: lang,
+        content: code,
+      },
+    },
+  };
+  const response = await fetch(url, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(body),
+  });
+  if (response.status !== 200) {
+    return null;
+  }
+  try {
+    const responseJson = await response.json();
+    return `${responseJson.html_url}#file-${fileStem}-${fileExt}`;
+  } catch {
     return null;
   }
 }

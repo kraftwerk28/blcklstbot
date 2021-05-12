@@ -1,40 +1,43 @@
-import { Captcha } from '../utils/captcha';
+import { Ctx } from "./context";
 
 export enum CaptchaMode {
   Arithmetic = 'arithmetic',
   Matrix = 'matrix',
 }
 
-export type ArithmeticCaptcha = CaptchaMeta<CaptchaMode.Arithmetic, {
-  expression: string,
-  answer: number,
-}>;
-
-type Person = {
-  _id: number,
-  name: string,
-  age: number
+type Captcha<Mode extends CaptchaMode, Meta extends Record<string, any>> = {
+  mode: Mode;
+  meta: Meta;
 };
 
-export type MatrixDenomCaptcha = CaptchaMeta<CaptchaMode.Matrix, {
-  matrix: number[][],
-  answer: number,
-}>;
+export type ArithmeticCaptcha = Captcha<
+  CaptchaMode.Arithmetic,
+  {
+    expression: string;
+    answer: number;
+  }
+>;
 
-type CaptchaMeta<Mode extends CaptchaMode, Meta extends Record<string, any>> = {
-  mode: Mode,
-  meta: Meta,
-};
+export type MatrixDenomCaptcha = Captcha<
+  CaptchaMode.Matrix,
+  {
+    matrix: number[][];
+    answer: number;
+  }
+>;
 
-type Captchas =
+export type AbstractCaptcha =
   | ArithmeticCaptcha
   | MatrixDenomCaptcha;
 
-export type ExtractCaptchaMeta<Mode extends CaptchaMode> = Extract<
-  Captchas,
-  { mode: Mode }
+export type ExtractMeta<M extends CaptchaMode> = Extract<
+  AbstractCaptcha,
+  { mode: M }
 >['meta'];
 
-export type AbstractCaptcha = {
-  [Mode in CaptchaMode]: Captcha<Mode>
-}[CaptchaMode];
+export type CaptchaDefs = {
+  [M in CaptchaMode]: {
+    check(ctx: Ctx, meta: ExtractMeta<M>): boolean;
+    generate(): ExtractMeta<M>;
+  };
+};

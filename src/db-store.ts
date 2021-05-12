@@ -1,11 +1,7 @@
 import { Redis } from 'ioredis';
 import { Knex } from 'knex';
-import { Chat, Message } from 'typegram';
-import {
-  CHATS_TABLE_NAME,
-  KEEP_TRACKED_MESSAGES_TIMEOUT,
-  USERS_TABLE_NAME,
-} from './constants';
+import { Message } from 'typegram';
+import { CHATS_TABLE_NAME, USERS_TABLE_NAME } from './constants';
 import {
   AbstractCaptcha,
   DbChat,
@@ -14,17 +10,13 @@ import {
   DbUserFromTg,
   DbUserMessage,
 } from './types';
-import { Captcha } from './utils/captcha';
+import { deserializeCaptcha, serializeCaptcha } from './captcha';
 
 export class DbStore {
   constructor(public readonly knex: Knex, public readonly redisClient: Redis) {}
 
   private captchaRedisKey(chatId: number, userId: number) {
     return `captcha:${chatId}:${userId}`;
-  }
-
-  private messageTrackRedisKey(chatId: number, userId: number) {
-    return `tracked_messages:${chatId}:${userId}`;
   }
 
   async addPendingCaptcha(
@@ -34,7 +26,7 @@ export class DbStore {
     timeoutSeconds: number,
   ) {
     const key = this.captchaRedisKey(chatId, userId);
-    await this.redisClient.set(key, captcha.serialize());
+    await this.redisClient.set(key, serializeCaptcha(captcha));
     // TODO: editable expire time
     await this.redisClient.expire(key, timeoutSeconds);
   }
@@ -42,10 +34,10 @@ export class DbStore {
   async hasPendingCaptcha(
     chatId: number,
     userId: number,
-  ): Promise<Captcha | null> {
+  ): Promise<AbstractCaptcha | null> {
     const key = this.captchaRedisKey(chatId, userId);
     const value = await this.redisClient.get(key);
-    return value ? Captcha.deserialize(value) : null;
+    return value ? deserializeCaptcha(value) : null;
   }
 
   async deletePendingCaptcha(chatId: number, userId: number) {
@@ -74,7 +66,7 @@ export class DbStore {
     return this.knex(table).where({ id: partial.id }).update(partial);
   }
 
-  private async genericInsert<T extends { id: number }, U extends T>(
+  private async genericInsert<T extends { id: number }, U extends T = T>(
     entity: T,
     table: string,
   ): Promise<U> {
@@ -98,16 +90,38 @@ export class DbStore {
     return this.genericInsert(chat, CHATS_TABLE_NAME);
   }
 
-  async addUser(user: DbUserFromTg): Promise<DbUser> {
-    return this.genericInsert(user, USERS_TABLE_NAME);
+  async addUser(user: DbUserFromTg, chatId: number): Promise<DbUser> {
+    const { id, first_name, last_name, language_code, username } = user;
+    const insertQuery = this.knex(USERS_TABLE_NAME).insert({
+      id,
+      chat_id: chatId,
+      first_name,
+      last_name,
+      language_code,
+      username,
+    });
+    const insertResult = await this.knex.raw(
+      '? on conflict(id, chat_id) do update ' +
+        'set id = excluded.id, chat_id = excluded.chat_id returning *',
+      [insertQuery],
+    );
+    return insertResult.rows[0];
   }
 
-  async getUser(userId: number): Promise<DbUser> {
-    return this.knex(USERS_TABLE_NAME).where({ id: userId }).first();
+  async getUser(chatId: number, userId: number): Promise<DbUser> {
+    return this.knex(USERS_TABLE_NAME)
+      .where({ id: userId, chat_id: chatId })
+      .first();
   }
 
-  async updateUser(partialUser: Partial<DbUser> & { id: number }) {
-    return this.genericUpdate(USERS_TABLE_NAME, partialUser);
+  async updateUser(
+    partialUser: Partial<DbUser> & { id: number; chat_id?: number },
+  ) {
+    const whereClause: Record<string, number> = { id: partialUser.id };
+    if (typeof partialUser.chat_id === 'number') {
+      whereClause.chat_id = partialUser.chat_id;
+    }
+    return this.knex(USERS_TABLE_NAME).where(whereClause).update(partialUser);
   }
 
   async addUserMessage(message: Message) {

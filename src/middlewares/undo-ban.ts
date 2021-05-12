@@ -2,12 +2,12 @@ import { ActionMiddleware } from '../types';
 import { Composer } from '../composer';
 import { senderIsAdmin } from '../guards';
 import { userMention } from '../utils/html';
-import { addRepliedUserToDatabase } from './add-replied-user-to-database';
+import { getDbUserFromReply } from './get-db-user-from-reply';
 
 export const undoBan = Composer.branch(
   senderIsAdmin,
   Composer.compose([
-    addRepliedUserToDatabase,
+    getDbUserFromReply,
     async function (ctx) {
       const [, reporterUserId, reportedUserId] = ctx.match.map((n) =>
         parseInt(n),

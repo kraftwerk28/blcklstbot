@@ -1,15 +1,15 @@
 import { Composer } from '../composer';
-import { isGroupChat, senderIsAdmin } from '../guards';
 import { CommandMiddleware } from '../types';
+import { botHasSufficientPermissions, isGroupChat } from '../guards';
 
-export const deleteJoins = Composer.guardAll(
-  [senderIsAdmin, isGroupChat],
+export const replaceCode = Composer.guardAll(
+  [isGroupChat, botHasSufficientPermissions],
   async function (ctx) {
     await ctx.deleteMessage();
     await ctx.dbStore.updateChatProp(
       ctx.chat.id,
-      'delete_joins',
-      !ctx.dbChat?.delete_joins,
+      'upload_to_gist',
+      !ctx.dbChat.upload_to_gist,
     );
   } as CommandMiddleware,
 );

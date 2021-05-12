@@ -8,14 +8,29 @@ import { initLogger, log } from './logger';
 import { regexp, safePromiseAll } from './utils';
 import * as middlewares from './middlewares';
 import * as commands from './commands';
+import util from 'util';
 
 async function main() {
   if (process.env.NODE_ENV === 'development') {
     dotenv.config();
   }
   initLogger();
-
   const bot = new Telegraf<Ctx>(process.env.BOT_TOKEN!);
+
+  async function shutdownHandler(signal: NodeJS.Signals) {
+    log.info(`Handling ${signal}...`);
+    try {
+      await bot.context.dbStore?.shutdown();
+      bot.context.eventQueue?.dispose();
+      process.exit(0);
+    } catch (err) {
+      log.error(err);
+      process.exit(1);
+    }
+  }
+  process.on('SIGTERM', shutdownHandler);
+  process.on('SIGINT', shutdownHandler);
+
   bot.telegram.webhookReply = false;
   await extendBotContext(bot);
   const botInfo = await bot.telegram.getMe();
@@ -26,14 +41,16 @@ async function main() {
   bot
     .use(composer2)
     .use(middlewares.getDbChat)
+    .on('message', middlewares.addUserToDatabase)
     .on('message', middlewares.trackMemberMessages)
     .on('text', middlewares.substitute)
     .on('text', middlewares.highlightCode)
     .on('text', middlewares.checkCaptchaAnswer)
+    .on('text', middlewares.uploadToGistOrHighlight)
     .on(['chat_member', 'new_chat_members'], middlewares.onNewChatMember)
     .on('left_chat_member', middlewares.leftChatMember)
     .hears(regexp`^\/ping(?:@${username})?\s+(\d+)(?:\s+(.+))?$`, commands.ping)
-    .hears(regexp`^\/codepic(?:@${username})?\s+(\w+)$`, commands.codePic)
+    .hears(regexp`^\/codepic(?:@${username})?(?:\s+(\w+))?$`, commands.codePic)
     .hears(
       regexp`^\/captcha(?:@${username})?((?:\s+[\w-]+)+)?\s*$`,
       commands.captcha,
@@ -50,11 +67,12 @@ async function main() {
     .command('beautify_code', commands.beautifyCode)
     .command('del', commands.delMessage)
     .command('delete_joins', commands.deleteJoins)
+    .command('replace_code', commands.replaceCode)
     .action(/^undo_ban:([\d-]+):([\d-]+)$/, middlewares.undoBan)
     .catch((err, ctx) => {
       log.error(
-        'Error in `bot::catch`\nUpdate: %O\nError: %O',
-        ctx.update,
+        'Error in `bot::catch`\nUpdate: %s\nError: %O',
+        util.inspect(ctx.update, { colors: true, depth: null }),
         err,
       );
     });
@@ -113,21 +131,6 @@ async function main() {
       log.error('NODE_ENV must be defined');
       process.exit(1);
   }
-
-  async function shutdownHandler(signal: NodeJS.Signals) {
-    log.info(`Handling ${signal}...`);
-    try {
-      await bot.context.dbStore?.shutdown();
-      bot.context.eventQueue?.dispose();
-      process.exit(0);
-    } catch (err) {
-      log.error(err);
-      process.exit(1);
-    }
-  }
-
-  process.on('SIGTERM', shutdownHandler);
-  process.on('SIGINT', shutdownHandler);
 }
 
 main().catch((err) => {

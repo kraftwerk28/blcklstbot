@@ -1,9 +1,9 @@
-FROM node:alpine AS dev-deps
+FROM node:16.0.0-alpine AS dev-deps
 WORKDIR /opt/build
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit
 
-FROM node:alpine AS prod-deps
+FROM node:16.0.0-alpine AS prod-deps
 WORKDIR /opt/app
 COPY package.json package-lock.json ./
 RUN npm ci --no-audit --only prod
@@ -19,4 +19,4 @@ COPY --from=build /opt/build/build/ ./
 COPY migrations/ migrations/
 COPY knexfile.js knexfile.js
 COPY bot.config.json ./
-CMD ["node", "src/index.js"]
+ENTRYPOINT ["node", "src/index.js"]
