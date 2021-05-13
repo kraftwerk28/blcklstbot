@@ -1,4 +1,5 @@
 import { MessageEntity, User } from 'typegram';
+import { MentionableUser } from '../types';
 
 export function bold(text: string) {
   return '<b>' + text + '</b>';
@@ -20,15 +21,15 @@ export function escape(text: string): string {
   return text.replace(/&/g, '&amp').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-export function userMention(
-  user: Pick<User, 'id' | 'username' | 'first_name' | 'last_name'>,
-  preferUsername = true,
-) {
+export function userFullName(user: MentionableUser) {
+  return user.first_name + (user.last_name ? ` ${user.last_name}` : '');
+}
+
+export function userMention(user: MentionableUser, preferUsername = true) {
   if (preferUsername && user.username) {
     return '@' + user.username;
   }
-  let text = user.first_name + (user.last_name ? ` ${user.last_name}` : '');
-  return link(`tg://user?id=${user.id}`, text);
+  return link(`tg://user?id=${user.id}`, userFullName(user));
 }
 
 const ENTITY_TYPE_TAGS: { [K in MessageEntity['type']]?: string } = {

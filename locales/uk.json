@@ -5,5 +5,8 @@
   "last_warning": "останнє попередження!",
   "math_captcha": "{user}, будь ласка, розв'яжи арифметичний вираз:",
   "matrix_captcha": "{user}, будь ласка, знайди визначник матриці (a×d-b×c):",
-  "captcha_remaining": "Залишилось {seconds} секунд."
+  "captcha_remaining": "Залишилось {seconds} секунд.",
+  "forgive": "{forgiver} розблокував {reported}.",
+  "banlist_title": "Заблоковані в поточному чаті",
+  "banlist_empty": "Ще ніхто не був заблокований..."
 }

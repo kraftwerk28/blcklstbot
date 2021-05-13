@@ -30,7 +30,7 @@ export const report = Composer.branchAll(
       const reason = isLastWarn
         ? ctx.reportedUser.warn_ban_reason
         : ctx.match[1];
-      const callbackData = `undo_ban:${ctx.from.id}:${reportedUser.id}`;
+      const callbackData = `unban:${ctx.chat.id}:${reportedUser.id}`;
       const inlineKbd = Markup.inlineKeyboard([
         Markup.button.callback('\u{1f519} Undo', callbackData),
       ]);
@@ -65,6 +65,7 @@ export const report = Composer.branchAll(
           id: reportedUser.id,
           banned: true,
           warn_ban_reason: reason,
+          banned_timestamp: new Date(),
         });
       }
 

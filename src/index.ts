@@ -71,7 +71,8 @@ async function main() {
     .command('del', commands.delMessage)
     .command('delete_joins', commands.deleteJoins)
     .command('replace_code', commands.replaceCode)
-    .action(/^undo_ban:([\d-]+):([\d-]+)$/, middlewares.undoBan)
+    .command('banlist', commands.banList)
+    .action(/^unban:([\d-]+):([\d-]+)$/, middlewares.undoBan)
     .catch((err, ctx) => {
       log.error(
         'Error in `bot::catch`\nUpdate: %s\nError: %O',
