@@ -1,4 +1,3 @@
-import { User } from 'typegram';
 import { HearsMiddleware } from '../types';
 import {
   botHasSufficientPermissions,
@@ -50,13 +49,16 @@ export const warn = Composer.branchAll(
       const isLastWarn = newWarningsCount === MAX_WARNINGS;
 
       let text =
-        `${userMention(ctx.from)} warned ` + `${userMention(reportedUser)} `;
+        ctx.t('warn', {
+          reporter: userMention(ctx.from),
+          reported: userMention(reportedUser),
+        }) + ' ';
       if (isLastWarn) {
-        text += bold('(last warning!)');
+        text += `(${ctx.t('last_warning')})`;
       } else {
         text += bold(`(${newWarningsCount} / ${MAX_WARNINGS})`);
       }
-      text += `\n${bold('Reason')}: ${escape(warnReason)}`;
+      text += '\n' + ctx.t('report_reason', { reason: escape(warnReason) });
 
       return safePromiseAll([
         ctx.replyWithHTML(text),

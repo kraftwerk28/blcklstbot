@@ -17,6 +17,7 @@ FROM prod-deps AS app
 WORKDIR /opt/app
 COPY --from=build /opt/build/build/ ./
 COPY migrations/ migrations/
+COPY locale/ locale/
 COPY knexfile.js knexfile.js
 COPY bot.config.json ./
 ENTRYPOINT ["node", "src/index.js"]

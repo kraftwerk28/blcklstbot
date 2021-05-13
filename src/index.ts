@@ -61,14 +61,18 @@ async function main() {
     )
     .hears(regexp`^\/report(?:@${username})?(?:\s+(.+))?$`, commands.report)
     .hears(regexp`^\/warn(?:@${username})?(?:\s+(.+))?$`, commands.warn)
+    .hears(
+      regexp`^\/language(?:@${username})?\s+(\w{2})$`,
+      commands.setLanguage,
+    )
     .command('rules', commands.rules)
     .command('settings', commands.groupSettings)
     .command('help', commands.help)
-    .command('beautify_code', commands.beautifyCode)
     .command('del', commands.delMessage)
     .command('delete_joins', commands.deleteJoins)
     .command('replace_code', commands.replaceCode)
-    .action(/^undo_ban:([\d-]+):([\d-]+)$/, middlewares.undoBan)
+    .command('banlist', commands.banList)
+    .action(/^unban:([\d-]+):([\d-]+)$/, middlewares.undoBan)
     .catch((err, ctx) => {
       log.error(
         'Error in `bot::catch`\nUpdate: %s\nError: %O',
@@ -91,7 +95,7 @@ async function main() {
         captchaMessageId,
         newChatMemberMessageId,
       } = payload;
-      safePromiseAll([
+      return safePromiseAll([
         telegram.kickChatMember(chatId, userId),
         telegram.unbanChatMember(chatId, userId),
         telegram.deleteMessage(chatId, captchaMessageId),

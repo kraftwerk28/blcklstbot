@@ -55,10 +55,11 @@ async function userCaptcha(ctx: Ctx, user: User) {
   switch (captcha.mode) {
     case CaptchaMode.Arithmetic: {
       captchaMessage = await ctx.replyWithHTML(
-        userMention(user) +
-          ', please solve the following math expression:\n' +
+        ctx.t('math_captcha', { user: userMention(user) }) +
+          '\n' +
           code(captcha.meta.expression) +
-          `\nyou have ${ctx.dbChat.captcha_timeout} seconds.`,
+          '\n' +
+          ctx.t('captcha_remaining', { seconds: ctx.dbChat.captcha_timeout }),
       );
       break;
     }
@@ -67,10 +68,11 @@ async function userCaptcha(ctx: Ctx, user: User) {
         .map((row) => '| ' + row.join(' ') + ' |')
         .join('\n');
       captchaMessage = await ctx.replyWithHTML(
-        userMention(user) +
-          ', please find the determinant of matrix below (a×d-b×c):\n' +
+        ctx.t('matrix_captcha', { user: userMention(user) }) +
+          '\n' +
           code(matrixText) +
-          `\nyou have ${ctx.dbChat.captcha_timeout} seconds.`,
+          '\n' +
+          ctx.t('captcha_remaining', { seconds: ctx.dbChat.captcha_timeout }),
       );
       break;
     }

@@ -2,7 +2,7 @@ import { Chat, User } from 'typegram';
 import { CaptchaMode } from './';
 import { DbOptional } from './utils';
 
-type ChatLanguageCode = 'uk' | 'en';
+export type ChatLanguageCode = 'uk' | 'en';
 
 export type DbChatFromTg = Pick<
   Chat.GroupChat & Chat.UserNameChat,
@@ -37,7 +37,7 @@ export type DbUser = DbUserFromTg & {
   warnings_count: number;
   banned: boolean;
   warn_ban_reason: DbOptional<string>;
-  banned_timestamp: Date;
+  banned_timestamp: DbOptional<Date>;
 };
 
 export type DbUserMessage = {

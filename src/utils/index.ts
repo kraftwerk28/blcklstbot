@@ -1,12 +1,20 @@
-import { Context as TelegrafContext } from 'telegraf';
-import { ChatMember, Message, Update, User } from 'typegram';
-export * as html from './html';
-import { Ctx, GuardPredicate } from '../types';
-import { log } from '../logger';
-import fetch from 'node-fetch';
 import { URL } from 'url';
 import crypto from 'crypto';
+import { promises as fs } from 'fs';
+import { Context as TelegrafContext } from 'telegraf';
+import { ChatMember, Message, Update, User } from 'typegram';
+import fetch from 'node-fetch';
+import path from 'path';
+
 import { LANGUAGE_TO_EXT } from '../constants';
+export * as html from './html';
+import {
+  ChatLanguageCode,
+  Ctx,
+  GuardPredicate,
+  LocaleContainer,
+} from '../types';
+import { log } from '../logger';
 
 /** Run Promise(s) w/o awaiting and log errors, if any */
 export async function safePromiseAll(
@@ -196,4 +204,18 @@ export async function updloadToGist(
   } catch {
     return null;
   }
+}
+
+export async function loadLocales(): Promise<LocaleContainer> {
+  const dir = 'locales/';
+  const files = await fs.readdir(dir);
+  const result = {} as LocaleContainer;
+  for (const file of files) {
+    const fullPath = path.resolve(dir, file);
+    const localeName = path.parse(fullPath).name as ChatLanguageCode;
+    const raw = await fs.readFile(fullPath, 'utf-8');
+    result[localeName] = JSON.parse(raw);
+    log.info('Loaded "%s" locale (%s)', localeName, file);
+  }
+  return result;
 }
