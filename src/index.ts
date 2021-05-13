@@ -68,7 +68,6 @@ async function main() {
     .command('rules', commands.rules)
     .command('settings', commands.groupSettings)
     .command('help', commands.help)
-    .command('beautify_code', commands.beautifyCode)
     .command('del', commands.delMessage)
     .command('delete_joins', commands.deleteJoins)
     .command('replace_code', commands.replaceCode)

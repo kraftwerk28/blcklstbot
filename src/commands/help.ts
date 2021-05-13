@@ -42,8 +42,13 @@ export const help = Composer.guardAll(
     const textRows = [
       bold('Commands:'),
       escape(commandList.join('\n')),
+      '',
+      'To make a text substitution, which is somewhat similar to ' +
+        link('https://en.wikipedia.org/wiki/Sed', 'GNU/sed') +
+        ', just reply to text message with a pattern(-s) to make proper substitution(-s)',
+      '',
       bold('Links:'),
-      ...links.map(([l, t]) => '- ' + link(l, t)),
+      ...links.map(([l, t]) => `• ${link(l, t)}`),
     ];
     await ctx.deleteItSoon()(ctx.message);
     return ctx

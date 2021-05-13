@@ -7,7 +7,9 @@ export const substitute: OnMiddleware<'text'> = async function (ctx, next) {
   const reply = ctx.message.reply_to_message;
   if (!reply || !('text' in reply)) return next();
   let finalText = reply.text;
+  let didMatch = false;
   for (const match of ctx.message.text.matchAll(substRe)) {
+    didMatch = true;
     const replaceTo = match[2]
       .replace(/\\([&\d])/g, '$$$1')
       .replace(/\$0/g, '$$&');
@@ -18,6 +20,7 @@ export const substitute: OnMiddleware<'text'> = async function (ctx, next) {
       log.info('Regex substitution: %O', { replaceFrom, replaceTo, finalText });
     } catch {}
   }
+  if (!didMatch) return next();
   const replyOptions = { reply_to_message_id: reply.message_id };
   return ctx.reply(finalText, replyOptions);
 };
