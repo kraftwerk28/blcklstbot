@@ -6,6 +6,7 @@ import {
 } from 'telegraf';
 import { Update } from 'typegram';
 import { Ctx } from './context';
+import { ChatLanguageCode } from './models';
 
 export type MaybePromise<T = any> = T | Promise<T>;
 
@@ -49,3 +50,5 @@ type MountMap = {
   };
 
 export type NonemptyReadonlyArray<T> = readonly [T, ...T[]];
+
+export type LocaleContainer = Record<ChatLanguageCode, Record<string, string>>;

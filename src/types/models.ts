@@ -2,7 +2,7 @@ import { Chat, User } from 'typegram';
 import { CaptchaMode } from './';
 import { DbOptional } from './utils';
 
-type ChatLanguageCode = 'uk' | 'en';
+export type ChatLanguageCode = 'uk' | 'en';
 
 export type DbChatFromTg = Pick<
   Chat.GroupChat & Chat.UserNameChat,

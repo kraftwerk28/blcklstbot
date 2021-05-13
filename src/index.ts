@@ -61,6 +61,10 @@ async function main() {
     )
     .hears(regexp`^\/report(?:@${username})?(?:\s+(.+))?$`, commands.report)
     .hears(regexp`^\/warn(?:@${username})?(?:\s+(.+))?$`, commands.warn)
+    .hears(
+      regexp`^\/language(?:@${username})?\s+(\w{2})$`,
+      commands.setLanguage,
+    )
     .command('rules', commands.rules)
     .command('settings', commands.groupSettings)
     .command('help', commands.help)
