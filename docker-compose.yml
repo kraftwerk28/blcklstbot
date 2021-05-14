@@ -6,8 +6,8 @@ services:
     environment:
       NODE_ENV: 'production'
       # NODE_ENV: 'development'
-    # env_file: .env
     env_file: .env.prod
+    # env_file: .env.local-compose
     ports:
       - 1490:1490
     restart: always

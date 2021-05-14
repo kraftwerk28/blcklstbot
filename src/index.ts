@@ -1,4 +1,5 @@
 import { Telegraf } from 'telegraf';
+import util from 'util';
 import dotenv from 'dotenv';
 
 import { Composer } from './composer';
@@ -8,7 +9,6 @@ import { initLogger, log } from './logger';
 import { regexp, safePromiseAll } from './utils';
 import * as middlewares from './middlewares';
 import * as commands from './commands';
-import util from 'util';
 
 async function main() {
   if (process.env.NODE_ENV === 'development') {
