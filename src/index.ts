@@ -95,12 +95,10 @@ async function main() {
         captchaMessageId,
         newChatMemberMessageId,
       } = payload;
-      return safePromiseAll([
-        telegram.kickChatMember(chatId, userId),
-        telegram.unbanChatMember(chatId, userId),
-        telegram.deleteMessage(chatId, captchaMessageId),
-        telegram.deleteMessage(chatId, newChatMemberMessageId),
-      ]);
+      await telegram.kickChatMember(chatId, userId);
+      await telegram.unbanChatMember(chatId, userId);
+      await telegram.deleteMessage(chatId, captchaMessageId).catch();
+      await telegram.deleteMessage(chatId, newChatMemberMessageId).catch();
     })
     .on('delete_message', async ({ telegram, payload }) => {
       await telegram.deleteMessage(payload.chatId, payload.messageId).catch();
