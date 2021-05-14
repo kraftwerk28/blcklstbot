@@ -16,6 +16,7 @@ export * from './upload-gist';
 export * from './replace-code';
 export * from './set-language';
 export * from './banlist';
+export * from './manual-gist';
 
 export const publicCommands: BotCommand[] = [
   { command: 'ping', description: 'Ping myself after n seconds' },
