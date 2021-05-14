@@ -16,6 +16,8 @@ import {
 } from '../types';
 import { log } from '../logger';
 
+export function noop() {}
+
 /** Run Promise(s) w/o awaiting and log errors, if any */
 export async function safePromiseAll(
   args: Promise<any> | Promise<any>[],

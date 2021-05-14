@@ -8,10 +8,10 @@ import {
   repliedMessageIsFromMember,
   senderIsAdmin,
 } from '../guards';
-import { bold, userMention, escape } from '../utils/html';
+import { userMention, escape } from '../utils/html';
 import { getDbUserFromReply, deleteMessage } from '../middlewares';
 import { MAX_WARNINGS } from '../constants';
-import { safePromiseAll } from '../utils';
+import { noop, safePromiseAll } from '../utils';
 
 export const report = Composer.branchAll(
   [
@@ -23,7 +23,7 @@ export const report = Composer.branchAll(
   Composer.compose([
     getDbUserFromReply,
     async function (ctx) {
-      await ctx.deleteMessage().catch();
+      await ctx.deleteMessage().catch(noop);
       const isLastWarn = ctx.reportedUser.warnings_count === MAX_WARNINGS;
       const reportedUser = ctx.reportedUser;
 

@@ -6,6 +6,7 @@ import { log } from '../logger';
 import { link, userMention } from '../utils/html';
 import { GIST_UPLOAD_LINE_COUNT_THRESHOLD } from '../constants';
 
+/** Detect large code messages and replace them with Gist link */
 export const uploadToGistOrHighlight = Composer.guardAll(
   [isGroupChat, botHasSufficientPermissions],
   async function (ctx, next) {

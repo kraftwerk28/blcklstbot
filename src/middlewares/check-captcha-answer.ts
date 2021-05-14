@@ -3,6 +3,7 @@ import { captchaHash } from '../utils/event-queue';
 import { OnMiddleware } from '../types';
 import { botHasSufficientPermissions, isGroupChat } from '../guards';
 import { checkCaptchaAnswer as checkAnswer } from '../captcha';
+import { noop } from '../utils';
 
 export const checkCaptchaAnswer = Composer.guardAll(
   [isGroupChat, botHasSufficientPermissions],
@@ -13,7 +14,7 @@ export const checkCaptchaAnswer = Composer.guardAll(
     const captcha = await ctx.dbStore.hasPendingCaptcha(chatId, userId);
     if (!captcha) return next();
     const correct = checkAnswer(ctx, captcha);
-    await ctx.deleteMessage().catch();
+    await ctx.deleteMessage().catch(noop);
     if (correct) {
       await ctx.dbStore.deletePendingCaptcha(chatId, userId);
       const payload = await ctx.eventQueue.removeEvent<'captcha_timeout'>(

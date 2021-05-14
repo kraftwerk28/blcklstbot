@@ -10,7 +10,7 @@ import { bold, userMention, escape } from '../utils/html';
 import { getDbUserFromReply, deleteMessage } from '../middlewares';
 import { MAX_WARNINGS } from '../constants';
 import { report } from './report';
-import { safePromiseAll } from '../utils';
+import { noop, safePromiseAll } from '../utils';
 
 export const warn = Composer.branchAll(
   [
@@ -29,7 +29,7 @@ export const warn = Composer.branchAll(
       if (reportedUser.warnings_count === MAX_WARNINGS) {
         return report(ctx, next);
       }
-      await ctx.deleteMessage().catch();
+      await ctx.deleteMessage().catch(noop);
 
       const reasonFromCommand = ctx.match[1];
       if (reportedUser.warnings_count === 0) {

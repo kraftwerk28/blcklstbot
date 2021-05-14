@@ -6,7 +6,7 @@ import { Composer } from './composer';
 import { Ctx } from './types';
 import { extendBotContext } from './extend-context';
 import { initLogger, log } from './logger';
-import { regexp, safePromiseAll } from './utils';
+import { noop, regexp, safePromiseAll } from './utils';
 import * as middlewares from './middlewares';
 import * as commands from './commands';
 
@@ -72,6 +72,7 @@ async function main() {
     .command('delete_joins', commands.deleteJoins)
     .command('replace_code', commands.replaceCode)
     .command('banlist', commands.banList)
+    .command('gist', commands.manualGist)
     .action(/^unban:([\d-]+):([\d-]+)$/, middlewares.undoBan)
     .catch((err, ctx) => {
       log.error(
@@ -97,11 +98,11 @@ async function main() {
       } = payload;
       await telegram.kickChatMember(chatId, userId);
       await telegram.unbanChatMember(chatId, userId);
-      await telegram.deleteMessage(chatId, captchaMessageId).catch();
-      await telegram.deleteMessage(chatId, newChatMemberMessageId).catch();
+      await telegram.deleteMessage(chatId, captchaMessageId).catch(noop);
+      await telegram.deleteMessage(chatId, newChatMemberMessageId).catch(noop);
     })
     .on('delete_message', async ({ telegram, payload }) => {
-      await telegram.deleteMessage(payload.chatId, payload.messageId).catch();
+      await telegram.deleteMessage(payload.chatId, payload.messageId).catch(noop);
     });
 
   await bot.telegram.setMyCommands(commands.publicCommands);
