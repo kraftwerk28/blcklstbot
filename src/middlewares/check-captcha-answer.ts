@@ -4,6 +4,8 @@ import { OnMiddleware } from '../types';
 import { botHasSufficientPermissions, isGroupChat } from '../guards';
 import { checkCaptchaAnswer as checkAnswer } from '../captcha';
 import { noop } from '../utils';
+import { log } from '../logger';
+import { userFullName } from '../utils/html';
 
 export const checkCaptchaAnswer = Composer.guardAll(
   [isGroupChat, botHasSufficientPermissions],
@@ -17,6 +19,12 @@ export const checkCaptchaAnswer = Composer.guardAll(
     await ctx.deleteMessage().catch(noop);
     if (correct) {
       await ctx.dbStore.deletePendingCaptcha(chatId, userId);
+      log.info(
+        'User %s (%d) passed captcha %O',
+        userFullName(ctx.from),
+        ctx.from.id,
+        captcha,
+      );
       const payload = await ctx.eventQueue.removeEvent<'captcha_timeout'>(
         captchaHash(chatId, userId),
       );
