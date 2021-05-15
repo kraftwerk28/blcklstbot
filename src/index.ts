@@ -1,14 +1,14 @@
 import { Telegraf } from 'telegraf';
+import util from 'util';
 import dotenv from 'dotenv';
 
 import { Composer } from './composer';
 import { Ctx } from './types';
 import { extendBotContext } from './extend-context';
 import { initLogger, log } from './logger';
-import { regexp, safePromiseAll } from './utils';
+import { noop, regexp } from './utils';
 import * as middlewares from './middlewares';
 import * as commands from './commands';
-import util from 'util';
 
 async function main() {
   if (process.env.NODE_ENV === 'development') {
@@ -65,6 +65,11 @@ async function main() {
       regexp`^\/language(?:@${username})?\s+(\w{2})$`,
       commands.setLanguage,
     )
+    .hears(
+      regexp`^\/(un)?def(global)?(?:@${username})?\s+(\w+)$`,
+      commands.defMessage,
+    )
+    .hears(regexp`^!(\w+)$`, commands.bangHandler)
     .command('rules', commands.rules)
     .command('settings', commands.groupSettings)
     .command('help', commands.help)
@@ -72,6 +77,7 @@ async function main() {
     .command('delete_joins', commands.deleteJoins)
     .command('replace_code', commands.replaceCode)
     .command('banlist', commands.banList)
+    .command('gist', commands.manualGist)
     .action(/^unban:([\d-]+):([\d-]+)$/, middlewares.undoBan)
     .catch((err, ctx) => {
       log.error(
@@ -95,15 +101,15 @@ async function main() {
         captchaMessageId,
         newChatMemberMessageId,
       } = payload;
-      return safePromiseAll([
-        telegram.kickChatMember(chatId, userId),
-        telegram.unbanChatMember(chatId, userId),
-        telegram.deleteMessage(chatId, captchaMessageId),
-        telegram.deleteMessage(chatId, newChatMemberMessageId),
-      ]);
+      await telegram.kickChatMember(chatId, userId);
+      await telegram.unbanChatMember(chatId, userId);
+      await telegram.deleteMessage(chatId, captchaMessageId).catch(noop);
+      await telegram.deleteMessage(chatId, newChatMemberMessageId).catch(noop);
     })
     .on('delete_message', async ({ telegram, payload }) => {
-      await telegram.deleteMessage(payload.chatId, payload.messageId).catch();
+      await telegram
+        .deleteMessage(payload.chatId, payload.messageId)
+        .catch(noop);
     });
 
   await bot.telegram.setMyCommands(commands.publicCommands);

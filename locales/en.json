@@ -7,6 +7,6 @@
   "matrix_captcha": "{user}, please, find the determinant of matrix below (a×d-b×c):",
   "captcha_remaining": "You have {seconds} seconds.",
   "forgive": "{forgiver} forgived {reported}.",
-  "banlist_title": "Users banned in current chat",
+  "banlist_title": "Users banned in current chat (click user to unban them):",
   "banlist_empty": "No banned users here so far..."
 }

@@ -13,7 +13,7 @@ import {
 export class EventQueue<
   Event extends BaseEvent,
   EventType extends ExtractType<Event> = ExtractType<Event>
-  > {
+> {
   private timerId: NodeJS.Timeout | null = null;
   private subscribers: Map<EventType, Callback<Event, EventType>[]> = new Map();
   private errorSubscribers: Set<(error: Error) => MaybePromise> = new Set();
@@ -97,14 +97,14 @@ export class EventQueue<
       try {
         const { type, payload } = JSON.parse(event);
         this.emit(type, payload);
-      } catch (err) { }
+      } catch (err) {}
     }
   }
 
   async pushDelayed<T extends EventType>(
     seconds: number,
     type: T,
-    payload: Extract<Event, { type: T }>['payload'],
+    payload: PayloadByType<Event, T>,
     hash?: string,
   ) {
     const deadline = Date.now() + seconds * 1000;

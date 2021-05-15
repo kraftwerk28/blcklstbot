@@ -4,7 +4,7 @@ import { senderIsAdmin } from '../guards';
 import { userMention } from '../utils/html';
 import { getDbUserFromReply } from './get-db-user-from-reply';
 import { log } from '../logger';
-import { safePromiseAll } from '../utils';
+import { noop, safePromiseAll } from '../utils';
 
 export const undoBan = Composer.branch(
   senderIsAdmin,
@@ -17,7 +17,9 @@ export const undoBan = Composer.branch(
       await ctx.unbanChatMember(reportedUserId);
       const forgiver = ctx.callbackQuery.from;
       if (ctx.callbackQuery.message) {
-        await ctx.deleteMessage(ctx.callbackQuery.message.message_id).catch();
+        await ctx
+          .deleteMessage(ctx.callbackQuery.message.message_id)
+          .catch(noop);
       }
       log.info(
         'User %d forgived %d in chat %d',
