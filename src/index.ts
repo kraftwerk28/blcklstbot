@@ -6,7 +6,7 @@ import { Composer } from './composer';
 import { Ctx } from './types';
 import { extendBotContext } from './extend-context';
 import { initLogger, log } from './logger';
-import { noop, regexp, safePromiseAll } from './utils';
+import { noop, regexp } from './utils';
 import * as middlewares from './middlewares';
 import * as commands from './commands';
 
@@ -65,6 +65,11 @@ async function main() {
       regexp`^\/language(?:@${username})?\s+(\w{2})$`,
       commands.setLanguage,
     )
+    .hears(
+      regexp`^\/(un)?def(global)?(?:@${username})?\s+(\w+)$`,
+      commands.defMessage,
+    )
+    .hears(regexp`^!(\w+)$`, commands.bangHandler)
     .command('rules', commands.rules)
     .command('settings', commands.groupSettings)
     .command('help', commands.help)
@@ -102,7 +107,9 @@ async function main() {
       await telegram.deleteMessage(chatId, newChatMemberMessageId).catch(noop);
     })
     .on('delete_message', async ({ telegram, payload }) => {
-      await telegram.deleteMessage(payload.chatId, payload.messageId).catch(noop);
+      await telegram
+        .deleteMessage(payload.chatId, payload.messageId)
+        .catch(noop);
     });
 
   await bot.telegram.setMyCommands(commands.publicCommands);

@@ -8,6 +8,6 @@ exports.up = async function (knex) {
 /** @param {import('knex').Knex} knex */
 exports.down = async function (knex) {
   await knex.schema.alterTable('user_messages', (table) => {
-    table.dropPrimary(['chat_id', 'message_id']);
+    table.dropPrimary();
   });
 };

@@ -51,3 +51,12 @@ export type EnryResponse = {
   language: string,
   extension: string,
 };
+
+export type DbDynamicCommand = {
+  /** ID of message in special channel where command messages are forwarded */
+  message_id: number,
+  chat_id: DbOptional<number>,
+  command: string,
+  defined_by: number,
+  global: boolean,
+};

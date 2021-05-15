@@ -1,11 +1,16 @@
 import { Redis } from 'ioredis';
 import { Knex } from 'knex';
 import { Message } from 'typegram';
-import { CHATS_TABLE_NAME, USERS_TABLE_NAME } from './constants';
+import {
+  CHATS_TABLE_NAME,
+  DYN_COMMANDS_TABLE_NAME,
+  USERS_TABLE_NAME,
+} from './constants';
 import {
   AbstractCaptcha,
   DbChat,
   DbChatFromTg,
+  DbDynamicCommand,
   DbUser,
   DbUserFromTg,
   DbUserMessage,
@@ -66,13 +71,18 @@ export class DbStore {
     return this.knex(table).where({ id: partial.id }).update(partial);
   }
 
-  private async genericInsert<T extends { id: number }, U extends T = T>(
+  private async genericInsert<T extends object, U extends T = T>(
     entity: T,
     table: string,
+    primaryKeys: (keyof U)[],
   ): Promise<U> {
     const insertQuery = this.knex(table).insert(entity);
+    const actioncmd = Object.keys(entity)
+      .map((key) => `${key} = excluded.${key}`)
+      .join(', ');
+    const pk = primaryKeys.join(', ');
     const insertResult = await this.knex.raw(
-      '? on conflict(id) do update set id = excluded.id returning *',
+      `? on conflict(${pk}) do update set ${actioncmd} returning *`,
       [insertQuery],
     );
     return insertResult.rows[0] as U;
@@ -87,25 +97,30 @@ export class DbStore {
   }
 
   async addChat(chat: DbChatFromTg): Promise<DbChat> {
-    return this.genericInsert(chat, CHATS_TABLE_NAME);
+    return this.genericInsert(chat, CHATS_TABLE_NAME, ['id']);
   }
 
   async addUser(user: DbUserFromTg, chatId: number): Promise<DbUser> {
     const { id, first_name, last_name, language_code, username } = user;
-    const insertQuery = this.knex(USERS_TABLE_NAME).insert({
+    const dbUser = {
       id,
       chat_id: chatId,
       first_name,
       last_name,
       language_code,
       username,
-    });
-    const insertResult = await this.knex.raw(
-      '? on conflict(id, chat_id) do update ' +
-        'set id = excluded.id, chat_id = excluded.chat_id returning *',
-      [insertQuery],
-    );
-    return insertResult.rows[0];
+    };
+    return this.genericInsert<DbUserFromTg, DbUser>(dbUser, USERS_TABLE_NAME, [
+      'id',
+      'chat_id',
+    ]);
+    // const insertQuery = this.knex(USERS_TABLE_NAME).insert();
+    // const insertResult = await this.knex.raw(
+    //   '? on conflict(id, chat_id) do update ' +
+    //     'set id = excluded.id, chat_id = excluded.chat_id returning *',
+    //   [insertQuery],
+    // );
+    // return insertResult.rows[0];
   }
 
   async getUser(chatId: number, userId: number): Promise<DbUser> {
@@ -137,6 +152,43 @@ export class DbStore {
     return this.knex<DbUserMessage>('user_messages')
       .where({ chat_id: chatId, user_id: userId })
       .del('message_id');
+  }
+
+  async defineCommand(
+    command: string,
+    chatId: number,
+    definedById: number,
+    messageId: number,
+    global: boolean,
+  ) {
+    return this.genericInsert<DbDynamicCommand>(
+      {
+        chat_id: chatId,
+        message_id: messageId,
+        defined_by: definedById,
+        command,
+        global,
+      },
+      DYN_COMMANDS_TABLE_NAME,
+      ['message_id', 'chat_id'],
+    );
+  }
+
+  async getCommand(command: string, chatId: number) {
+    return this.knex<DbDynamicCommand>(DYN_COMMANDS_TABLE_NAME)
+      .where({ command, chat_id: chatId })
+      .orWhere({ command, global: true })
+      .first();
+  }
+
+  async undefCommand(command: string, userId: number) {
+    const nDeleted = await this.knex<DbDynamicCommand>(DYN_COMMANDS_TABLE_NAME)
+      .where({
+        command,
+        defined_by: userId,
+      })
+      .del();
+    return nDeleted > 0;
   }
 
   shutdown() {
