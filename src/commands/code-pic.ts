@@ -8,10 +8,8 @@ export const codePic: HearsMiddleware = async function (ctx, next) {
 
   const sourceCode = getCodeFromMessage(reply);
   if (!sourceCode) return next();
-  let languageName = ctx.match[1];
-  if (!languageName) {
-    languageName = await runEnry(sourceCode);
-  }
+  let languageName = ctx.match[1] ?? (await runEnry(sourceCode))?.language;
+  if (!languageName) return;
   log.info('Highlighting `%s` code', languageName);
   const pictureStream = await runTreeSitterHighlight(languageName, sourceCode);
   if (pictureStream) {

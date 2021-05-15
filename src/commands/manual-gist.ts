@@ -2,7 +2,7 @@ import { Composer } from '../composer';
 import { botHasSufficientPermissions, senderIsAdmin } from '../guards';
 import { log } from '../logger';
 import { CommandMiddleware } from '../types';
-import { noop, runEnry, updloadToGist } from '../utils';
+import { noop, runEnry, uploadToGist } from '../utils';
 import { link, userMention } from '../utils/html';
 
 /** Manually upload text in replied message to Gist */
@@ -12,9 +12,10 @@ export const manualGist: CommandMiddleware = Composer.guardAll(
     const reply = ctx.message.reply_to_message;
     if (!reply || !reply.from || !('text' in reply)) return next();
     const sourceCode = reply.text;
-    const languageName = await runEnry(sourceCode);
-    log.info('Manual uploading to gist `%s` code', languageName);
-    const codeUrl = await updloadToGist(languageName, sourceCode);
+    const enryResult = await runEnry(sourceCode);
+    if (!enryResult) return next();
+    log.info('Manual uploading to gist `%s` code', enryResult.language);
+    const codeUrl = await uploadToGist(enryResult, sourceCode);
     if (codeUrl) {
       await ctx.deleteMessage(reply.message_id).catch(noop);
       const codeLink = link(codeUrl, 'GitHub Gist');

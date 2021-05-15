@@ -12,7 +12,6 @@ export * from './report';
 export * from './warn';
 export * from './code-pic';
 export * from './delete-joins';
-export * from './upload-gist';
 export * from './replace-code';
 export * from './set-language';
 export * from './banlist';

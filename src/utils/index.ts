@@ -6,11 +6,11 @@ import { ChatMember, Message, Update, User } from 'typegram';
 import fetch from 'node-fetch';
 import path from 'path';
 
-import { LANGUAGE_TO_EXT } from '../constants';
 export * as html from './html';
 import {
   ChatLanguageCode,
   Ctx,
+  EnryResponse,
   GuardPredicate,
   LocaleContainer,
 } from '../types';
@@ -164,18 +164,20 @@ export async function runTreeSitterHighlight(
   return null;
 }
 
-export async function runEnry(code: string): Promise<string> {
+export async function runEnry(code: string): Promise<EnryResponse | null> {
   const response = await fetch(process.env.ENRY_SERVER_HOST!, {
     method: 'POST',
     body: code,
   });
-  return response.text();
+  if (response.status !== 200) return null;
+  return response.json();
 }
 
-export async function updloadToGist(
-  lang: string,
-  code: string,
+export async function uploadToGist(
+  info: EnryResponse,
+  sourceCode: string,
 ): Promise<string | null> {
+  const { language, extension } = info;
   const url = new URL(
     `${process.env.GITHUB_API_HOST}/gists/${process.env.GITHUB_GIST_ID}`,
   );
@@ -183,14 +185,8 @@ export async function updloadToGist(
     Authorization: `token ${process.env.GITHUB_API_KEY}`,
   };
   const fileStem = csIdGen();
-  const fileExt = LANGUAGE_TO_EXT[lang];
   const body = {
-    files: {
-      [`${fileStem}.${fileExt}`]: {
-        language: lang,
-        content: code,
-      },
-    },
+    files: { [`${fileStem}.${extension}`]: { language, content: sourceCode } },
   };
   const response = await fetch(url, {
     method: 'POST',
@@ -202,7 +198,7 @@ export async function updloadToGist(
   }
   try {
     const responseJson = await response.json();
-    return `${responseJson.html_url}#file-${fileStem}-${fileExt}`;
+    return `${responseJson.html_url}#file-${fileStem}-${extension}`;
   } catch {
     return null;
   }

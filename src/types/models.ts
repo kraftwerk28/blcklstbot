@@ -46,3 +46,8 @@ export type DbUserMessage = {
   message_id: number;
   timestamp: Date;
 };
+
+export type EnryResponse = {
+  language: string,
+  extension: string,
+};
