@@ -33,6 +33,7 @@ export class Composer<
       falseBranch,
     );
   }
+
   // static guardAll<
   //   C extends TelegrafContext = Ctx,
   //   M = unknown,
@@ -45,4 +46,16 @@ export class Composer<
   //     Promise.all(predicates.map((p) => p(ctx))).then((r) => r.every(Boolean));
   //   return Composer.optional(allPredicate, ...fns);
   // }
+
+  /**
+   * Check command permissions
+   * if they don't match and chat settings say "Delete accidental commands",
+   * then remove command; otherwise, process command normally
+   */
+  static guardDelete<C extends TelegrafContext = Ctx>(
+    predicates: readonly GuardPredicate<C>[],
+    middleware: Middleware<C>,
+  ) {
+    // TODO
+  }
 }

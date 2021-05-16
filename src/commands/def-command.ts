@@ -12,28 +12,34 @@ export const defMessage = Composer.guardAll([isGroupChat], async function (
   const command = match[3];
   const isAdmin = await senderIsAdmin(ctx);
   const isUndef = match[1] === 'un';
+
   if (isUndef) {
     const dbCommand = await ctx.dbStore.getCommand(command, chat.id);
     if (!dbCommand) return;
+    // Refuse undef if command is not created by this user
+    // and (command is global or user isn't chat admin)
+    if (dbCommand.defined_by !== from.id && (!isAdmin || dbCommand.global)) {
+      return;
+    }
     await tg.deleteMessage(cmdChannelId, dbCommand.message_id);
     await ctx.dbStore.undefCommand(command, from.id);
     return;
+  } else {
+    const isGlobal = match[2] === 'global';
+    if ((isGlobal && !isAdmin) || !reply) return;
+
+    const forwardedMsg = await tg.forwardMessage(
+      cmdChannelId,
+      chat.id,
+      reply.message_id,
+    );
+
+    await ctx.dbStore.defineCommand(
+      command,
+      chat.id,
+      from.id,
+      forwardedMsg.message_id,
+      isGlobal,
+    );
   }
-
-  const isGlobal = match[2] === 'global';
-  if ((isGlobal && !isAdmin) || !reply) return;
-
-  const forwardedMsg = await tg.forwardMessage(
-    +process.env.COMMANDS_CHANNEL_ID!,
-    chat.id,
-    reply.message_id,
-  );
-
-  await ctx.dbStore.defineCommand(
-    command,
-    chat.id,
-    from.id,
-    forwardedMsg.message_id,
-    isGlobal,
-  );
 } as HearsMiddleware);
