@@ -3,3 +3,4 @@ export * from './models';
 export * from './context';
 export * from './captcha';
 export * from './event-queue';
+export * from './doc-search';
