@@ -6,7 +6,8 @@
     "outDir": "build/",
     "strict": true,
     "resolveJsonModule": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "noImplicitAny": true
   },
   "include": ["src/"]
 }
