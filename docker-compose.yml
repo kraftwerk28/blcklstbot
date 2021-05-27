@@ -19,6 +19,7 @@ services:
 
   enry-server:
     image: kraftwerk28/enry-server
+    restart: always
 
 networks:
   default:
