@@ -39,17 +39,19 @@ export class DbStore {
   async hasPendingCaptcha(
     chatId: number,
     userId: number,
-  ): Promise<AbstractCaptcha | null> {
+  ): Promise<AbstractCaptcha | undefined> {
     const key = this.captchaRedisKey(chatId, userId);
     const value = await this.redisClient.get(key);
-    return value ? deserializeCaptcha(value) : null;
+    if (value) {
+      return deserializeCaptcha(value);
+    }
   }
 
   async deletePendingCaptcha(chatId: number, userId: number) {
     await this.redisClient.del(this.captchaRedisKey(chatId, userId));
   }
 
-  async getChat(chatId: number): Promise<DbChat | null> {
+  async getChat(chatId: number): Promise<DbChat | undefined> {
     return this.knex(CHATS_TABLE_NAME).where({ id: chatId }).first();
   }
 
@@ -189,6 +191,13 @@ export class DbStore {
       })
       .del();
     return nDeleted > 0;
+  }
+
+  async addInlineResultMetadata<T>(results: T[]) {
+    const currentSerial = await this.redisClient.incrby(
+      'inline_results_serial',
+      results.length,
+    );
   }
 
   shutdown() {

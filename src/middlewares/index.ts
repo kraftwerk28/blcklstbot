@@ -12,3 +12,4 @@ export * from './delete-message';
 export * from './add-user-to-database';
 export * from './upload-to-gist-or-highlight';
 export * from './doc-search';
+export * from './on-chosen-inline-result';

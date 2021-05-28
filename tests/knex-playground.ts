@@ -11,32 +11,18 @@ const kn = knex({
   },
 });
 
-type WithArr = {
-  arr: string[]
-};
-
 (async () => {
-  await kn('has_array').insert({ arr: ['hello', 'world'] });
-  for (const row of await kn<WithArr>('has_array').select()) {
-    console.log(row.arr);
-  }
+  await kn.schema.dropTableIfExists('foo');
+  await kn.schema.createTable('foo', table => {
+    table.increments('id');
+    table.string('name').nullable();
+  });
+  await kn('foo').insert({});
+  await kn('foo').insert({});
+  console.dir(await kn('foo').select());
+  console.dir(await kn('foo').first());
+  await kn('foo').del();
+  console.dir(await kn('foo').first());
+  await kn.schema.dropTable('foo');
   await kn.destroy();
-  // const createdTable = await pool.query(`
-  //   create table if not exists has_array (
-  //     arr varchar[]
-  //   )
-  // `);
-  // console.log(createdTable);
-  // console.log(
-  //   await pool.query(`
-  //     insert into has_array values('{"arithmetic", "button"}')
-  //   `)
-  // );
-  // const select = await pool.query<{ arr: string[] }>(`
-  //   select * from has_array
-  // `);
-  // for (let i = 0; i < select.rowCount; i++) {
-  //   console.log(i, select.rows[i].arr);
-  // }
-  // pool.end();
 })();
