@@ -51,6 +51,7 @@ async function main() {
     .on(['chat_member', 'new_chat_members'], middlewares.onNewChatMember)
     .on('left_chat_member', middlewares.leftChatMember)
     .on('inline_query', middlewares.docSearch)
+    .on('chosen_inline_result', middlewares.onChosenInlineResult)
     .hears(regexp`^\/ping(?:@${username})?\s+(\d+)(?:\s+(.+))?$`, commands.ping)
     .hears(regexp`^\/codepic(?:@${username})?(?:\s+(\w+))?$`, commands.codePic)
     .hears(

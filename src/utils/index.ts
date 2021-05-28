@@ -5,7 +5,6 @@ import { Context as TelegrafContext } from 'telegraf';
 import { ChatMember, Message, MessageEntity, Update, User } from 'typegram';
 import fetch from 'node-fetch';
 import path from 'path';
-import util from 'util';
 
 export * as html from './html';
 import {
@@ -80,14 +79,16 @@ export const dev = process.env.NODE_ENV === 'development';
 // export function getUserFromAnyMessage(message: Message): User | null {
 //   if (message.new
 // }
-export function getCodeFromMessage(msg: Message.TextMessage): string | null {
-  if (!msg.entities) return null;
+export function getCodeFromMessage(
+  msg: Message.TextMessage,
+): string | undefined {
+  if (!msg.entities) return;
   const codeEntities = msg.entities.filter(
     (e) => e.type === 'pre' || e.type === 'code',
   );
   if (codeEntities.length !== 1) {
     // TODO:  Need to merge multiple entities into one
-    return null;
+    return;
   }
   const { length, offset } = codeEntities[0];
   // Return only if the whole message is code
@@ -95,7 +96,7 @@ export function getCodeFromMessage(msg: Message.TextMessage): string | null {
     const codeSource = msg.text.slice(offset, offset + length);
     return codeSource;
   }
-  return null;
+  return;
 }
 
 const OUT_OF_CHAT_STATUS: ChatMember['status'][] = ['left', 'kicked'];
@@ -107,7 +108,7 @@ const IN_CHAT_STATUS: ChatMember['status'][] = [
 
 export function getNewMembersFromUpdate(
   update: Update.ChatMemberUpdate | Update.MessageUpdate,
-): User[] | null {
+): User[] | undefined {
   if ('chat_member' in update) {
     const chatMember = update.chat_member;
     const oldMember = chatMember.old_chat_member;
@@ -117,19 +118,15 @@ export function getNewMembersFromUpdate(
       IN_CHAT_STATUS.includes(newMember.status)
     ) {
       return [newMember.user];
-    } else {
-      return null;
     }
   } else if ('new_chat_members' in update.message) {
     return update.message.new_chat_members;
-  } else {
-    return null;
   }
 }
 
 export function getLeftMemberFromUpdate(
   update: Update.ChatMemberUpdate | Update.MessageUpdate,
-): User | null {
+): User | undefined {
   if ('chat_member' in update) {
     const chatMember = update.chat_member;
     const oldMember = chatMember.old_chat_member;
@@ -139,20 +136,16 @@ export function getLeftMemberFromUpdate(
       OUT_OF_CHAT_STATUS.includes(oldMember.status)
     ) {
       return newMember.user;
-    } else {
-      return null;
     }
   } else if ('left_chat_member' in update.message) {
     return update.message.left_chat_member;
-  } else {
-    return null;
   }
 }
 
 export async function runTreeSitterHighlight(
   lang: string,
   code: string,
-): Promise<NodeJS.ReadableStream | null> {
+): Promise<NodeJS.ReadableStream | undefined> {
   const hlServerUrl = new URL(process.env.TREE_SITTER_SERVER_HOST!);
   hlServerUrl.searchParams.append('lang', lang);
   log.info(hlServerUrl);
@@ -168,22 +161,21 @@ export async function runTreeSitterHighlight(
   if (response.status === 200) {
     return response.body;
   }
-  return null;
 }
 
-export async function runEnry(code: string): Promise<EnryResponse | null> {
+export async function runEnry(code: string): Promise<EnryResponse | undefined> {
   const response = await fetch(process.env.ENRY_SERVER_HOST!, {
     method: 'POST',
     body: code,
   });
-  if (response.status !== 200) return null;
+  if (response.status !== 200) return;
   return response.json();
 }
 
 export async function uploadToGist(
   info: EnryResponse,
   sourceCode: string,
-): Promise<string | null> {
+): Promise<string | undefined> {
   const { language, extension } = info;
   const url = new URL(
     `${process.env.GITHUB_API_HOST}/gists/${process.env.GITHUB_GIST_ID}`,
@@ -202,13 +194,13 @@ export async function uploadToGist(
   });
   log.info('Gist response: %d (%s)', response.status, response.statusText);
   if (response.status !== 200) {
-    return null;
+    return;
   }
   try {
     const responseJson = await response.json();
     return `${responseJson.html_url}#file-${fileStem}-${extension}`;
   } catch {
-    return null;
+    return;
   }
 }
 

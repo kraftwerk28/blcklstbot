@@ -64,7 +64,7 @@ export class Captcha<Mode extends CaptchaMode = CaptchaMode> {
       const { mode, meta } = JSON.parse(raw);
       return new Captcha(mode, meta);
     } catch {
-      return null;
+      return;
     }
   }
 

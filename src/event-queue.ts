@@ -14,7 +14,7 @@ export class EventQueue<
   Event extends BaseEvent,
   EventType extends ExtractType<Event> = ExtractType<Event>
 > {
-  private timerId: NodeJS.Timeout | null = null;
+  private timerId: NodeJS.Timeout | undefined;
   private subscribers: Map<EventType, Callback<Event, EventType>[]> = new Map();
   private errorSubscribers: Set<(error: Error) => MaybePromise> = new Set();
   private redisClient: Redis;
@@ -40,8 +40,9 @@ export class EventQueue<
   }
 
   dispose() {
-    if (this.timerId !== null) {
+    if (this.timerId !== undefined) {
       clearInterval(this.timerId);
+      this.timerId = undefined;
     }
   }
 
@@ -117,7 +118,7 @@ export class EventQueue<
 
   async removeEvent<T extends EventType>(
     hash: string,
-  ): Promise<PayloadByType<Event, T> | null> {
+  ): Promise<PayloadByType<Event, T> | undefined> {
     const score = await this.redisClient.get(hash);
     if (score) {
       const rawPayloads = await this.redisClient.zrangebyscore(
@@ -131,9 +132,8 @@ export class EventQueue<
       try {
         return JSON.parse(rawPayloads[0]).payload;
       } catch {
-        return null;
+        return;
       }
     }
-    return null;
   }
 }

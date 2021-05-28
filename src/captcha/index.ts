@@ -58,12 +58,12 @@ export function serializeCaptcha(captcha: AbstractCaptcha) {
   return JSON.stringify(captcha);
 }
 
-export function deserializeCaptcha(raw: string): AbstractCaptcha | null {
+export function deserializeCaptcha(raw: string): AbstractCaptcha | undefined {
   try {
     const { mode, meta } = JSON.parse(raw);
     return { mode, meta };
   } catch {
-    return null;
+    return;
   }
 }
 
