@@ -1,23 +1,20 @@
-import { Ctx } from "./context";
-import { MatchedContext } from "./utils";
+import { Telegram } from 'typegram';
 
-export type SearchEntry = {
+export type SearchEntry<Meta = any> = {
   title: string;
   link: string;
   text?: string;
-  metadata?: Record<string, any>;
+  metadata?: Meta;
 };
 
-export type DocSearchFn = (query: string) => Promise<SearchEntry[] | undefined>;
-
-export type SearchProvider = {
+export type SearchProvider<Meta = any> = {
   name: string;
   aliases: string[];
   /** Get array of search results */
-  search: DocSearchFn;
+  search(query: string): Promise<SearchEntry<Meta>[] | undefined>;
   // answerQuery(ctx: MatchedContext<Ctx, 'inline_query'>): Promise<void>;
-  onChosenInlineResult?(
-    ctx: MatchedContext<Ctx, 'chosen_inline_result'>,
-    metadata: any,
-  ): Promise<void>;
+  onChosenInlineResult?(tg: Telegram, userId: number, meta: any): Promise<void>;
+  getFullText?(meta: Meta): Promise<string | undefined>;
 };
+
+export type ChosenInlineResultMeta = Record<string, string>;

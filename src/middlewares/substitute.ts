@@ -14,7 +14,7 @@ export const substitute: OnMiddleware<'text'> = async function (ctx, next) {
       .replace(/\\([&\d])/g, '$$$1')
       .replace(/\$0/g, '$$&');
     try {
-      // Catch bad regex syntax
+      // Catch bad regex syntax from user
       const replaceFrom = new RegExp(match[1], match[3]);
       finalText = finalText.replace(replaceFrom, replaceTo);
       log.info('Regex substitution: %O', { replaceFrom, replaceTo, finalText });

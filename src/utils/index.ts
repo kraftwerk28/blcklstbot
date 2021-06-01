@@ -69,7 +69,7 @@ export function all<C extends TelegrafContext = Ctx>(
   ...predicates: GuardPredicate<C>[]
 ) {
   return (ctx: C) =>
-    Promise.all(predicates.map((p) => p(ctx))).then((results) =>
+    Promise.all(predicates.map(p => p(ctx))).then(results =>
       results.every(Boolean),
     );
 }
@@ -84,7 +84,7 @@ export function getCodeFromMessage(
 ): string | undefined {
   if (!msg.entities) return;
   const codeEntities = msg.entities.filter(
-    (e) => e.type === 'pre' || e.type === 'code',
+    e => e.type === 'pre' || e.type === 'code',
   );
   if (codeEntities.length !== 1) {
     // TODO:  Need to merge multiple entities into one
@@ -168,7 +168,7 @@ export async function runEnry(code: string): Promise<EnryResponse | undefined> {
     method: 'POST',
     body: code,
   });
-  if (response.status !== 200) return;
+  if (!response.ok) return;
   return response.json();
 }
 
@@ -193,7 +193,7 @@ export async function uploadToGist(
     body: JSON.stringify(body),
   });
   log.info('Gist response: %d (%s)', response.status, response.statusText);
-  if (response.status !== 200) {
+  if (!response.ok) {
     return;
   }
   try {
@@ -245,3 +245,25 @@ export async function loadLocales(): Promise<LocaleContainer> {
 //     curOffset += line.length + 1;
 //   }
 // }
+
+export async function checkCASban(userId: number): Promise<boolean> {
+  try {
+    const url = new URL('https://api.cas.chat/check');
+    url.searchParams.append('user_id', userId.toString());
+    const response = await fetch(url, {
+      headers: { Accept: 'application/json' },
+    });
+    if (!response.ok) {
+      return false;
+    }
+    const { ok } = (await response.json()) as { ok: boolean };
+    return ok;
+  } catch (err) {
+    log.error('Error in ::checkCASban:', err);
+    return false;
+  }
+}
+
+export function secondsToHumanReadable(seconds: number): string {
+  return seconds.toString();
+}

@@ -8,10 +8,13 @@ export const getDbUserFromReply: Mw = async function (ctx, next) {
   const chatId = ctx.chat?.id;
   if (ctx.reportedUser || typeof chatId !== 'number') return next();
   if (ctx.callbackQuery && 'data' in ctx.callbackQuery && ctx.match) {
-    ctx.reportedUser = await ctx.dbStore.getUser(
+    const user = await ctx.dbStore.getUser(
       chatId,
       parseInt(ctx.match[2], 10),
     );
+    if (user) {
+      ctx.reportedUser = user;
+    }
     // const userId = parseInt(ctx.match[2], 10);
     // ctx.reportedUser = await ctx.dbStore.getUser(userId);
   } else if (

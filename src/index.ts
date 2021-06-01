@@ -147,6 +147,6 @@ async function main() {
   }
 }
 
-main().catch((err) => {
+main().catch(err => {
   log.error('Error in `::main`:', err);
 });

@@ -3,13 +3,15 @@ import {
   Middleware,
   Context as TelegrafContext,
 } from 'telegraf';
+import { botHasSufficientPermissions, senderIsAdmin } from './guards';
+import { deleteMessage } from './middlewares/delete-message';
 import { Ctx, GuardPredicate, NonemptyReadonlyArray } from './types';
 
 function mergePredicates<C extends TelegrafContext>(
   predicates: readonly GuardPredicate<C>[],
 ) {
   return (ctx: C) =>
-    Promise.all(predicates.map((p) => p(ctx))).then((r) => r.every(Boolean));
+    Promise.all(predicates.map(p => p(ctx))).then(r => r.every(Boolean));
 }
 
 export class Composer<
@@ -52,10 +54,11 @@ export class Composer<
    * if they don't match and chat settings say "Delete accidental commands",
    * then remove command; otherwise, process command normally
    */
-  static guardDelete<C extends TelegrafContext = Ctx>(
-    predicates: readonly GuardPredicate<C>[],
-    middleware: Middleware<C>,
-  ) {
-    // TODO
+  static adminCommand<C extends Ctx = Ctx>(middleware: Middleware<C>) {
+    return Composer.branchAll(
+      [senderIsAdmin, botHasSufficientPermissions],
+      middleware,
+      deleteMessage,
+    );
   }
 }

@@ -10,7 +10,7 @@ export const botHasSufficientPermissions: GuardPredicate = async function (
     log.warn(`Bot cannot delete messages in chat ${ctx.chat!.id}`);
     return false;
   }
-  // FIXME: doesn't work for some reasons
+  // FIXME: doesn't work for some reason
   // if (!me.can_send_messages) {
   //   return log.warn(`Bot cannot send messages in chat ${ctx.chat.id}`);
   // }
