@@ -6,19 +6,18 @@ import {
   senderIsAdmin,
 } from '../guards';
 import { Composer } from '../composer';
-import { bold, userMention, escape } from '../utils/html';
 import { getDbUserFromReply, deleteMessage } from '../middlewares';
 import { MAX_WARNINGS } from '../constants';
 import { report } from './report';
-import { noop, safePromiseAll } from '../utils';
+import { noop, html } from '../utils';
 
-export const warn = Composer.branchAll(
-  [
+export const warn = Composer.branch(
+  Composer.allOf(
     botHasSufficientPermissions,
     senderIsAdmin,
     messageIsReply,
     repliedMessageIsFromMember,
-  ],
+  ),
   Composer.compose([
     getDbUserFromReply,
     async function (ctx, next) {
@@ -50,25 +49,27 @@ export const warn = Composer.branchAll(
 
       let text =
         ctx.t('warn', {
-          reporter: userMention(ctx.from),
-          reported: userMention(reportedUser),
+          reporter: html.userMention(ctx.from),
+          reported: html.userMention(reportedUser),
         }) + ' ';
       if (isLastWarn) {
         text += `(${ctx.t('last_warning')})`;
       } else {
-        text += bold(`(${newWarningsCount} / ${MAX_WARNINGS})`);
+        text += html.bold(`(${newWarningsCount} / ${MAX_WARNINGS})`);
       }
-      text += '\n' + ctx.t('report_reason', { reason: escape(warnReason) });
+      text +=
+        '\n' + ctx.t('report_reason', { reason: html.escape(warnReason) });
 
-      return safePromiseAll([
-        ctx.replyWithHTML(text),
-        ctx.dbStore.updateUser({
-          id: reportedUser.id,
-          chat_id: chatId,
-          warnings_count: newWarningsCount,
-          warn_ban_reason: warnReason,
-        }),
-      ]);
+      await ctx.dbStore.updateUser({
+        id: reportedUser.id,
+        chat_id: chatId,
+        warnings_count: newWarningsCount,
+        warn_ban_reason: warnReason,
+      });
+      await ctx
+        .deleteMessage(ctx.message.reply_to_message!.message_id)
+        .catch(noop);
+      await ctx.replyWithHTML(text);
     } as HearsMiddleware,
   ]),
   deleteMessage,

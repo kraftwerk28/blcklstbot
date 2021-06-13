@@ -16,14 +16,16 @@
     "test": "NODE_ENV=development ts-node test/index.test.ts"
   },
   "dependencies": {
+    "@types/pino": "^6.3.8",
     "cheerio": "^1.0.0-rc.9",
     "dotenv": "^9.0.2",
     "ioredis": "^4.27.1",
     "knex": "^0.95.4",
     "node-fetch": "^2.6.1",
     "pg": "^8.5.1",
-    "telegraf": "^4.3.0",
-    "winston": "^3.3.3"
+    "pino": "^6.11.3",
+    "pino-pretty": "^5.0.2",
+    "telegraf": "^4.3.0"
   },
   "devDependencies": {
     "@types/ioredis": "^4.19.3",

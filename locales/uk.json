@@ -1,6 +1,7 @@
 {
   "report": "{reporter} заблокували {reported}.",
   "report_reason": "<b>Причина</b>: {reason}.",
+  "cas_report": "{user} заблоковано. <b>Причина</b>: акаунт записаний в системі {cas_link}",
   "warn": "{reporter} попереджують {reported}",
   "last_warning": "останнє попередження!",
   "math_captcha": "{user}, будь ласка, розв'яжи арифметичний вираз:",

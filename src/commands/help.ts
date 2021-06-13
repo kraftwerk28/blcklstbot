@@ -1,4 +1,4 @@
-import { bold, escape, link } from '../utils/html';
+import { html } from '../utils';
 import { Composer } from '../composer';
 import {
   botHasSufficientPermissions,
@@ -40,15 +40,15 @@ export const help = Composer.guardAll(
       ],
     ];
     const textRows = [
-      bold('Commands:'),
-      escape(commandList.join('\n')),
+      html.bold('Commands:'),
+      html.escape(commandList.join('\n')),
       '',
       'To make a text substitution, which is somewhat similar to ' +
-        link('https://en.wikipedia.org/wiki/Sed', 'GNU/sed') +
+        html.link('https://en.wikipedia.org/wiki/Sed', 'GNU/sed') +
         ', just reply to text message with a pattern(-s) to make proper substitution(-s)',
       '',
-      bold('Links:'),
-      ...links.map(([l, t]) => `• ${link(l, t)}`),
+      html.bold('Links:'),
+      ...links.map(([l, t]) => `• ${html.link(l, t)}`),
     ];
     await ctx.deleteItSoon()(ctx.message);
     return ctx

@@ -1,5 +1,6 @@
 import { CommandMiddleware } from '../types';
-import { code, escape } from '../utils/html';
+import { html } from '../utils';
+
 export const dbg: CommandMiddleware = async function (ctx) {
   const { message } = ctx;
   let text;
@@ -8,7 +9,7 @@ export const dbg: CommandMiddleware = async function (ctx) {
   } else {
     text = JSON.stringify(message, null, 2);
   }
-  ctx.replyWithHTML(code(escape(text)), {
+  ctx.replyWithHTML(html.code(html.escape(text)), {
     reply_to_message_id: ctx.message.message_id,
   });
 };

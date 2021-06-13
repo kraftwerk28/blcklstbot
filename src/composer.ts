@@ -3,7 +3,7 @@ import {
   Middleware,
   Context as TelegrafContext,
 } from 'telegraf';
-import { botHasSufficientPermissions, senderIsAdmin } from './guards';
+import { senderIsAdmin } from './guards';
 import { deleteMessage } from './middlewares/delete-message';
 import { Ctx, GuardPredicate, NonemptyReadonlyArray } from './types';
 
@@ -36,29 +36,37 @@ export class Composer<
     );
   }
 
-  // static guardAll<
-  //   C extends TelegrafContext = Ctx,
-  //   M = unknown,
-  //   M2 = Middleware<C> extends M ? M : never
-  // >(
-  //   predicates: readonly GuardPredicate<C>[],
-  //   ...fns: NonemptyReadonlyArray<M2>
-  // ) {
-  //   const allPredicate = (ctx: C) =>
-  //     Promise.all(predicates.map((p) => p(ctx))).then((r) => r.every(Boolean));
-  //   return Composer.optional(allPredicate, ...fns);
-  // }
-
   /**
    * Check command permissions
    * if they don't match and chat settings say "Delete accidental commands",
    * then remove command; otherwise, process command normally
    */
   static adminCommand<C extends Ctx = Ctx>(middleware: Middleware<C>) {
-    return Composer.branchAll(
-      [senderIsAdmin, botHasSufficientPermissions],
-      middleware,
-      deleteMessage,
-    );
+    return Composer.branch(senderIsAdmin, middleware, deleteMessage);
+  }
+
+  /** Predicate that returns `true` if all arguments resolve to trueish */
+  static allOf<C extends Ctx = Ctx>(...predicates: GuardPredicate<C>[]) {
+    return async (ctx: C) => {
+      const promises = predicates.map(p => p(ctx));
+      const results = await Promise.allSettled(promises);
+      return results.every(r => r.status === 'fulfilled' && r.value);
+    };
+  }
+
+  /** Predicate that returns `true` if any of arguments resolve to trueish */
+  static async anyOf<C extends Ctx = Ctx>(...predicates: GuardPredicate<C>[]) {
+    return async (ctx: C) => {
+      const promises = predicates.map(p => p(ctx));
+      const results = await Promise.allSettled(promises);
+      return results.some(r => r.status === 'fulfilled' && r.value);
+    };
+  }
+
+  static async not<C extends Ctx = Ctx>(predicate: GuardPredicate<C>) {
+    return async (ctx: C) => {
+      const passed = predicate(ctx);
+      return !passed;
+    };
   }
 }

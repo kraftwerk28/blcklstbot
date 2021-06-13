@@ -1,7 +1,7 @@
 import { log } from '../logger';
 import { OnMiddleware } from '../types';
 
-const substRe = /\bs\/((?:\\\/|[^\/])+)\/((?:\\\/|[^\/])*)(?:\/([mig]*))?(?:$|\s+)\b/g;
+const substRe = /^s\/((?:\\\/|[^\/\n\r])+)\/((?:\\\/|[^\/\n\r])*)(?:\/([mig]*))?$/g;
 
 export const substitute: OnMiddleware<'text'> = async function (ctx, next) {
   const reply = ctx.message.reply_to_message;

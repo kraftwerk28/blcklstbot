@@ -7,12 +7,11 @@ import { noop } from '../utils';
 import { log } from '../logger';
 import { userFullName } from '../utils/html';
 
-export const checkCaptchaAnswer = Composer.guardAll(
-  [isGroupChat, botHasSufficientPermissions],
+export const checkCaptchaAnswer = Composer.optional(
+  Composer.allOf(isGroupChat, botHasSufficientPermissions),
   async function (ctx, next) {
     const chatId = ctx.chat.id;
     const userId = ctx.from.id;
-
     const captcha = await ctx.dbStore.hasPendingCaptcha(chatId, userId);
     if (!captcha) return next();
     const correct = checkAnswer(ctx, captcha);
