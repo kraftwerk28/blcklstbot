@@ -25,3 +25,9 @@ export const MDN_URL = 'https://developer.mozilla.org';
 export const CPPREFERENCE_URL = 'https://en.cppreference.com';
 
 export const MAX_INLINE_RESULTS_AMOUNT = 50;
+
+/**
+ * Time in seconds, where captcha message text is updated,
+ * e.g. update a seconds remaining to solve it etc.
+ */
+export const CAPTCHA_MESSAGE_UPDATE_INTERVAL = 10;

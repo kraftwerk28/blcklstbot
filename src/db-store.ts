@@ -34,15 +34,15 @@ export class DbStore {
     chatId: number,
     userId: number,
     captcha: AbstractCaptcha,
-    timeoutSeconds: number,
+    deadlineTimestamp: number,
   ) {
     const key = captchaRedisKey(chatId, userId);
     await this.redisClient.set(key, serializeCaptcha(captcha));
     // TODO: editable expire time
-    await this.redisClient.expire(key, timeoutSeconds);
+    await this.redisClient.expireat(key, deadlineTimestamp);
   }
 
-  async hasPendingCaptcha(
+  async getPendingCaptcha(
     chatId: number,
     userId: number,
   ): Promise<AbstractCaptcha | undefined> {

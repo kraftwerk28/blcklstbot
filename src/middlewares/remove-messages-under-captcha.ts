@@ -9,7 +9,7 @@ export const removeMessagesUnderCaptcha = Composer.guardAll(
     if ('text' in ctx.message) {
       return next();
     }
-    const captcha = await ctx.dbStore.hasPendingCaptcha(
+    const captcha = await ctx.dbStore.getPendingCaptcha(
       ctx.chat.id,
       ctx.from.id,
     );

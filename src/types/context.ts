@@ -5,7 +5,7 @@ import { EventQueue } from '../event-queue';
 import { DbStore } from '../db-store';
 import { EventQueueEvent } from './event-queue';
 import { DbChat, DbUser } from './models';
-import { LocaleContainer } from './utils';
+import { LocaleContainer, TranslateFn } from './utils';
 
 export interface Ctx extends TelegrafContext {
   dbStore: DbStore;
@@ -20,5 +20,5 @@ export interface Ctx extends TelegrafContext {
   deleteItSoon(): (message: Message) => Promise<Message>;
   tryDeleteMsg(messageId?: number): Promise<true>;
   locales: LocaleContainer;
-  t(s: string, replaces?: Record<string, string | number>): string;
+  t: TranslateFn;
 }

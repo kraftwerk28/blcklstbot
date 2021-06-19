@@ -57,3 +57,8 @@ export type MentionableUser = Pick<
   User,
   'id' | 'username' | 'first_name' | 'last_name'
 >;
+
+export type TranslateFn = (
+  s: string,
+  replaces?: Record<string, string | number>,
+) => string;
