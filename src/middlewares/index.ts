@@ -14,3 +14,4 @@ export * from './upload-to-gist-or-highlight';
 export * from './doc-search';
 export * from './on-chosen-inline-result';
 export * from './check-cas-ban';
+export * from './update-chat-setting';

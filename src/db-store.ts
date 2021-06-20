@@ -231,6 +231,17 @@ export class DbStore {
     }
   }
 
+  async addPendingSettingsMessage(chatId: number, messageId: number) {
+    const key = `chat_settings:${chatId}`;
+    await this.redisClient.set(key, messageId);
+    await this.redisClient.expire(key, 60 * 60 * 24);
+  }
+
+  async getPendingSettingsMessage(chatId: number): Promise<number | undefined> {
+    const res = await this.redisClient.get(`chat_settings:${chatId}`);
+    return res === null ? undefined : parseInt(res);
+  }
+
   shutdown() {
     return Promise.all([this.redisClient.quit(), this.knex.destroy()]);
   }

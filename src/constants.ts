@@ -3,6 +3,9 @@ import { CaptchaMode } from './types';
 export const CHATS_TABLE_NAME = 'chats';
 export const USERS_TABLE_NAME = 'users';
 export const DYN_COMMANDS_TABLE_NAME = 'dynamic_commands';
+/** NOTE: this must be ALL captcha modes to work properly in
+ * chat settings flow
+ */
 export const DEFAULT_CAPCHA_MODES = Object.values(CaptchaMode);
 
 export const MIN_CAPTCHA_TIMEOUT = 10;

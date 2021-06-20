@@ -8,7 +8,6 @@ import {
   AbstractCaptcha,
   TranslateFn,
   MentionableUser,
-  ExtractMeta,
 } from '../types';
 import { randBool, randInt, html, joinLines } from '../utils';
 
