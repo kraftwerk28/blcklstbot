@@ -1,4 +1,4 @@
-import { MessageEntity, User } from 'typegram';
+import { MessageEntity } from 'typegram';
 import { MentionableUser } from '../types';
 
 export function bold(text: string) {
@@ -18,7 +18,7 @@ export function link(url: string, text: string) {
 }
 
 export function escape(text: string): string {
-  return text.replace(/&/g, '&amp').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 export function userFullName(user: MentionableUser) {
