@@ -1,16 +1,24 @@
 import { URL } from 'url';
 import crypto from 'crypto';
 import { promises as fs } from 'fs';
-import { Context as TelegrafContext } from 'telegraf';
-import { ChatMember, Message, Update, User } from 'typegram';
+import { Context as TelegrafContext, Markup } from 'telegraf';
+import {
+  ChatMember,
+  InlineKeyboardMarkup,
+  Message,
+  Update,
+  User,
+} from 'typegram';
 import fetch from 'node-fetch';
 import path from 'path';
 
 export * as html from './html';
 
 import {
+  CaptchaMode,
   ChatLanguageCode,
   Ctx,
+  DbChat,
   EnryResponse,
   GuardPredicate,
   LocaleContainer,
@@ -270,4 +278,44 @@ export function runI18n(
       return match;
     }
   });
+}
+
+const booleanEmoji = (b: boolean) => (b ? '\u2705' : '\u{1f6ab}');
+const boolBullet = (b: boolean) => (b ? '\u{1f7e2}' : '\u26ab');
+export function settingsKeyboard(chat: DbChat): InlineKeyboardMarkup {
+  const btn = Markup.button.callback;
+  const { reply_markup } = Markup.inlineKeyboard([
+    [
+      btn(
+        boolBullet(chat.captcha_modes.includes(CaptchaMode.Arithmetic)) +
+          ` ${CaptchaMode.Arithmetic}`,
+        `setting:${CaptchaMode.Arithmetic}`,
+      ),
+      btn(
+        boolBullet(chat.captcha_modes.includes(CaptchaMode.Matrix)) +
+          ` ${CaptchaMode.Matrix}`,
+        `setting:${CaptchaMode.Matrix}`,
+      ),
+    ],
+    [
+      btn(
+        booleanEmoji(chat.delete_joins) +
+          ' Delete "*user* joined/left the group"',
+        'setting:delete_joins',
+      ),
+    ],
+    [
+      btn(
+        booleanEmoji(chat.delete_slash_commands) +
+          ' Delete slash commands from non-admins',
+        'setting:delete_slash_commands',
+      ),
+    ],
+    [
+      btn('\u2796', 'setting:dec_timeout'),
+      btn(chat.captcha_timeout + 's', 'noop'),
+      btn('\u2795', 'setting:inc_timeout'),
+    ],
+  ]);
+  return reply_markup;
 }

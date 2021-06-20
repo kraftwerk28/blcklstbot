@@ -87,6 +87,7 @@ async function main() {
     .command('gist', commands.manualGist)
     .command('dbg', commands.dbg)
     .action(/^unban:([\d-]+):([\d-]+)$/, middlewares.undoBan)
+    .action(/^setting:(\w+)$/, middlewares.updateChatSetting)
     .catch((err, ctx) => {
       log.error('Error in bot::catch; update');
       log.error(ctx.update);
