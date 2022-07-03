@@ -1,10 +1,10 @@
-import { URL } from 'url';
-import crypto from 'crypto';
-import { promises as fs } from 'fs';
-import { Context as TelegrafContext } from 'telegraf';
-import { ChatMember, Message, Update, User } from 'typegram';
-import fetch from 'node-fetch';
-import path from 'path';
+import { URL } from "url";
+import crypto from "crypto";
+import { promises as fs } from "fs";
+import { Context as TelegrafContext } from "telegraf";
+import { ChatMember, Message, Update, User } from "typegram";
+import fetch from "node-fetch";
+import path from "path";
 
 import {
   ChatLanguageCode,
@@ -12,12 +12,12 @@ import {
   EnryResponse,
   GuardPredicate,
   LocaleContainer,
-} from '../types';
-import { log } from '../logger';
+} from "../types";
+import { log } from "../logger";
 
-export * as html from './html';
-export * from './i18n';
-export * from './settings-keyboard';
+export * as html from "./html";
+export * from "./i18n";
+export * from "./settings-keyboard";
 
 export function noop() {}
 
@@ -27,8 +27,8 @@ export async function safePromiseAll(
 ): Promise<void> {
   const results = await Promise.allSettled(Array.isArray(args) ? args : [args]);
   for (const result of results) {
-    if (result.status === 'rejected') {
-      log.error('Error in ::safePromiseAll: %O', result.reason);
+    if (result.status === "rejected") {
+      log.error("Error in ::safePromiseAll: %O", result.reason);
     }
   }
 }
@@ -38,7 +38,7 @@ export function regexp(parts: TemplateStringsArray, ...inBetweens: any[]) {
 }
 
 export function randInt(a: number, b?: number) {
-  if (typeof b === 'number') {
+  if (typeof b === "number") {
     return Math.floor(Math.random() * (b - a)) + a;
   } else {
     return Math.floor(Math.random() * a);
@@ -50,7 +50,7 @@ export function randBool() {
 }
 
 export function csIdGen(len = 8): string {
-  return crypto.randomBytes(len).toString('hex');
+  return crypto.randomBytes(len).toString("hex");
 }
 
 export function ensureEnvExists(name: string): string {
@@ -77,7 +77,7 @@ export function all<C extends TelegrafContext = Ctx>(
     );
 }
 
-export const dev = process.env.NODE_ENV === 'development';
+export const dev = process.env.NODE_ENV === "development";
 
 // export function getUserFromAnyMessage(message: Message): User | null {
 //   if (message.new
@@ -87,7 +87,7 @@ export function getCodeFromMessage(
 ): string | undefined {
   if (!msg.entities) return;
   const codeEntities = msg.entities.filter(
-    e => e.type === 'pre' || e.type === 'code',
+    e => e.type === "pre" || e.type === "code",
   );
   if (codeEntities.length !== 1) {
     // TODO:  Need to merge multiple entities into one
@@ -102,17 +102,17 @@ export function getCodeFromMessage(
   return;
 }
 
-const OUT_OF_CHAT_STATUS: ChatMember['status'][] = ['left', 'kicked'];
-const IN_CHAT_STATUS: ChatMember['status'][] = [
-  'member',
-  'administrator',
-  'creator',
+const OUT_OF_CHAT_STATUS: ChatMember["status"][] = ["left", "kicked"];
+const IN_CHAT_STATUS: ChatMember["status"][] = [
+  "member",
+  "administrator",
+  "creator",
 ];
 
 export function getNewMembersFromUpdate(
   update: Update.ChatMemberUpdate | Update.MessageUpdate,
 ): User[] | undefined {
-  if ('chat_member' in update) {
+  if ("chat_member" in update) {
     const chatMember = update.chat_member;
     const oldMember = chatMember.old_chat_member;
     const newMember = chatMember.new_chat_member;
@@ -122,7 +122,7 @@ export function getNewMembersFromUpdate(
     ) {
       return [newMember.user];
     }
-  } else if ('new_chat_members' in update.message) {
+  } else if ("new_chat_members" in update.message) {
     return update.message.new_chat_members;
   }
 }
@@ -130,7 +130,7 @@ export function getNewMembersFromUpdate(
 export function getLeftMemberFromUpdate(
   update: Update.ChatMemberUpdate | Update.MessageUpdate,
 ): User | undefined {
-  if ('chat_member' in update) {
+  if ("chat_member" in update) {
     const chatMember = update.chat_member;
     const oldMember = chatMember.old_chat_member;
     const newMember = chatMember.new_chat_member;
@@ -140,7 +140,7 @@ export function getLeftMemberFromUpdate(
     ) {
       return newMember.user;
     }
-  } else if ('left_chat_member' in update.message) {
+  } else if ("left_chat_member" in update.message) {
     return update.message.left_chat_member;
   }
 }
@@ -150,14 +150,14 @@ export async function runTreeSitterHighlight(
   code: string,
 ): Promise<NodeJS.ReadableStream | undefined> {
   const hlServerUrl = new URL(process.env.TREE_SITTER_SERVER_HOST!);
-  hlServerUrl.searchParams.append('lang', lang);
+  hlServerUrl.searchParams.append("lang", lang);
   log.info(hlServerUrl);
   const response = await fetch(hlServerUrl, {
-    method: 'POST',
+    method: "POST",
     body: code,
   });
   log.info(
-    'Tree-sitter-highlight status %d (%s)',
+    "Tree-sitter-highlight status %d (%s)",
     response.status,
     response.statusText,
   );
@@ -168,7 +168,7 @@ export async function runTreeSitterHighlight(
 
 export async function runEnry(code: string): Promise<EnryResponse | undefined> {
   const response = await fetch(process.env.ENRY_SERVER_HOST!, {
-    method: 'POST',
+    method: "POST",
     body: code,
   });
   if (!response.ok) return;
@@ -191,11 +191,11 @@ export async function uploadToGist(
     files: { [`${fileStem}.${extension}`]: { language, content: sourceCode } },
   };
   const response = await fetch(url, {
-    method: 'POST',
+    method: "POST",
     headers,
     body: JSON.stringify(body),
   });
-  log.info('Gist response: %d (%s)', response.status, response.statusText);
+  log.info("Gist response: %d (%s)", response.status, response.statusText);
   if (!response.ok) {
     return;
   }
@@ -208,15 +208,15 @@ export async function uploadToGist(
 }
 
 export async function loadLocales(): Promise<LocaleContainer> {
-  const dir = 'locales/';
+  const dir = "locales/";
   const files = await fs.readdir(dir);
   const result = {} as LocaleContainer;
   for (const file of files) {
     const fullPath = path.resolve(dir, file);
     const localeName = path.parse(fullPath).name as ChatLanguageCode;
-    const raw = await fs.readFile(fullPath, 'utf-8');
+    const raw = await fs.readFile(fullPath, "utf-8");
     result[localeName] = JSON.parse(raw);
-    log.info('Loaded "%s" locale (%s)', localeName, file);
+    log.info("Loaded \"%s\" locale (%s)", localeName, file);
   }
   return result;
 }
@@ -224,10 +224,10 @@ export async function loadLocales(): Promise<LocaleContainer> {
 /** If user is CAS banned, returns link to the report */
 export async function checkCASban(userId: number): Promise<string | undefined> {
   try {
-    const url = new URL('https://api.cas.chat/check');
-    url.searchParams.append('user_id', userId.toString());
+    const url = new URL("https://api.cas.chat/check");
+    url.searchParams.append("user_id", userId.toString());
     const response = await fetch(url, {
-      headers: { Accept: 'application/json' },
+      headers: { Accept: "application/json" },
     });
     if (!response.ok) {
       return;
@@ -237,7 +237,7 @@ export async function checkCASban(userId: number): Promise<string | undefined> {
       return `https://cas.chat/query?u=${userId}`;
     }
   } catch (err) {
-    log.error('Error in ::checkCASban:', err);
+    log.error("Error in ::checkCASban:", err);
     return;
   }
 }
@@ -245,7 +245,7 @@ export async function checkCASban(userId: number): Promise<string | undefined> {
 export function secondsToHumanReadable(seconds: number): string {
   const mins = ~~(seconds / 60);
   const secs = seconds % 60;
-  let result = '';
+  let result = "";
   if (secs > 0) {
     result += `${secs}s`;
   }
@@ -256,9 +256,9 @@ export function secondsToHumanReadable(seconds: number): string {
 }
 
 export function joinLines(...lines: (string | number)[]) {
-  return lines.join('\n');
+  return lines.join("\n");
 }
 
 export function isChannelComment(message: Message.CommonMessage) {
-  return message.reply_to_message?.sender_chat?.type === 'channel';
+  return message.reply_to_message?.sender_chat?.type === "channel";
 }

@@ -1,5 +1,5 @@
-import { CommandMiddleware } from '../types';
-import { html } from '../utils';
+import { CommandMiddleware } from "../types";
+import { html } from "../utils";
 
 export const dbg: CommandMiddleware = async function (ctx) {
   const { message } = ctx;

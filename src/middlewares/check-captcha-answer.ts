@@ -1,11 +1,11 @@
-import { Composer } from '../composer';
-import { captchaHash } from '../utils/event-queue';
-import { OnMiddleware } from '../types';
-import { botHasSufficientPermissions, isGroupChat } from '../guards';
-import { checkCaptchaAnswer as checkAnswer } from '../captcha';
-import { noop } from '../utils';
-import { log } from '../logger';
-import { userFullName } from '../utils/html';
+import { Composer } from "../composer";
+import { captchaHash } from "../utils/event-queue";
+import { OnMiddleware } from "../types";
+import { botHasSufficientPermissions, isGroupChat } from "../guards";
+import { checkCaptchaAnswer as checkAnswer } from "../captcha";
+import { noop } from "../utils";
+import { log } from "../logger";
+import { userFullName } from "../utils/html";
 
 export const checkCaptchaAnswer = Composer.optional(
   Composer.allOf(isGroupChat, botHasSufficientPermissions),
@@ -19,16 +19,16 @@ export const checkCaptchaAnswer = Composer.optional(
     if (correct) {
       await ctx.dbStore.deletePendingCaptcha(chatId, userId);
       log.info(
-        'User %s (%d) passed captcha %O',
+        "User %s (%d) passed captcha %O",
         userFullName(ctx.from),
         ctx.from.id,
         captcha,
       );
-      const payload = await ctx.eventQueue.removeEvent<'captcha_timeout'>(
+      const payload = await ctx.eventQueue.removeEvent<"captcha_timeout">(
         captchaHash(chatId, userId),
       );
       if (!payload) return;
       await ctx.telegram.deleteMessage(chatId, payload.captchaMessageId);
     }
-  } as OnMiddleware<'text'>,
+  } as OnMiddleware<"text">,
 );

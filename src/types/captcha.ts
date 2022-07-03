@@ -1,10 +1,10 @@
-import { InlineKeyboardMarkup, User } from 'typegram';
-import { Ctx } from './context';
-import { MentionableUser, TranslateFn } from './utils';
+import { InlineKeyboardMarkup, User } from "typegram";
+import { Ctx } from "./context";
+import { MentionableUser, TranslateFn } from "./utils";
 
 export enum CaptchaMode {
-  Arithmetic = 'arithmetic',
-  Matrix = 'matrix',
+  Arithmetic = "arithmetic",
+  Matrix = "matrix",
   // Emoji = 'emoji',
 }
 
@@ -34,11 +34,11 @@ type Captcha<Mode extends CaptchaMode, Meta extends Record<string, any>> = {
 export type ExtractMeta<M extends CaptchaMode> = Extract<
   AbstractCaptcha,
   { mode: M }
->['meta'];
+>["meta"];
 
 export type CaptchaDefs = {
   [M in CaptchaMode]: {
-    mode: M,
+    mode: M;
     check(ctx: Ctx, meta: ExtractMeta<M>): boolean;
     generate(): ExtractMeta<M>;
     // TODO: This is very bad way to pass translation and other things to it
@@ -47,6 +47,6 @@ export type CaptchaDefs = {
       meta: ExtractMeta<M>,
       targetUser: MentionableUser,
       secondsLeft: number,
-    ): { text: string, keyboard?: InlineKeyboardMarkup };
+    ): { text: string; keyboard?: InlineKeyboardMarkup };
   };
 }[CaptchaMode][];

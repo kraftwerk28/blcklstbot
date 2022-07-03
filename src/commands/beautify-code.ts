@@ -1,10 +1,10 @@
-import { Composer } from '../composer';
+import { Composer } from "../composer";
 import {
   botHasSufficientPermissions,
   isGroupChat,
   senderIsAdmin,
-} from '../guards';
-import { CommandMiddleware } from '../types';
+} from "../guards";
+import { CommandMiddleware } from "../types";
 
 export const beautifyCode = Composer.optional(
   Composer.allOf(botHasSufficientPermissions, senderIsAdmin, isGroupChat),
@@ -12,7 +12,7 @@ export const beautifyCode = Composer.optional(
     await Promise.all([
       ctx.dbStore.updateChatProp(
         ctx.chat.id,
-        'replace_code_with_pic',
+        "replace_code_with_pic",
         !ctx.dbChat?.replace_code_with_pic,
       ),
       ctx.deleteMessage(),

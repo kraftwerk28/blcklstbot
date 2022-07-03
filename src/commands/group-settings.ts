@@ -1,8 +1,8 @@
-import { Composer } from '../composer';
-import { CommandMiddleware } from '../types';
-import { isGroupChat, senderIsAdmin } from '../guards';
-import { deleteMessage } from '../middlewares';
-import { noop, settingsKeyboard } from '../utils';
+import { Composer } from "../composer";
+import { CommandMiddleware } from "../types";
+import { isGroupChat, senderIsAdmin } from "../guards";
+import { deleteMessage } from "../middlewares";
+import { noop, settingsKeyboard } from "../utils";
 
 // return b ? '\u2705' : '\u26d4';
 // return b ? '\u2705' : '\u274c';
@@ -48,7 +48,7 @@ export const groupSettings = Composer.branch(
     if (oldMessageId !== undefined) {
       await ctx.deleteMessage(oldMessageId).catch(noop);
     }
-    const sent = await ctx.replyWithHTML('Chat settings', {
+    const sent = await ctx.replyWithHTML("Chat settings", {
       reply_markup: settingsKeyboard(ctx.dbChat),
       reply_to_message_id: ctx.message.message_id,
     });

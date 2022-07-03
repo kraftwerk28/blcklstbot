@@ -1,11 +1,15 @@
 extends:
   - "eslint:recommended"
   - "plugin:@typescript-eslint/recommended"
-plugins:
-  - "prettier"
 parser: "@typescript-eslint/parser"
 parserOptions:
   sourceType: "module"
   ecmaVersion: "latest"
+plugins:
+  - "prettier"
+  - "@typescript-eslint"
 rules:
   prettier/prettier: "error"
+  quotes: 
+    - error
+    - double

@@ -1,12 +1,12 @@
-import { Composer } from '../composer';
-import { botHasSufficientPermissions, isGroupChat } from '../guards';
-import { OnMiddleware } from '../types';
+import { Composer } from "../composer";
+import { botHasSufficientPermissions, isGroupChat } from "../guards";
+import { OnMiddleware } from "../types";
 
 export const removeMessagesUnderCaptcha = Composer.guardAll(
   [isGroupChat, botHasSufficientPermissions],
-  async function(ctx, next) {
+  async function (ctx, next) {
     // Text messages are already handled by other middleware
-    if ('text' in ctx.message) {
+    if ("text" in ctx.message) {
       return next();
     }
     const captcha = await ctx.dbStore.getPendingCaptcha(
@@ -17,5 +17,5 @@ export const removeMessagesUnderCaptcha = Composer.guardAll(
       await ctx.deleteMessage();
     }
     return next();
-  } as OnMiddleware<'message'>,
+  } as OnMiddleware<"message">,
 );

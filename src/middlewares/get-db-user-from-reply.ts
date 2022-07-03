@@ -1,17 +1,14 @@
-import { Middleware } from 'telegraf';
-import { Ctx } from '../types';
+import { Middleware } from "telegraf";
+import { Ctx } from "../types";
 
 type Mw = Middleware<Ctx & { match?: RegExpExecArray }>;
 
 /** Gets user from all of `/warn`, `/ban` and "Pardon" click */
 export const getDbUserFromReply: Mw = async function (ctx, next) {
   const chatId = ctx.chat?.id;
-  if (ctx.reportedUser || typeof chatId !== 'number') return next();
-  if (ctx.callbackQuery && 'data' in ctx.callbackQuery && ctx.match) {
-    const user = await ctx.dbStore.getUser(
-      chatId,
-      parseInt(ctx.match[2], 10),
-    );
+  if (ctx.reportedUser || typeof chatId !== "number") return next();
+  if (ctx.callbackQuery && "data" in ctx.callbackQuery && ctx.match) {
+    const user = await ctx.dbStore.getUser(chatId, parseInt(ctx.match[2], 10));
     if (user) {
       ctx.reportedUser = user;
     }
@@ -19,7 +16,7 @@ export const getDbUserFromReply: Mw = async function (ctx, next) {
     // ctx.reportedUser = await ctx.dbStore.getUser(userId);
   } else if (
     ctx.message &&
-    'reply_to_message' in ctx.message &&
+    "reply_to_message" in ctx.message &&
     ctx.message.reply_to_message?.from
   ) {
     ctx.reportedUser = await ctx.dbStore.addUser(

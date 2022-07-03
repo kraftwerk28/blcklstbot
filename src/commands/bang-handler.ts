@@ -1,5 +1,5 @@
-import { HearsMiddleware } from '../types';
-import { noop } from '../utils';
+import { HearsMiddleware } from "../types";
+import { noop } from "../utils";
 
 export const bangHandler = async function (ctx, next) {
   const { chat, match, message, tg } = ctx;

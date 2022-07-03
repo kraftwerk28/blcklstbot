@@ -1,7 +1,7 @@
-import { Composer } from '../composer';
-import { isGroupChat, senderIsAdmin } from '../guards';
-import { HearsMiddleware } from '../types';
-import { noop } from '../utils';
+import { Composer } from "../composer";
+import { isGroupChat, senderIsAdmin } from "../guards";
+import { HearsMiddleware } from "../types";
+import { noop } from "../utils";
 
 /** Registers message that will be responded to !<command> */
 export const defMessage = Composer.optional(
@@ -12,7 +12,7 @@ export const defMessage = Composer.optional(
     const reply = message.reply_to_message;
     const command = match[3];
     const isAdmin = await senderIsAdmin(ctx);
-    const isUndef = match[1] === 'un';
+    const isUndef = match[1] === "un";
 
     const existingCommand = await ctx.dbStore.getCommand(command, chat.id);
     if (isUndef) {
@@ -30,7 +30,7 @@ export const defMessage = Composer.optional(
         await tg.deleteMessage(commandsChannelId, existingCommand.message_id);
         await ctx.dbStore.undefCommand(command, from.id);
       }
-      const isGlobal = match[2] === 'global';
+      const isGlobal = match[2] === "global";
       if (isGlobal && !isAdmin) return;
 
       const forwardedMsg = await tg.forwardMessage(

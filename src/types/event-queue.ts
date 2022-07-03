@@ -1,9 +1,9 @@
-import { Ctx } from './context';
-import { ChatLanguageCode } from './models';
-import { MaybePromise } from './utils';
+import { Ctx } from "./context";
+import { ChatLanguageCode } from "./models";
+import { MaybePromise } from "./utils";
 
 export type PongEvent = BaseEvent<
-  'pong',
+  "pong",
   {
     chatId: number;
     text?: string;
@@ -13,7 +13,7 @@ export type PongEvent = BaseEvent<
 >;
 
 export type CaptchaTimeoutEvent = BaseEvent<
-  'captcha_timeout',
+  "captcha_timeout",
   {
     chatId: number;
     userId: number;
@@ -23,7 +23,7 @@ export type CaptchaTimeoutEvent = BaseEvent<
 >;
 
 export type DeleteMessageEvent = BaseEvent<
-  'delete_message',
+  "delete_message",
   {
     chatId: number;
     messageId: number;
@@ -31,7 +31,7 @@ export type DeleteMessageEvent = BaseEvent<
 >;
 
 export type UpdateCaptchaMessageEvent = BaseEvent<
-  'update_captcha',
+  "update_captcha",
   {
     chatId: number;
     userId: number;
@@ -49,7 +49,7 @@ export type EventQueueEvent =
 export type BaseEvent<
   T extends string = any,
   P extends Record<string | number, any> = any,
-  Pk = (keyof P)[]
+  Pk = (keyof P)[],
 > = {
   /** Event type */
   type: T;
@@ -61,22 +61,22 @@ export type BaseEvent<
   pkArray: Pk;
 };
 
-export type ExtractType<E extends BaseEvent> = E['type'];
+export type ExtractType<E extends BaseEvent> = E["type"];
 
 export type PayloadByType<
   E extends BaseEvent,
-  T extends ExtractType<E>
-> = Extract<E, { type: T }>['payload'];
+  T extends ExtractType<E>,
+> = Extract<E, { type: T }>["payload"];
 
 export type EventPrimaryKeys<
   E extends BaseEvent,
-  T extends ExtractType<E>
-> = Extract<E, { type: T }>['pkArray'];
+  T extends ExtractType<E>,
+> = Extract<E, { type: T }>["pkArray"];
 
 export type Context<
   Event extends BaseEvent,
-  Type extends ExtractType<Event>
-> = Pick<Ctx, 'telegram' | 'dbStore'> & {
+  Type extends ExtractType<Event>,
+> = Pick<Ctx, "telegram" | "dbStore"> & {
   type: Type;
   payload: PayloadByType<Event, Type>;
 };

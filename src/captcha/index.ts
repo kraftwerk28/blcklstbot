@@ -1,6 +1,6 @@
-import { InlineKeyboardMarkup } from 'typegram';
-import { DEFAULT_CAPCHA_MODES } from '../constants';
-import { log } from '../logger';
+import { InlineKeyboardMarkup } from "typegram";
+import { DEFAULT_CAPCHA_MODES } from "../constants";
+import { log } from "../logger";
 import {
   Ctx,
   CaptchaMode,
@@ -8,8 +8,8 @@ import {
   AbstractCaptcha,
   TranslateFn,
   MentionableUser,
-} from '../types';
-import { randBool, randInt, html, joinLines } from '../utils';
+} from "../types";
+import { randBool, randInt, html, joinLines } from "../utils";
 
 const captchas: CaptchaDefs = [
   {
@@ -33,15 +33,15 @@ const captchas: CaptchaDefs = [
       return { expression, answer };
     },
     check(ctx: Ctx, meta) {
-      if (!(ctx.message && 'text' in ctx.message)) return false;
+      if (!(ctx.message && "text" in ctx.message)) return false;
       return parseInt(ctx.message?.text) === meta.answer;
     },
     getMessageMetadata(t, meta, user, secondsLeft) {
       return {
         text: joinLines(
-          t('math_captcha', { user: html.userMention(user) }),
+          t("math_captcha", { user: html.userMention(user) }),
           html.code(meta.expression),
-          t('captcha_remaining', { seconds: secondsLeft }),
+          t("captcha_remaining", { seconds: secondsLeft }),
         ),
       };
     },
@@ -60,18 +60,18 @@ const captchas: CaptchaDefs = [
       return { matrix, answer };
     },
     check(ctx, meta) {
-      if (!(ctx.message && 'text' in ctx.message)) return false;
+      if (!(ctx.message && "text" in ctx.message)) return false;
       return parseInt(ctx.message?.text) === meta.answer;
     },
     getMessageMetadata(t, meta, user, secondsLeft) {
       const matrixText = meta.matrix
-        .map(row => '| ' + row.join(' ') + ' |')
-        .join('\n');
+        .map(row => "| " + row.join(" ") + " |")
+        .join("\n");
       return {
         text: joinLines(
-          t('matrix_captcha', { user: html.userMention(user) }),
+          t("matrix_captcha", { user: html.userMention(user) }),
           html.code(matrixText),
-          t('captcha_remaining', { seconds: secondsLeft }),
+          t("captcha_remaining", { seconds: secondsLeft }),
         ),
       };
     },
@@ -95,7 +95,7 @@ export function generateCaptcha(
   const mode = modes[randInt(modes.length)];
   const meta = captchas.find(cd => cd.mode === mode)!.generate();
   const captcha = { mode, meta, deadline };
-  log.info('New captcha: %O', captcha);
+  log.info("New captcha: %O", captcha);
   return captcha as AbstractCaptcha;
 }
 
@@ -129,10 +129,5 @@ export function getCaptchaMessage(
 ): { text: string; keyboard?: InlineKeyboardMarkup } {
   return captchas
     .find(cd => cd.mode === captcha.mode)!
-    .getMessageMetadata(
-      t,
-      captcha.meta as any,
-      user,
-      secondsLeft,
-    );
+    .getMessageMetadata(t, captcha.meta as any, user, secondsLeft);
 }

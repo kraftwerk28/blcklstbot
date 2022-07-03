@@ -5,7 +5,8 @@ import {
 } from 'telegraf';
 import { senderIsAdmin } from './guards';
 import { deleteMessage } from './middlewares/delete-message';
-import { Ctx, GuardPredicate, NonemptyReadonlyArray } from './types';
+import { Ctx, GuardPredicate, MatchedMiddleware, NonemptyReadonlyArray } from './types';
+import { regexp } from './utils';
 
 function mergePredicates<C extends TelegrafContext>(
   predicates: readonly GuardPredicate<C>[],
@@ -68,5 +69,9 @@ export class Composer<
       const passed = predicate(ctx);
       return !passed;
     };
+  }
+
+  static async hears2(regex: string, ...fns: MatchedMiddleware<Ctx, 'text'>) {
+    return this.hears(regexp(regex))
   }
 }

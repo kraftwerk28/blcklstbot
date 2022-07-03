@@ -1,8 +1,8 @@
-import { Composer } from '../composer';
-import { botHasSufficientPermissions, isGroupChat } from '../guards';
-import { log } from '../logger';
-import { OnMiddleware } from '../types';
-import { checkCASban, html } from '../utils';
+import { Composer } from "../composer";
+import { botHasSufficientPermissions, isGroupChat } from "../guards";
+import { log } from "../logger";
+import { OnMiddleware } from "../types";
+import { checkCASban, html } from "../utils";
 
 export const checkCasBan = Composer.optional(
   Composer.allOf(isGroupChat, botHasSufficientPermissions),
@@ -22,11 +22,11 @@ export const checkCasBan = Composer.optional(
     );
     await ctx.kickChatMember(userId);
     await ctx.replyWithHTML(
-      ctx.t('cas_report', {
+      ctx.t("cas_report", {
         user: html.userMention(ctx.from),
-        cas_link: html.link(casLink, 'CAS'),
+        cas_link: html.link(casLink, "CAS"),
       }),
     );
     return next();
-  } as OnMiddleware<'message'>,
+  } as OnMiddleware<"message">,
 );

@@ -1,14 +1,14 @@
-import { Message, User } from 'typegram';
+import { Message, User } from "typegram";
 
-import { Composer } from '../composer';
-import { getNewMembersFromUpdate, safePromiseAll } from '../utils';
-import { Ctx, OnMiddleware } from '../types';
-import { generateCaptcha, getCaptchaMessage } from '../captcha';
-import { captchaHash } from '../utils/event-queue';
-import { botHasSufficientPermissions } from '../guards';
-import { CAPTCHA_MESSAGE_UPDATE_INTERVAL } from '../constants';
+import { Composer } from "../composer";
+import { getNewMembersFromUpdate, safePromiseAll } from "../utils";
+import { Ctx, OnMiddleware } from "../types";
+import { generateCaptcha, getCaptchaMessage } from "../captcha";
+import { captchaHash } from "../utils/event-queue";
+import { botHasSufficientPermissions } from "../guards";
+import { CAPTCHA_MESSAGE_UPDATE_INTERVAL } from "../constants";
 
-type Middleware = OnMiddleware<'new_chat_members' | 'chat_member'>;
+type Middleware = OnMiddleware<"new_chat_members" | "chat_member">;
 
 /** Creates capthca.  Also registers user in DB for messages tracking */
 export const onNewChatMember: Middleware = Composer.optional(
@@ -17,7 +17,7 @@ export const onNewChatMember: Middleware = Composer.optional(
       // /me also wants to pass captcha so ima about to comment dis :)
       // if (ctx.from?.id === ctx.botCreatorId) return false;
       const cm = await ctx.getChatMember(ctx.from!.id);
-      return cm.status === 'member';
+      return cm.status === "member";
     },
     // Composer.not(senderIsAdmin),
     botHasSufficientPermissions,
@@ -56,7 +56,7 @@ async function userCaptcha(ctx: Ctx, user: User, isDemo = false) {
 
   await ctx.eventQueue.pushDelayed(
     CAPTCHA_MESSAGE_UPDATE_INTERVAL,
-    'update_captcha',
+    "update_captcha",
     {
       chatId,
       userId,
@@ -66,7 +66,7 @@ async function userCaptcha(ctx: Ctx, user: User, isDemo = false) {
   );
   await ctx.eventQueue.pushDelayed(
     captchaTimeout,
-    'captcha_timeout',
+    "captcha_timeout",
     {
       chatId: ctx.chat!.id,
       userId: user.id,

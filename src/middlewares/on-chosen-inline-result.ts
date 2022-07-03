@@ -1,15 +1,15 @@
-import { Markup } from 'telegraf';
+import { Markup } from "telegraf";
 
-import { log } from '../logger';
-import { OnMiddleware } from '../types';
-import { getProviderByName } from '../utils/doc-search';
-import { bold } from '../utils/html';
+import { log } from "../logger";
+import { OnMiddleware } from "../types";
+import { getProviderByName } from "../utils/doc-search";
+import { bold } from "../utils/html";
 
-type Mw = OnMiddleware<'chosen_inline_result'>;
+type Mw = OnMiddleware<"chosen_inline_result">;
 
 export const onChosenInlineResult: Mw = async function (ctx, next) {
   const { chosenInlineResult } = ctx;
-  log.info('Chosen inline result: %O', chosenInlineResult);
+  log.info("Chosen inline result: %O", chosenInlineResult);
   const match = chosenInlineResult.result_id.match(/^(\w+):(\d+)$/);
   if (!match) return next();
   const [, providerName, resultIdStr] = match;
@@ -21,7 +21,7 @@ export const onChosenInlineResult: Mw = async function (ctx, next) {
     searchProvider.name,
     +resultIdStr,
   );
-  log.info('Inline result metadata: %O', metadata);
+  log.info("Inline result metadata: %O", metadata);
   let fullText: string | undefined;
 
   try {
@@ -43,7 +43,7 @@ export const onChosenInlineResult: Mw = async function (ctx, next) {
       undefined,
       chosenInlineResult.inline_message_id,
       text,
-      { parse_mode: 'HTML', disable_web_page_preview: true },
+      { parse_mode: "HTML", disable_web_page_preview: true },
     );
   }
 };

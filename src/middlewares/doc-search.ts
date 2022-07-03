@@ -1,15 +1,15 @@
-import { Markup } from 'telegraf';
-import { InlineQueryResult } from 'typegram';
+import { Markup } from "telegraf";
+import { InlineQueryResult } from "typegram";
 
-import { OnMiddleware } from '../types';
-import { log } from '../logger';
-import { html } from '../utils';
-import { searchProviders } from '../utils/doc-search';
-import { MAX_INLINE_RESULTS_AMOUNT } from '../constants';
+import { OnMiddleware } from "../types";
+import { log } from "../logger";
+import { html } from "../utils";
+import { searchProviders } from "../utils/doc-search";
+import { MAX_INLINE_RESULTS_AMOUNT } from "../constants";
 
-type Mw = OnMiddleware<'inline_query'>;
+type Mw = OnMiddleware<"inline_query">;
 
-const cache_time = process.env.NODE_ENV === 'development' ? 5 : 300;
+const cache_time = process.env.NODE_ENV === "development" ? 5 : 300;
 
 export const docSearch: Mw = async function (ctx, next) {
   const match = ctx.inlineQuery.query.match(/^(\w+)\s+(.+)$/);
@@ -22,8 +22,8 @@ export const docSearch: Mw = async function (ctx, next) {
 
   if (!searchProvider) {
     return ctx.answerInlineQuery([], {
-      switch_pm_text: 'Invalid search provider',
-      switch_pm_parameter: 'showhelp',
+      switch_pm_text: "Invalid search provider",
+      switch_pm_parameter: "showhelp",
     });
   }
   log.info(`Invoking provider "${searchProvider.name}" with query "${query}"`);
@@ -35,8 +35,8 @@ export const docSearch: Mw = async function (ctx, next) {
 
     if (!results?.length) {
       return ctx.answerInlineQuery([], {
-        switch_pm_text: 'No results...',
-        switch_pm_parameter: 'showhelp',
+        switch_pm_text: "No results...",
+        switch_pm_parameter: "showhelp",
       });
     }
 
@@ -49,18 +49,18 @@ export const docSearch: Mw = async function (ctx, next) {
     }
 
     const inlineResults: InlineQueryResult[] = results.map((result, index) => {
-      let text = html.bold(searchProvider.name) + ':\n';
+      let text = html.bold(searchProvider.name) + ":\n";
       text += html.link(result.link, result.title);
       if (result.text) {
         text += `\n${html.escape(result.text)}`;
       }
       const entry = {
-        type: 'article',
+        type: "article",
         id: `${searchProvider.name}:${index}`,
         title: html.escape(result.title),
         input_message_content: {
           message_text: text,
-          parse_mode: 'HTML',
+          parse_mode: "HTML",
           disable_web_page_preview: true,
         },
         url: result.link,
@@ -80,7 +80,7 @@ export const docSearch: Mw = async function (ctx, next) {
 
     return ctx.answerInlineQuery(inlineResults, { cache_time });
   } catch (err) {
-    log.error('Error in ::docSearch: %O', err);
+    log.error("Error in ::docSearch: %O", err);
     return ctx.answerInlineQuery([]);
   }
 };

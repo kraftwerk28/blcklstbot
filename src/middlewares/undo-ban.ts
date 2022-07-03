@@ -1,10 +1,10 @@
-import { ActionMiddleware } from '../types';
-import { Composer } from '../composer';
-import { senderIsAdmin } from '../guards';
-import { userMention } from '../utils/html';
-import { getDbUserFromReply } from './get-db-user-from-reply';
-import { log } from '../logger';
-import { noop, safePromiseAll } from '../utils';
+import { ActionMiddleware } from "../types";
+import { Composer } from "../composer";
+import { senderIsAdmin } from "../guards";
+import { userMention } from "../utils/html";
+import { getDbUserFromReply } from "./get-db-user-from-reply";
+import { log } from "../logger";
+import { noop, safePromiseAll } from "../utils";
 
 export const undoBan = Composer.branch(
   senderIsAdmin,
@@ -23,13 +23,13 @@ export const undoBan = Composer.branch(
           .catch(noop);
       }
       log.info(
-        'User %d forgived %d in chat %d',
+        "User %d forgived %d in chat %d",
         forgiver.id,
         reportedUserId,
         chatId,
       );
       await ctx.answerCbQuery();
-      const text = ctx.t('forgive', {
+      const text = ctx.t("forgive", {
         forgiver: userMention(forgiver),
         reported: userMention(reportedDbUser),
       });

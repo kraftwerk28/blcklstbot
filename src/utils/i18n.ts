@@ -1,4 +1,4 @@
-import { ChatLanguageCode, LocaleContainer } from '../types';
+import { ChatLanguageCode, LocaleContainer } from "../types";
 
 function getByPath(obj: any, path: string[]) {
   let result = obj;
@@ -15,13 +15,13 @@ export function runI18n(
   str: string,
   replacements: Record<string, string | number> = {},
 ) {
-  const pathParts = str.split('.');
+  const pathParts = str.split(".");
   const locale = locales[localeName];
   if (!locale) return str;
   let value: string = getByPath(locale, pathParts);
   if (!value) {
     // Fallback to en locale
-    value = getByPath(locales['en'], pathParts);
+    value = getByPath(locales["en"], pathParts);
   }
   if (!value) return str;
 
@@ -33,4 +33,3 @@ export function runI18n(
     }
   });
 }
-

@@ -1,13 +1,13 @@
-import { Telegraf } from 'telegraf';
-import IoRedis from 'ioredis';
-import { config } from 'dotenv';
+import { Telegraf } from "telegraf";
+import IoRedis from "ioredis";
+import { config } from "dotenv";
 
-import { EventQueue } from '../src/event-queue';
-import { BaseEvent } from '../src/types';
+import { EventQueue } from "../src/event-queue";
+import { BaseEvent } from "../src/types";
 
-type PongEvent = BaseEvent<'pong', { chatId: number; messageId: number }>;
+type PongEvent = BaseEvent<"pong", { chatId: number; messageId: number }>;
 type RemindEvent = BaseEvent<
-  'remind',
+  "remind",
   {
     chatId: number;
     userId: number;

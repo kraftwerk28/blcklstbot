@@ -1,15 +1,15 @@
-import { HearsMiddleware } from '../types';
-import { Composer } from '../composer';
+import { HearsMiddleware } from "../types";
+import { Composer } from "../composer";
 import {
   botHasSufficientPermissions,
   messageIsReply,
   repliedMessageIsFromMember,
   senderIsAdmin,
-} from '../guards';
-import { getDbUserFromReply, deleteMessage } from '../middlewares';
-import { MAX_WARNINGS } from '../constants';
-import { noop, safePromiseAll, html } from '../utils';
-import { Chat } from 'typegram';
+} from "../guards";
+import { getDbUserFromReply, deleteMessage } from "../middlewares";
+import { MAX_WARNINGS } from "../constants";
+import { noop, safePromiseAll, html } from "../utils";
+import { Chat } from "typegram";
 
 const reportByAdmin = async function (ctx) {
   await ctx.deleteMessage().catch(noop);
@@ -17,12 +17,12 @@ const reportByAdmin = async function (ctx) {
   const { reportedUser, chat } = ctx;
 
   const reason = isLastWarn ? ctx.reportedUser.warn_ban_reason : ctx.match[1];
-  let text = ctx.t('report', {
+  let text = ctx.t("report", {
     reporter: html.userMention(ctx.from),
     reported: html.userMention(reportedUser),
   });
   if (reason) {
-    text += '\n' + ctx.t('report_reason', { reason: html.escape(reason) });
+    text += "\n" + ctx.t("report_reason", { reason: html.escape(reason) });
   }
 
   const allUserMessageIds = await ctx.dbStore.getUserMessages(
@@ -55,11 +55,11 @@ const reportByMember = async function (ctx) {
   const admins = await ctx.getChatAdministrators();
   const chat = ctx.chat as Chat.GroupChat | Chat.SupergroupChat;
   let chatString = `"${html.bold(chat.title)}"`;
-  if ('username' in chat) {
+  if ("username" in chat) {
     chatString += ` (@${chat.username})`;
   }
 
-  const text = ctx.t('user_report_admin_pm', {
+  const text = ctx.t("user_report_admin_pm", {
     reporter: html.userMention(ctx.from),
     reportee: html.userMention(ctx.reportedUser),
     chat: chatString,
@@ -69,7 +69,7 @@ const reportByMember = async function (ctx) {
     admins
       .filter(cm => !cm.user.is_bot)
       .map(cm =>
-        ctx.telegram.sendMessage(cm.user.id, text, { parse_mode: 'HTML' }),
+        ctx.telegram.sendMessage(cm.user.id, text, { parse_mode: "HTML" }),
       ),
   );
 } as HearsMiddleware;

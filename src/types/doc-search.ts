@@ -1,4 +1,4 @@
-import { Telegram } from 'typegram';
+import { Telegram } from "typegram";
 
 export type SearchEntry<Meta = any> = {
   title: string;

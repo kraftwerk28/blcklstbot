@@ -1,12 +1,12 @@
-import { Middleware } from 'telegraf';
-import { Composer } from '../composer';
-import { Chat } from 'typegram';
-import { Ctx } from '../types';
+import { Middleware } from "telegraf";
+import { Composer } from "../composer";
+import { Chat } from "typegram";
+import { Ctx } from "../types";
 
 type C = (Chat.GroupChat | Chat.SupergroupChat) & Chat.UserNameChat;
 
 export const getDbChat: Middleware<Ctx> = Composer.chatType(
-  ['group', 'supergroup'],
+  ["group", "supergroup"],
   async function (ctx, next) {
     const chat = ctx.chat as C;
     if (!chat) return next();
