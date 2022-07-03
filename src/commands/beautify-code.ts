@@ -6,8 +6,8 @@ import {
 } from '../guards';
 import { CommandMiddleware } from '../types';
 
-export const beautifyCode = Composer.guardAll(
-  [botHasSufficientPermissions, senderIsAdmin, isGroupChat],
+export const beautifyCode = Composer.optional(
+  Composer.allOf(botHasSufficientPermissions, senderIsAdmin, isGroupChat),
   async function (ctx) {
     await Promise.all([
       ctx.dbStore.updateChatProp(

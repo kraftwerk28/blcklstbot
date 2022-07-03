@@ -2,7 +2,6 @@ import { log } from '../logger';
 import { HearsMiddleware } from '../types';
 import {
   getCodeFromMessage,
-  noop,
   runEnry,
   runTreeSitterHighlight,
   safePromiseAll,

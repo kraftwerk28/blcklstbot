@@ -7,8 +7,8 @@ import {
 } from '../guards';
 import { CommandMiddleware } from '../types';
 
-export const help = Composer.guardAll(
-  [isGroupChat, botHasSufficientPermissions],
+export const help = Composer.optional(
+  Composer.allOf(isGroupChat, botHasSufficientPermissions),
   async function (ctx) {
     const isAdmin = await senderIsAdmin(ctx);
     let commandList = [

@@ -1,9 +1,7 @@
 import { log } from '../logger';
 import { Ctx, GuardPredicate, MatchedContext } from '../types';
 
-export const botHasSufficientPermissions: GuardPredicate = async function (
-  ctx,
-) {
+export const botHasSufficientPermissions = async function (ctx) {
   // TODO: cache chat member with some EXPIRE in redis
   const me = await ctx.getChatMember(ctx.botInfo.id);
   if (!me.can_delete_messages) {
@@ -15,7 +13,7 @@ export const botHasSufficientPermissions: GuardPredicate = async function (
   //   return log.warn(`Bot cannot send messages in chat ${ctx.chat.id}`);
   // }
   return true;
-};
+} as GuardPredicate;
 
 export const senderIsAdmin: GuardPredicate = async function (ctx) {
   if (ctx.from!.id === ctx.botCreatorId) {
@@ -33,11 +31,16 @@ export const isGroupChat: GuardPredicate = function (ctx) {
   return ctx.chat!.type === 'group' || ctx.chat!.type === 'supergroup';
 };
 
+/**
+ * `ctx.message.reply_to_message` is present
+ */
 export const messageIsReply: GuardPredicate = function (ctx) {
   return 'reply_to_message' in (ctx.message ?? {});
 };
 
-/** Ensures that replies messages is not from admin or bot */
+/**
+ * Ensures that replies messages is not from admin or bot
+ */
 export const repliedMessageIsFromMember = async function (ctx) {
   const reply = ctx.message.reply_to_message;
   if (typeof reply?.from?.id !== 'number') return false;

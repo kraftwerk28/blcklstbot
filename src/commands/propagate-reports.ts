@@ -3,8 +3,8 @@ import { CommandMiddleware } from '../types';
 import { senderIsAdmin, isGroupChat } from '../guards';
 import { deleteMessage } from '../middlewares';
 
-export const propagateReports = Composer.branchAll(
-  [senderIsAdmin, isGroupChat],
+export const propagateReports = Composer.branch(
+  Composer.allOf(senderIsAdmin, isGroupChat),
   async function (ctx) {
     ctx.dbStore.updateChatProp(
       ctx.chat.id,

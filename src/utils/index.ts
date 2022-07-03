@@ -2,12 +2,7 @@ import { URL } from 'url';
 import crypto from 'crypto';
 import { promises as fs } from 'fs';
 import { Context as TelegrafContext } from 'telegraf';
-import {
-  ChatMember,
-  Message,
-  Update,
-  User,
-} from 'typegram';
+import { ChatMember, Message, Update, User } from 'typegram';
 import fetch from 'node-fetch';
 import path from 'path';
 
@@ -262,4 +257,8 @@ export function secondsToHumanReadable(seconds: number): string {
 
 export function joinLines(...lines: (string | number)[]) {
   return lines.join('\n');
+}
+
+export function isChannelComment(message: Message.CommonMessage) {
+  return message.reply_to_message?.sender_chat?.type === 'channel';
 }

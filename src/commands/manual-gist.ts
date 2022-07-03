@@ -6,8 +6,8 @@ import { noop, runEnry, uploadToGist } from '../utils';
 import { link, userMention } from '../utils/html';
 
 /** Manually upload text in replied message to Gist */
-export const manualGist: CommandMiddleware = Composer.guardAll(
-  [botHasSufficientPermissions, senderIsAdmin],
+export const manualGist: CommandMiddleware = Composer.optional(
+  Composer.allOf(botHasSufficientPermissions, senderIsAdmin),
   async function (ctx, next) {
     const reply = ctx.message.reply_to_message;
     if (!reply || !reply.from || !('text' in reply)) return next();

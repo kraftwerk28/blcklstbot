@@ -6,8 +6,8 @@ import { noop, settingsKeyboard } from '../utils';
 
 // return b ? '\u2705' : '\u26d4';
 // return b ? '\u2705' : '\u274c';
-export const groupSettings = Composer.branchAll(
-  [senderIsAdmin, isGroupChat],
+export const groupSettings = Composer.branch(
+  Composer.allOf(senderIsAdmin, isGroupChat),
   async function (ctx) {
     // const buttons: InlineKeyboardButton[][] = [
     // ];

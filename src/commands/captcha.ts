@@ -4,8 +4,8 @@ import { CaptchaMode, HearsMiddleware } from '../types';
 import { senderIsAdmin, isGroupChat } from '../guards';
 import { deleteMessage } from '../middlewares';
 
-export const captcha = Composer.branchAll(
-  [senderIsAdmin, isGroupChat],
+export const captcha = Composer.branch(
+  Composer.allOf(senderIsAdmin, isGroupChat),
   async function (ctx) {
     let modeList: string[] = [];
     if (ctx.match[1]) {

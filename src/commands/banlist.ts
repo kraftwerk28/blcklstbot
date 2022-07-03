@@ -5,8 +5,8 @@ import { deleteMessage } from '../middlewares';
 import { CommandMiddleware, DbUser } from '../types';
 import { userFullName } from '../utils/html';
 
-export const banList = Composer.branchAll(
-  [senderIsAdmin, isGroupChat],
+export const banList = Composer.branch(
+  Composer.allOf(senderIsAdmin, isGroupChat),
   async function (ctx) {
     const chatId = ctx.chat.id;
     const bannedUsers: DbUser[] = await ctx.dbStore

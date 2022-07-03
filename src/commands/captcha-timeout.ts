@@ -4,8 +4,8 @@ import { Composer } from '../composer';
 import { isGroupChat, senderIsAdmin } from '../guards';
 import { deleteMessage } from '../middlewares';
 
-export const captchaTimeout: HearsMiddleware = Composer.branchAll(
-  [senderIsAdmin, isGroupChat],
+export const captchaTimeout: HearsMiddleware = Composer.branch(
+  Composer.allOf(senderIsAdmin, isGroupChat),
   async function (ctx) {
     const seconds = parseInt(ctx.match[1]);
     const replyOptions = { reply_to_message_id: ctx.message.message_id };
