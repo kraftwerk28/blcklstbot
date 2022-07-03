@@ -13,6 +13,8 @@ services:
     depends_on:
       - redis
     restart: "unless-stopped"
+    command: [ node, index.js ]
+
   redis:
     image: redis:alpine
     restart: "unless-stopped"

@@ -20,4 +20,3 @@ COPY migrations/ migrations/
 COPY locales/ locales/
 COPY knexfile.js knexfile.js
 COPY bot.config.json ./
-ENTRYPOINT ["node", "src/index.js"]
