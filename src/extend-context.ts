@@ -7,15 +7,15 @@ import { BOT_SERVICE_MESSAGES_TIMEOUT } from './constants';
 import { DbStore } from './db-store';
 import { EventQueue } from './event-queue';
 import { log } from './logger';
-import { Ctx } from './types';
-import { ensureEnvExists, loadLocales } from './utils';
+import { Ctx, LocaleContainer } from './types';
+import { ensureEnvExists, runI18n } from './utils';
 
-export async function extendBotContext(bot: Telegraf<Ctx>) {
+export async function extendBotContext(bot: Telegraf<Ctx>, locales: LocaleContainer) {
   const ctx = bot.context;
   log.info('Connecting to Redis...');
   const redisClient = new IORedis({
     host: process.env.REDIS_HOST,
-    retryStrategy: (times) => (times < 5 ? 1 : null),
+    retryStrategy: times => (times < 5 ? 1 : null),
   });
   log.info('Connecting to Postgres...');
   const knex = createKnex({
@@ -48,23 +48,9 @@ export async function extendBotContext(bot: Telegraf<Ctx>) {
       return msg;
     };
   };
-  ctx.locales = await loadLocales();
+  ctx.locales = locales;
   ctx.t = function (s, replaces = {}) {
     if (!this.dbChat) return s;
-    const locale = this.locales![this.dbChat.language_code];
-    if (!locale) return s;
-    let value = locale[s];
-    if (!value) {
-      // Fallback to en locale
-      value = this.locales!.en[s];
-    }
-    if (!value) return s;
-    return value.replace(/(?<!{){(\w+)}(?!})/g, (match, key) => {
-      if (key in replaces) {
-        return replaces[key].toString();
-      } else {
-        return match;
-      }
-    });
+    return runI18n(this.locales!, this.dbChat.language_code, s, replaces);
   };
 }

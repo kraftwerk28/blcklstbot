@@ -244,3 +244,30 @@ export async function checkCASban(userId: number): Promise<string | undefined> {
 export function secondsToHumanReadable(seconds: number): string {
   return seconds.toString();
 }
+
+export function joinLines(...lines: (string | number)[]) {
+  return lines.join('\n');
+}
+
+export function runI18n(
+  locales: LocaleContainer,
+  localeName: ChatLanguageCode,
+  str: string,
+  replacements: Record<string, string | number> = {},
+) {
+  const locale = locales[localeName];
+  if (!locale) return str;
+  let value = locale[str];
+  if (!value) {
+    // Fallback to en locale
+    value = locales.en[str];
+  }
+  if (!value) return str;
+  return value.replace(/(?<!{){(\w+)}(?!})/g, (match, key: string) => {
+    if (key in replacements) {
+      return replacements[key].toString();
+    } else {
+      return match;
+    }
+  });
+}

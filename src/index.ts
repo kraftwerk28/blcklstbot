@@ -3,12 +3,14 @@ import util from 'util';
 import * as path from 'path';
 
 import { Composer } from './composer';
-import { Ctx } from './types';
+import { Ctx, TranslateFn } from './types';
 import { extendBotContext } from './extend-context';
 import { initLogger, log } from './logger';
-import { noop, regexp } from './utils';
+import { loadLocales, noop, regexp, runI18n } from './utils';
 import * as middlewares from './middlewares';
 import * as commands from './commands';
+import { getCaptchaMessage } from './captcha';
+import { CAPTCHA_MESSAGE_UPDATE_INTERVAL } from './constants';
 
 async function main() {
   if (process.env.NODE_ENV === 'development') {
@@ -33,14 +35,14 @@ async function main() {
   process.on('SIGINT', shutdownHandler);
 
   bot.telegram.webhookReply = false;
-  await extendBotContext(bot);
+  const locales = await loadLocales();
+  await extendBotContext(bot, locales);
   const botInfo = await bot.telegram.getMe();
   bot.botInfo ??= botInfo;
   const username = botInfo.username;
-  const composer2 = new Composer();
 
   bot
-    .use(composer2)
+    .use(new Composer())
     .use(middlewares.getDbChat)
     .on('message', middlewares.addUserToDatabase)
     .on('message', middlewares.trackMemberMessages)
@@ -86,7 +88,7 @@ async function main() {
     .command('dbg', commands.dbg)
     .action(/^unban:([\d-]+):([\d-]+)$/, middlewares.undoBan)
     .catch((err, ctx) => {
-      log.error('Error in bot::catch; update')
+      log.error('Error in bot::catch; update');
       log.error(ctx.update);
       log.error(err as Error);
     });
@@ -109,11 +111,40 @@ async function main() {
       await telegram.unbanChatMember(chatId, userId);
       await telegram.deleteMessage(chatId, captchaMessageId).catch(noop);
       await telegram.deleteMessage(chatId, newChatMemberMessageId).catch(noop);
+      // TODO: captcha cooldown
     })
     .on('delete_message', async ({ telegram, payload }) => {
       await telegram
         .deleteMessage(payload.chatId, payload.messageId)
         .catch(noop);
+    })
+    .on('update_captcha', async ({ telegram, payload, dbStore }) => {
+      const { chatId, userId, messageId, chatLocale } = payload;
+      const now = Math.floor(Date.now() / 1000);
+      const pendingCaptcha = await dbStore.getPendingCaptcha(chatId, userId);
+      if (!pendingCaptcha) return;
+      const remainingSeconds = pendingCaptcha.deadline - now;
+      const t: TranslateFn = (s, replacements = {}) => {
+        return runI18n(locales, chatLocale, s, replacements);
+      };
+      const chatMember = await telegram.getChatMember(chatId, userId);
+      const { text, keyboard } = getCaptchaMessage(
+        t,
+        pendingCaptcha,
+        chatMember.user,
+        remainingSeconds,
+      );
+      await telegram.editMessageText(chatId, messageId, undefined, text, {
+        parse_mode: 'HTML',
+        reply_markup: keyboard,
+      });
+      if (remainingSeconds > CAPTCHA_MESSAGE_UPDATE_INTERVAL) {
+        bot.context.eventQueue?.pushDelayed(
+          CAPTCHA_MESSAGE_UPDATE_INTERVAL,
+          'update_captcha',
+          payload,
+        );
+      }
     });
 
   await bot.telegram.setMyCommands(commands.publicCommands);

@@ -12,7 +12,7 @@ export const checkCaptchaAnswer = Composer.optional(
   async function (ctx, next) {
     const chatId = ctx.chat.id;
     const userId = ctx.from.id;
-    const captcha = await ctx.dbStore.hasPendingCaptcha(chatId, userId);
+    const captcha = await ctx.dbStore.getPendingCaptcha(chatId, userId);
     if (!captcha) return next();
     const correct = checkAnswer(ctx, captcha);
     await ctx.deleteMessage().catch(noop);

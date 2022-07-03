@@ -20,6 +20,7 @@ export * from './def-command';
 export * from './bang-handler';
 export * from './dbg';
 export * from './start';
+export * from './demo-captcha';
 
 export const publicCommands: BotCommand[] = [
   { command: 'ping', description: 'Ping myself after n seconds' },

@@ -24,7 +24,7 @@ export class Composer<
     return Composer.optional(mergePredicates(predicates), ...fns);
   }
 
-  static branchAll<C extends TelegrafContext = Ctx>(
+  static branchAll<C extends Ctx = Ctx>(
     predicates: readonly GuardPredicate<C>[],
     trueBranch: Middleware<C>,
     falseBranch: Middleware<C>,

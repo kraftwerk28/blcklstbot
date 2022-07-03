@@ -1,10 +1,20 @@
+import { InlineKeyboardMarkup } from 'typegram';
 import { DEFAULT_CAPCHA_MODES } from '../constants';
 import { log } from '../logger';
-import { Ctx, CaptchaMode, CaptchaDefs, AbstractCaptcha } from '../types';
-import { randBool, randInt } from '../utils';
+import {
+  Ctx,
+  CaptchaMode,
+  CaptchaDefs,
+  AbstractCaptcha,
+  TranslateFn,
+  MentionableUser,
+  ExtractMeta,
+} from '../types';
+import { randBool, randInt, html, joinLines } from '../utils';
 
-const captchas: CaptchaDefs = {
-  [CaptchaMode.Arithmetic]: {
+const captchas: CaptchaDefs = [
+  {
+    mode: CaptchaMode.Arithmetic,
     generate() {
       const multiplier = randInt(2, 10);
       const isSum = randBool();
@@ -27,8 +37,19 @@ const captchas: CaptchaDefs = {
       if (!(ctx.message && 'text' in ctx.message)) return false;
       return parseInt(ctx.message?.text) === meta.answer;
     },
+    getMessageMetadata(t, meta, user, secondsLeft) {
+      return {
+        text: joinLines(
+          t('math_captcha', { user: html.userMention(user) }),
+          html.code(meta.expression),
+          t('captcha_remaining', { seconds: secondsLeft }),
+        ),
+      };
+    },
   },
-  [CaptchaMode.Matrix]: {
+
+  {
+    mode: CaptchaMode.Matrix,
     generate() {
       const [a, d] = [randInt(10), randInt(8)];
       const [b, c] = [randInt(4), randInt(7)];
@@ -43,13 +64,38 @@ const captchas: CaptchaDefs = {
       if (!(ctx.message && 'text' in ctx.message)) return false;
       return parseInt(ctx.message?.text) === meta.answer;
     },
+    getMessageMetadata(t, meta, user, secondsLeft) {
+      const matrixText = meta.matrix
+        .map(row => '| ' + row.join(' ') + ' |')
+        .join('\n');
+      return {
+        text: joinLines(
+          t('matrix_captcha', { user: html.userMention(user) }),
+          html.code(matrixText),
+          t('captcha_remaining', { seconds: secondsLeft }),
+        ),
+      };
+    },
   },
-};
 
-export function generateCaptcha(modes = DEFAULT_CAPCHA_MODES) {
+  // {
+  //   mode: CaptchaMode.Emoji,
+  //   generate() {
+  //     return { answer: 123 };
+  //   },
+  //   check(ctx, meta) {
+  //     return false;
+  //   },
+  // },
+];
+
+export function generateCaptcha(
+  modes = DEFAULT_CAPCHA_MODES,
+  deadline: number,
+): AbstractCaptcha {
   const mode = modes[randInt(modes.length)];
-  const meta = captchas[mode].generate();
-  const captcha = { mode, meta };
+  const meta = captchas.find(cd => cd.mode === mode)!.generate();
+  const captcha = { mode, meta, deadline };
   log.info('New captcha: %O', captcha);
   return captcha as AbstractCaptcha;
 }
@@ -60,8 +106,8 @@ export function serializeCaptcha(captcha: AbstractCaptcha) {
 
 export function deserializeCaptcha(raw: string): AbstractCaptcha | undefined {
   try {
-    const { mode, meta } = JSON.parse(raw);
-    return { mode, meta };
+    const { mode, meta, deadline } = JSON.parse(raw);
+    return { mode, meta, deadline };
   } catch {
     return;
   }
@@ -71,7 +117,23 @@ export function checkCaptchaAnswer(
   ctx: Ctx,
   captcha: AbstractCaptcha,
 ): boolean {
-  const { mode, meta } = captcha;
-  // @ts-expect-error
-  return captchas[mode].check(ctx, meta);
+  return captchas
+    .find(cd => cd.mode === captcha.mode)!
+    .check(ctx, captcha.meta as any);
+}
+
+export function getCaptchaMessage(
+  t: TranslateFn,
+  captcha: AbstractCaptcha,
+  user: MentionableUser,
+  secondsLeft: number,
+): { text: string; keyboard?: InlineKeyboardMarkup } {
+  return captchas
+    .find(cd => cd.mode === captcha.mode)!
+    .getMessageMetadata(
+      t,
+      captcha.meta as any,
+      user,
+      secondsLeft,
+    );
 }
