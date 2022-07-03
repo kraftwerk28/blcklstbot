@@ -50,6 +50,7 @@ export type DbUserMessage = {
 export type EnryResponse = {
   language: string,
   extension: string,
+  commentstring: string,
 };
 
 export type DbDynamicCommand = {

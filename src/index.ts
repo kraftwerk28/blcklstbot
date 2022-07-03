@@ -50,6 +50,7 @@ async function main() {
     .on('text', middlewares.uploadToGistOrHighlight)
     .on(['chat_member', 'new_chat_members'], middlewares.onNewChatMember)
     .on('left_chat_member', middlewares.leftChatMember)
+    .on('inline_query', middlewares.docSearch)
     .hears(regexp`^\/ping(?:@${username})?\s+(\d+)(?:\s+(.+))?$`, commands.ping)
     .hears(regexp`^\/codepic(?:@${username})?(?:\s+(\w+))?$`, commands.codePic)
     .hears(
@@ -71,6 +72,7 @@ async function main() {
       commands.defMessage,
     )
     .hears(regexp`^!(\w+)$`, commands.bangHandler)
+    .start(commands.start)
     .command('rules', commands.rules)
     .command('settings', commands.groupSettings)
     .command('help', commands.help)
@@ -79,6 +81,7 @@ async function main() {
     .command('replace_code', commands.replaceCode)
     .command('banlist', commands.banList)
     .command('gist', commands.manualGist)
+    .command('dbg', commands.dbg)
     .action(/^unban:([\d-]+):([\d-]+)$/, middlewares.undoBan)
     .catch((err, ctx) => {
       log.error(

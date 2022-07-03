@@ -2,9 +2,10 @@ import { URL } from 'url';
 import crypto from 'crypto';
 import { promises as fs } from 'fs';
 import { Context as TelegrafContext } from 'telegraf';
-import { ChatMember, Message, Update, User } from 'typegram';
+import { ChatMember, Message, MessageEntity, Update, User } from 'typegram';
 import fetch from 'node-fetch';
 import path from 'path';
+import util from 'util';
 
 export * as html from './html';
 import {
@@ -25,7 +26,7 @@ export async function safePromiseAll(
   const results = await Promise.allSettled(Array.isArray(args) ? args : [args]);
   for (const result of results) {
     if (result.status === 'rejected') {
-      log.error(result.reason);
+      log.error('Error in ::safePromiseAll: %O', result.reason);
     }
   }
 }
@@ -154,10 +155,16 @@ export async function runTreeSitterHighlight(
 ): Promise<NodeJS.ReadableStream | null> {
   const hlServerUrl = new URL(process.env.TREE_SITTER_SERVER_HOST!);
   hlServerUrl.searchParams.append('lang', lang);
+  log.info(hlServerUrl);
   const response = await fetch(hlServerUrl, {
     method: 'POST',
     body: code,
   });
+  log.info(
+    'Tree-sitter-highlight status %d (%s)',
+    response.status,
+    response.statusText,
+  );
   if (response.status === 200) {
     return response.body;
   }
@@ -193,6 +200,7 @@ export async function uploadToGist(
     headers,
     body: JSON.stringify(body),
   });
+  log.info('Gist response: %d (%s)', response.status, response.statusText);
   if (response.status !== 200) {
     return null;
   }
@@ -217,3 +225,31 @@ export async function loadLocales(): Promise<LocaleContainer> {
   }
   return result;
 }
+
+// export function applyComments(
+//   text: string,
+//   entities: MessageEntity[],
+//   commentString: string,
+// ) {
+//   const resLines = [];
+//   const codeEntities = entities
+//     .filter((e) => e.type === 'code' || e.type === 'pre')
+//     .map(({ offset, length }) => [offset, offset + length])
+//     .sort((a, b) => a[0] - b[0]);
+
+//   let curOffset = 0;
+//   let inCodeTag = false;
+//   let curEntity = codeEntities.shift();
+//   for (const line of text.split('\n')) {
+//     if (!curEntity) {
+//       resLines.push(util.format(commentString, line));
+//       continue;
+//     }
+
+//     if (curEntity) {
+//       if (curOffset > curEntity.offset) {
+//       }
+//     }
+//     curOffset += line.length + 1;
+//   }
+// }

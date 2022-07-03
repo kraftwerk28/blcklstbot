@@ -11,3 +11,4 @@ export * from './get-db-user-from-reply';
 export * from './delete-message';
 export * from './add-user-to-database';
 export * from './upload-to-gist-or-highlight';
+export * from './doc-search';

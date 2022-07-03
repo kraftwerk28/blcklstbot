@@ -53,4 +53,7 @@ export type NonemptyReadonlyArray<T> = readonly [T, ...T[]];
 
 export type LocaleContainer = Record<ChatLanguageCode, Record<string, string>>;
 
-export type MentionableUser = Pick<User, 'id' | 'username' | 'first_name' | 'last_name'>;
+export type MentionableUser = Pick<
+  User,
+  'id' | 'username' | 'first_name' | 'last_name'
+>;
