@@ -1,6 +1,6 @@
 import { Telegraf } from 'telegraf';
 import util from 'util';
-import dotenv from 'dotenv';
+import * as path from 'path';
 
 import { Composer } from './composer';
 import { Ctx } from './types';
@@ -12,7 +12,8 @@ import * as commands from './commands';
 
 async function main() {
   if (process.env.NODE_ENV === 'development') {
-    dotenv.config();
+    const dotenv = await import('dotenv');
+    dotenv.config({ path: path.resolve('.env.dev') });
   }
   initLogger();
   const bot = new Telegraf<Ctx>(process.env.BOT_TOKEN!);

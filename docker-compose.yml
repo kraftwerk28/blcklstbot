@@ -10,17 +10,18 @@ services:
     # env_file: .env.local-compose
     ports:
       - 1490:1490
-    restart: always
     depends_on:
       - redis
+    restart: "unless-stopped"
   redis:
     image: redis:alpine
-    restart: always
+    restart: "unless-stopped"
 
   enry-server:
     image: kraftwerk28/enry-server
+    restart: "unless-stopped"
 
 networks:
   default:
-    external:
-      name: globalpg
+    name: globalpg
+    external: true

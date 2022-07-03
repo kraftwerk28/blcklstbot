@@ -5,10 +5,8 @@
     "lib": ["ESNext"],
     "outDir": "build/",
     "strict": true,
-    "rootDir": "./",
     "resolveJsonModule": true,
     "esModuleInterop": true
   },
-  "include": ["src/", "tests/"],
-  "exclude": ["tests/*.test.ts"]
+  "include": ["src/"]
 }
