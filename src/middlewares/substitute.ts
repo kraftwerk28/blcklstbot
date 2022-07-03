@@ -11,6 +11,9 @@ export const substitute: OnMiddleware<"text"> = async function (ctx, next) {
     .split("\n")
     .map(q => q.trim())
     .filter(q => q.startsWith("s"));
+  if (sedQueries.length === 0) {
+    return next();
+  }
   let nValidSedQueries = 0;
   for (const sedQuery of sedQueries) {
     const m = sedQuery.match(/^s\s*([/#@])/); // TODO: more characters
@@ -28,7 +31,7 @@ export const substitute: OnMiddleware<"text"> = async function (ctx, next) {
     log.info(`Applying ${sedQuery} to ${finalText}`);
     try {
       const replaceFrom = new RegExp(sedQueryMatch[1], sedQueryMatch[3]);
-      const replaceTo = sedQueryMatch[2].replace(/\\(\d+)/, (_, d) =>
+      const replaceTo = sedQueryMatch[2].replace(/\\(\d+)/g, (_, d) =>
         parseInt(d) === 0 ? "$&" : `$${d}`,
       );
       finalText = finalText.replace(replaceFrom, replaceTo);
