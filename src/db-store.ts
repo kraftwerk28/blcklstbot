@@ -14,23 +14,29 @@ import {
   DbUser,
   DbUserFromTg,
   DbUserMessage,
+  SearchEntry,
 } from './types';
 import { deserializeCaptcha, serializeCaptcha } from './captcha';
+
+const captchaRedisKey = (chatId: number, userId: number) =>
+  `captcha:${chatId}:${userId}`;
+
+const inlineResultRedisKey = (userId: number) => `inline_results:${userId}`;
 
 export class DbStore {
   constructor(public readonly knex: Knex, public readonly redisClient: Redis) {}
 
-  private captchaRedisKey(chatId: number, userId: number) {
-    return `captcha:${chatId}:${userId}`;
-  }
-
+  /**
+   * Add metadata about the captcha
+   * which will be retrieven when checking user answer
+   */
   async addPendingCaptcha(
     chatId: number,
     userId: number,
     captcha: AbstractCaptcha,
     timeoutSeconds: number,
   ) {
-    const key = this.captchaRedisKey(chatId, userId);
+    const key = captchaRedisKey(chatId, userId);
     await this.redisClient.set(key, serializeCaptcha(captcha));
     // TODO: editable expire time
     await this.redisClient.expire(key, timeoutSeconds);
@@ -40,7 +46,7 @@ export class DbStore {
     chatId: number,
     userId: number,
   ): Promise<AbstractCaptcha | undefined> {
-    const key = this.captchaRedisKey(chatId, userId);
+    const key = captchaRedisKey(chatId, userId);
     const value = await this.redisClient.get(key);
     if (value) {
       return deserializeCaptcha(value);
@@ -48,7 +54,7 @@ export class DbStore {
   }
 
   async deletePendingCaptcha(chatId: number, userId: number) {
-    await this.redisClient.del(this.captchaRedisKey(chatId, userId));
+    await this.redisClient.del(captchaRedisKey(chatId, userId));
   }
 
   async getChat(chatId: number): Promise<DbChat | undefined> {
@@ -80,7 +86,7 @@ export class DbStore {
   ): Promise<U> {
     const insertQuery = this.knex(table).insert(entity);
     const actioncmd = Object.keys(entity)
-      .map((key) => `${key} = excluded.${key}`)
+      .map(key => `${key} = excluded.${key}`)
       .join(', ');
     const pk = primaryKeys.join(', ');
     const insertResult = await this.knex.raw(
@@ -116,16 +122,9 @@ export class DbStore {
       'id',
       'chat_id',
     ]);
-    // const insertQuery = this.knex(USERS_TABLE_NAME).insert();
-    // const insertResult = await this.knex.raw(
-    //   '? on conflict(id, chat_id) do update ' +
-    //     'set id = excluded.id, chat_id = excluded.chat_id returning *',
-    //   [insertQuery],
-    // );
-    // return insertResult.rows[0];
   }
 
-  async getUser(chatId: number, userId: number): Promise<DbUser> {
+  async getUser(chatId: number, userId: number): Promise<DbUser | undefined> {
     return this.knex(USERS_TABLE_NAME)
       .where({ id: userId, chat_id: chatId })
       .first();
@@ -176,8 +175,11 @@ export class DbStore {
     );
   }
 
-  async getCommand(command: string, chatId: number) {
-    return this.knex<DbDynamicCommand>(DYN_COMMANDS_TABLE_NAME)
+  async getCommand(
+    command: string,
+    chatId: number,
+  ): Promise<DbDynamicCommand | undefined> {
+    return this.knex(DYN_COMMANDS_TABLE_NAME)
       .where({ command, chat_id: chatId })
       .orWhere({ command, global: true })
       .first();
@@ -193,11 +195,40 @@ export class DbStore {
     return nDeleted > 0;
   }
 
-  async addInlineResultMetadata<T>(results: T[]) {
-    const currentSerial = await this.redisClient.incrby(
-      'inline_results_serial',
-      results.length,
+  async addInlineResultsMeta(
+    userId: number,
+    providerName: string,
+    results: SearchEntry[],
+  ) {
+    const args: string[] = [];
+    for (let i = 0; i < results.length; i++) {
+      const { metadata } = results[i];
+      if (metadata) {
+        const mapKey = `${providerName}:${i}`;
+        args.push(mapKey, JSON.stringify(metadata));
+      }
+    }
+    const key = inlineResultRedisKey(userId);
+    await this.redisClient.hset(key, ...args);
+    await this.redisClient.expire(key, 60);
+  }
+
+  async getInlineResultMeta(
+    userId: number,
+    providerName: string,
+    resultIndex: number,
+  ): Promise<Record<string, string> | undefined> {
+    const key = inlineResultRedisKey(userId);
+    const metaStr = await this.redisClient.hget(
+      key,
+      `${providerName}:${resultIndex}`,
     );
+    await this.redisClient.del(key);
+    if (metaStr) {
+      try {
+        return JSON.parse(metaStr);
+      } catch {}
+    }
   }
 
   shutdown() {

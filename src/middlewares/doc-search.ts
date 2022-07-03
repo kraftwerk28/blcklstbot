@@ -1,31 +1,17 @@
 import { Markup } from 'telegraf';
 import { InlineQueryResult } from 'typegram';
+
 import { OnMiddleware } from '../types';
-import { link, escape } from '../utils/html';
+import { link, escape, bold } from '../utils/html';
 import { log } from '../logger';
 import { searchProviders } from '../utils/doc-search';
+import { MAX_INLINE_RESULTS_AMOUNT } from '../constants';
 
 type Mw = OnMiddleware<'inline_query'>;
 
 const cache_time = process.env.NODE_ENV === 'development' ? 5 : 300;
 
 export const docSearch: Mw = async function (ctx, next) {
-  // return ctx.answerInlineQuery(
-  //   Array.from({ length: 10 }, (_, i) => ({
-  //     type: 'article',
-  //     id: `foo_${i}`,
-  //     title: 'My title',
-  //     input_message_content: {
-  //       message_text: `Message #${i}`,
-  //     },
-  //     reply_markup: Markup.inlineKeyboard([
-  //       // Markup.button.callback('Foo', 'foo'),
-  //       // Markup.button.callback('Bar', 'bar'),
-  //     ]).reply_markup,
-  //   })),
-  //   { cache_time: 5 },
-  // );
-
   const match = ctx.inlineQuery.query.match(/^(\w+)\s+(.+)$/);
   if (!match) return next();
   const [, provider, query] = match;
@@ -36,13 +22,16 @@ export const docSearch: Mw = async function (ctx, next) {
 
   if (!searchProvider) {
     return ctx.answerInlineQuery([], {
-      switch_pm_text: 'Invalid search provider...',
+      switch_pm_text: 'Invalid search provider',
       switch_pm_parameter: 'showhelp',
     });
   }
+  log.info(`Invoking provider "${searchProvider.name}" with query "${query}"`);
 
   try {
-    const results = await searchProvider.search(query);
+    const results = await searchProvider
+      .search(query)
+      .then(res => res?.slice(0, MAX_INLINE_RESULTS_AMOUNT));
 
     if (!results?.length) {
       return ctx.answerInlineQuery([], {
@@ -50,29 +39,43 @@ export const docSearch: Mw = async function (ctx, next) {
         switch_pm_parameter: 'showhelp',
       });
     }
-    const resultIds = await ctx.dbStore.addInlineResultMetadata(results);
+
+    if (searchProvider.getFullText) {
+      await ctx.dbStore.addInlineResultsMeta(
+        ctx.from.id,
+        searchProvider.name,
+        results,
+      );
+    }
 
     const inlineResults: InlineQueryResult[] = results.map((result, index) => {
-      let text = link(result.link, result.title);
+      let text = bold(searchProvider.name) + ':\n';
+      text += link(result.link, result.title);
       if (result.text) {
         text += `\n${escape(result.text)}`;
       }
-      const { reply_markup } = Markup.inlineKeyboard([
-        Markup.button.url(searchProvider.name, result.link),
-      ]);
-      const resultId = `${searchProvider.name}:${123}`;
-      return {
+      const entry = {
         type: 'article',
-        id: index.toString(),
+        id: `${searchProvider.name}:${index}`,
         title: escape(result.title),
         input_message_content: {
           message_text: text,
           parse_mode: 'HTML',
           disable_web_page_preview: true,
         },
-        reply_markup,
         url: result.link,
-      };
+      } as const;
+      if (searchProvider.getFullText) {
+        // Add a useless button to be able to edit message
+        // IDK why it only works this way, please ask Telegram developers
+        Object.assign(
+          entry,
+          Markup.inlineKeyboard([
+            Markup.button.url(searchProvider.name, result.link),
+          ]),
+        );
+      }
+      return entry;
     });
 
     return ctx.answerInlineQuery(inlineResults, { cache_time });

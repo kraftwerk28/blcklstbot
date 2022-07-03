@@ -14,6 +14,7 @@ export const undoBan = Composer.branch(
       const chatId = parseInt(ctx.match[1]);
       const reportedUserId = parseInt(ctx.match[2]);
       const reportedDbUser = await ctx.dbStore.getUser(chatId, reportedUserId);
+      if (!reportedDbUser) return;
       await ctx.unbanChatMember(reportedUserId);
       const forgiver = ctx.callbackQuery.from;
       if (ctx.callbackQuery.message) {

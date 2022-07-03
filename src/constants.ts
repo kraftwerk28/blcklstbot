@@ -23,3 +23,5 @@ export const GIST_UPLOAD_LINE_COUNT_THRESHOLD = 16;
 
 export const MDN_URL = 'https://developer.mozilla.org';
 export const CPPREFERENCE_URL = 'https://en.cppreference.com';
+
+export const MAX_INLINE_RESULTS_AMOUNT = 50;
