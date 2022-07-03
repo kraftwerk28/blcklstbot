@@ -6,7 +6,7 @@ import {
 } from 'telegraf';
 import { Update, User } from 'typegram';
 import { Ctx } from './context';
-import { ChatLanguageCode } from './models';
+import { ChatLanguageCode, DbChat } from './models';
 
 export type MaybePromise<T = any> = T | Promise<T>;
 
@@ -62,3 +62,11 @@ export type TranslateFn = (
   s: string,
   replaces?: Record<string, string | number>,
 ) => string;
+
+type NonOptionalKeys<T> = {
+  [K in keyof T]: {} extends { [P in K]: T[K] } ? never : K;
+}[keyof T];
+
+export type KeysWhichMapTo<T, U, O = Pick<T, NonOptionalKeys<T>>> = {
+  [K in keyof O]: O[K] extends U ? K : never;
+}[keyof O];

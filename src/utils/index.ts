@@ -1,10 +1,9 @@
 import { URL } from 'url';
 import crypto from 'crypto';
 import { promises as fs } from 'fs';
-import { Context as TelegrafContext, Markup } from 'telegraf';
+import { Context as TelegrafContext } from 'telegraf';
 import {
   ChatMember,
-  InlineKeyboardMarkup,
   Message,
   Update,
   User,
@@ -12,19 +11,18 @@ import {
 import fetch from 'node-fetch';
 import path from 'path';
 
-export * as html from './html';
-
 import {
-  CaptchaMode,
   ChatLanguageCode,
   Ctx,
-  DbChat,
   EnryResponse,
   GuardPredicate,
   LocaleContainer,
 } from '../types';
-
 import { log } from '../logger';
+
+export * as html from './html';
+export * from './i18n';
+export * from './settings-keyboard';
 
 export function noop() {}
 
@@ -250,72 +248,18 @@ export async function checkCASban(userId: number): Promise<string | undefined> {
 }
 
 export function secondsToHumanReadable(seconds: number): string {
-  return seconds.toString();
+  const mins = ~~(seconds / 60);
+  const secs = seconds % 60;
+  let result = '';
+  if (secs > 0) {
+    result += `${secs}s`;
+  }
+  if (mins > 0) {
+    result = `${mins}m ${result}`;
+  }
+  return result;
 }
 
 export function joinLines(...lines: (string | number)[]) {
   return lines.join('\n');
-}
-
-export function runI18n(
-  locales: LocaleContainer,
-  localeName: ChatLanguageCode,
-  str: string,
-  replacements: Record<string, string | number> = {},
-) {
-  const locale = locales[localeName];
-  if (!locale) return str;
-  let value = locale[str];
-  if (!value) {
-    // Fallback to en locale
-    value = locales.en[str];
-  }
-  if (!value) return str;
-  return value.replace(/(?<!{){(\w+)}(?!})/g, (match, key: string) => {
-    if (key in replacements) {
-      return replacements[key].toString();
-    } else {
-      return match;
-    }
-  });
-}
-
-const booleanEmoji = (b: boolean) => (b ? '\u2705' : '\u{1f6ab}');
-const boolBullet = (b: boolean) => (b ? '\u{1f7e2}' : '\u26ab');
-export function settingsKeyboard(chat: DbChat): InlineKeyboardMarkup {
-  const btn = Markup.button.callback;
-  const { reply_markup } = Markup.inlineKeyboard([
-    [
-      btn(
-        boolBullet(chat.captcha_modes.includes(CaptchaMode.Arithmetic)) +
-          ` ${CaptchaMode.Arithmetic}`,
-        `setting:${CaptchaMode.Arithmetic}`,
-      ),
-      btn(
-        boolBullet(chat.captcha_modes.includes(CaptchaMode.Matrix)) +
-          ` ${CaptchaMode.Matrix}`,
-        `setting:${CaptchaMode.Matrix}`,
-      ),
-    ],
-    [
-      btn(
-        booleanEmoji(chat.delete_joins) +
-          ' Delete "*user* joined/left the group"',
-        'setting:delete_joins',
-      ),
-    ],
-    [
-      btn(
-        booleanEmoji(chat.delete_slash_commands) +
-          ' Delete slash commands from non-admins',
-        'setting:delete_slash_commands',
-      ),
-    ],
-    [
-      btn('\u2796', 'setting:dec_timeout'),
-      btn(chat.captcha_timeout + 's', 'noop'),
-      btn('\u2795', 'setting:inc_timeout'),
-    ],
-  ]);
-  return reply_markup;
 }

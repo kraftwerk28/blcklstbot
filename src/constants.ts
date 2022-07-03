@@ -1,4 +1,4 @@
-import { CaptchaMode } from './types';
+import { CaptchaMode, ChatLanguageCode } from './types';
 
 export const CHATS_TABLE_NAME = 'chats';
 export const USERS_TABLE_NAME = 'users';
@@ -7,6 +7,11 @@ export const DYN_COMMANDS_TABLE_NAME = 'dynamic_commands';
  * chat settings flow
  */
 export const DEFAULT_CAPCHA_MODES = Object.values(CaptchaMode);
+export const CHAT_LANGUAGES: ChatLanguageCode[] = ['en', 'uk'];
+export const LANGUAGE_FLAG: Record<ChatLanguageCode, string> = {
+  en: '\u{1f1fa}\u{1f1f8}',
+  uk: '\u{1f1fa}\u{1f1e6}',
+}
 
 export const MIN_CAPTCHA_TIMEOUT = 10;
 export const MAX_CAPTCHA_TIMEOUT = 5 * 60;
