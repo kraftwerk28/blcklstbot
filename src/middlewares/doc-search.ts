@@ -2,8 +2,8 @@ import { Markup } from 'telegraf';
 import { InlineQueryResult } from 'typegram';
 
 import { OnMiddleware } from '../types';
-import { link, escape, bold } from '../utils/html';
 import { log } from '../logger';
+import { html } from '../utils';
 import { searchProviders } from '../utils/doc-search';
 import { MAX_INLINE_RESULTS_AMOUNT } from '../constants';
 
@@ -49,15 +49,15 @@ export const docSearch: Mw = async function (ctx, next) {
     }
 
     const inlineResults: InlineQueryResult[] = results.map((result, index) => {
-      let text = bold(searchProvider.name) + ':\n';
-      text += link(result.link, result.title);
+      let text = html.bold(searchProvider.name) + ':\n';
+      text += html.link(result.link, result.title);
       if (result.text) {
-        text += `\n${escape(result.text)}`;
+        text += `\n${html.escape(result.text)}`;
       }
       const entry = {
         type: 'article',
         id: `${searchProvider.name}:${index}`,
-        title: escape(result.title),
+        title: html.escape(result.title),
         input_message_content: {
           message_text: text,
           parse_mode: 'HTML',

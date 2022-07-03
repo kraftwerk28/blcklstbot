@@ -2,11 +2,12 @@ import { URL } from 'url';
 import crypto from 'crypto';
 import { promises as fs } from 'fs';
 import { Context as TelegrafContext } from 'telegraf';
-import { ChatMember, Message, MessageEntity, Update, User } from 'typegram';
+import { ChatMember, Message, Update, User } from 'typegram';
 import fetch from 'node-fetch';
 import path from 'path';
 
 export * as html from './html';
+
 import {
   ChatLanguageCode,
   Ctx,
@@ -14,6 +15,7 @@ import {
   GuardPredicate,
   LocaleContainer,
 } from '../types';
+
 import { log } from '../logger';
 
 export function noop() {}
@@ -218,35 +220,8 @@ export async function loadLocales(): Promise<LocaleContainer> {
   return result;
 }
 
-// export function applyComments(
-//   text: string,
-//   entities: MessageEntity[],
-//   commentString: string,
-// ) {
-//   const resLines = [];
-//   const codeEntities = entities
-//     .filter((e) => e.type === 'code' || e.type === 'pre')
-//     .map(({ offset, length }) => [offset, offset + length])
-//     .sort((a, b) => a[0] - b[0]);
-
-//   let curOffset = 0;
-//   let inCodeTag = false;
-//   let curEntity = codeEntities.shift();
-//   for (const line of text.split('\n')) {
-//     if (!curEntity) {
-//       resLines.push(util.format(commentString, line));
-//       continue;
-//     }
-
-//     if (curEntity) {
-//       if (curOffset > curEntity.offset) {
-//       }
-//     }
-//     curOffset += line.length + 1;
-//   }
-// }
-
-export async function checkCASban(userId: number): Promise<boolean> {
+/** If user is CAS banned, returns link to the report */
+export async function checkCASban(userId: number): Promise<string | undefined> {
   try {
     const url = new URL('https://api.cas.chat/check');
     url.searchParams.append('user_id', userId.toString());
@@ -254,13 +229,15 @@ export async function checkCASban(userId: number): Promise<boolean> {
       headers: { Accept: 'application/json' },
     });
     if (!response.ok) {
-      return false;
+      return;
     }
     const { ok } = (await response.json()) as { ok: boolean };
-    return ok;
+    if (ok) {
+      return `https://cas.chat/query?u=${userId}`;
+    }
   } catch (err) {
     log.error('Error in ::checkCASban:', err);
-    return false;
+    return;
   }
 }
 

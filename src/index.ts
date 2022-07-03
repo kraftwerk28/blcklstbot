@@ -44,6 +44,7 @@ async function main() {
     .use(middlewares.getDbChat)
     .on('message', middlewares.addUserToDatabase)
     .on('message', middlewares.trackMemberMessages)
+    .on('message', middlewares.checkCasBan)
     .on('text', middlewares.substitute)
     .on('text', middlewares.highlightCode)
     .on('text', middlewares.checkCaptchaAnswer)
@@ -85,11 +86,9 @@ async function main() {
     .command('dbg', commands.dbg)
     .action(/^unban:([\d-]+):([\d-]+)$/, middlewares.undoBan)
     .catch((err, ctx) => {
-      log.error(
-        'Error in `bot::catch`\nUpdate: %s\nError: %O',
-        util.inspect(ctx.update, { colors: true, depth: null }),
-        err,
-      );
+      log.error('Error in bot::catch; update')
+      log.error(ctx.update);
+      log.error(err as Error);
     });
 
   bot.context

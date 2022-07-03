@@ -1,6 +1,0 @@
-report - report user [admin]
-voteban - start voteban
-cancel_voteban - cancel last voteban
-voteban_threshold - get/set voteban threshold [admin]
-stop - set voteban cooldown (15min) [admin]
-help - manual [admin]

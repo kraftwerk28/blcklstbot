@@ -19,19 +19,12 @@ export const groupSettings = Composer.branchAll(
     rows.push('Captcha modes:');
     rows.push(
       ...DEFAULT_CAPCHA_MODES.map(
-        (mode) =>
+        mode =>
           `  ${booleanEmoji(dbChat.captcha_modes.includes(mode))} ${mode}`,
       ),
     );
     rows.push(
-      'Rules message: ' + booleanEmoji(dbChat.rules_message_id !== null),
-    );
-    // TODO:
-    // rows.push(
-    //   'Beautify code: ' + booleanEmoji(dbChat.replace_code_with_pic),
-    // );
-    rows.push(
-      'Delete "*user* joined the group" messages: ' +
+      'Delete "*user* joined/left the group": ' +
         booleanEmoji(dbChat.delete_joins),
     );
     rows.push(
@@ -43,13 +36,14 @@ export const groupSettings = Composer.branchAll(
         booleanEmoji(dbChat.upload_to_gist),
     );
     rows.push(
-      `Delete accidental ${code('/slash')} commands sent by users: ` +
+      `Delete ${code('/slash')} commands sent by non-admins: ` +
         booleanEmoji(dbChat.delete_slash_commands),
     );
-    rows.push(`Chat language (i18n still WIP): ${bold(dbChat.language_code)}`);
+    rows.push(`Preferred chat language (uk/en): ${bold(dbChat.language_code)}`);
+    rows.push(`CAS ban enabled: ${booleanEmoji(dbChat.enable_cas)}`);
+    rows.push(`Captcha timeout: ${dbChat.captcha_timeout}s.`);
 
     await ctx.deleteItSoon()(ctx.message);
-    rows.push(`Captcha timeout: ${dbChat.captcha_timeout}s.`);
     await ctx
       .replyWithHTML(rows.join('\n'), {
         reply_to_message_id: ctx.message.message_id,

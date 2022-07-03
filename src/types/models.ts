@@ -27,6 +27,7 @@ export type DbChat = DbChatFromTg & {
   delete_joins: boolean;
   propagate_bans: boolean;
   upload_to_gist: boolean;
+  enable_cas: boolean;
 };
 
 /** Non-normalized version of User with primary key of (id, chat_id) */
@@ -38,6 +39,7 @@ export type DbUser = DbUserFromTg & {
   banned: boolean;
   warn_ban_reason: DbOptional<string>;
   banned_timestamp: DbOptional<Date>;
+  ignore_cas: boolean;
 };
 
 export type DbUserMessage = {

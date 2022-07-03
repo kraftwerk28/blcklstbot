@@ -1,6 +1,7 @@
 {
   "report": "{reporter} banned {reported}.",
   "report_reason": "<b>Reason</b>: {reason}.",
+  "cas_report": "Banned {user}. <b>Reason</b>: user is in {cas_link} database.",
   "warn": "{reporter} warned {reported}",
   "last_warning": "last warning!",
   "math_captcha": "{user}, please, solve the following math expression:",
@@ -8,5 +9,6 @@
   "captcha_remaining": "You have {seconds} seconds.",
   "forgive": "{forgiver} forgived {reported}.",
   "banlist_title": "Users banned in current chat (click user to unban them):",
-  "banlist_empty": "No banned users here so far..."
+  "banlist_empty": "No banned users here so far...",
+  "user_report_admin_pm": "User {reporter} reported {reportee} in chat {chat}"
 }
