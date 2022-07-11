@@ -16,12 +16,11 @@ export const substitute: OnMiddleware<"text"> = async function (ctx, next) {
   }
   let nValidSedQueries = 0;
   for (const sedQuery of sedQueries) {
-    const m = sedQuery.match(/^s\s*([/#@])/); // TODO: more characters
-    const sep = m?.[1]; // Usually it's "/": s/foo/bar/
+    const sep = sedQuery.match(/^s\s*([/#@])/)?.[1]; // TODO: more characters
     // TODO: escape special characters before generating sed regexp
     if (!sep) continue;
     const sedRe = new RegExp(
-      String.raw`^s${sep}((?:\\${sep}|[^${sep}])+)${sep}((?:\\${sep}|[^${sep}])+)(?:${sep}([mig]*))$`,
+      String.raw`^s${sep}((?:\\${sep}|[^${sep}])+)${sep}((?:\\${sep}|[^${sep}])*)(?:${sep}([mig]*))$`,
     );
     const sedQueryMatch = sedQuery.match(sedRe);
     if (!sedQueryMatch) {
