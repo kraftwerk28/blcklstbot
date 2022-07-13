@@ -63,6 +63,48 @@ async function userCaptcha(ctx: Ctx, user: User) {
       );
       break;
     }
+    case CaptchaMode.ArithmeticWorded: {
+      const NUM_NAME = {
+        1: { en: 'one', uk: 'один' },
+        2: { en: 'two', uk: 'два' },
+        3: { en: 'three', uk: 'три' },
+        4: { en: 'four', uk: 'чотири' },
+        5: { en: 'five', uk: "п'ять" },
+        6: { en: 'six', uk: "шість" },
+        7: { en: 'seven', uk: "сім" },
+        8: { en: 'eight', uk: "вісім" },
+        9: { en: 'nine', uk: "дев'ять" },
+      };
+      const { multiplier, s1, s2, isSum, nthTermToStringify } = captcha.meta
+      let [a, b, c] = [multiplier, s1, s2].map(it => it.toString());
+      switch (nthTermToStringify) {
+        case 0:
+          // @ts-expect-error bad type
+          a = NUM_NAME[a][ctx.dbChat.language_code] ?? a;
+          break;
+        case 1:
+          // @ts-expect-error bad type
+          b = NUM_NAME[b][ctx.dbChat.language_code] ?? b;
+          break;
+        case 2:
+          // @ts-expect-error bad type
+          c = NUM_NAME[c][ctx.dbChat.language_code] ?? c;
+      }
+      let expression: string;
+      if (isSum) {
+        expression = `${a} × (${b} + ${c})`;
+      } else {
+        expression = `${a} × (${b} - ${c})`;
+      }
+      captchaMessage = await ctx.replyWithHTML(
+        ctx.t('math_captcha', { user: userMention(user) }) +
+          '\n' +
+          code(expression) +
+          '\n' +
+          ctx.t('captcha_remaining', { seconds: ctx.dbChat.captcha_timeout }),
+      );
+      break;
+    }
     case CaptchaMode.Matrix: {
       const matrixText = captcha.meta.matrix
         .map((row) => '| ' + row.join(' ') + ' |')

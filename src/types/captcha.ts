@@ -2,6 +2,7 @@ import { Ctx } from "./context";
 
 export enum CaptchaMode {
   Arithmetic = 'arithmetic',
+  ArithmeticWorded = 'arithmetic_worded',
   Matrix = 'matrix',
 }
 
@@ -18,6 +19,18 @@ export type ArithmeticCaptcha = Captcha<
   }
 >;
 
+export type ArithmeticWordedCaptcha = Captcha<
+  CaptchaMode.ArithmeticWorded,
+  {
+    multiplier: number;
+    s1: number;
+    s2: number;
+    isSum: boolean;
+    nthTermToStringify: number;
+    answer: number;
+  }
+>;
+
 export type MatrixDenomCaptcha = Captcha<
   CaptchaMode.Matrix,
   {
@@ -28,6 +41,7 @@ export type MatrixDenomCaptcha = Captcha<
 
 export type AbstractCaptcha =
   | ArithmeticCaptcha
+  | ArithmeticWordedCaptcha
   | MatrixDenomCaptcha;
 
 export type ExtractMeta<M extends CaptchaMode> = Extract<

@@ -28,6 +28,35 @@ const captchas: CaptchaDefs = {
       return parseInt(ctx.message?.text) === meta.answer;
     },
   },
+  [CaptchaMode.ArithmeticWorded]: {
+    generate() {
+      const multiplier = randInt(2, 10);
+      const isSum = randBool();
+      let answer;
+      let term1, term2;
+      if (isSum) {
+        term1 = randInt(2, 5);
+        term2 = randInt(3, 7);
+        answer = multiplier * (term1 + term2);
+      } else {
+        term1 = randInt(4, 10);
+        term2 = randInt(2, term1);
+        answer = multiplier * (term1 - term2);
+      }
+      return {
+        multiplier,
+        s1: term1,
+        s2: term2,
+        isSum,
+        answer,
+        nthTermToStringify: randInt(0, 3),
+      };
+    },
+    check(ctx: Ctx, meta) {
+      if (!(ctx.message && 'text' in ctx.message)) return false;
+      return parseInt(ctx.message?.text) === meta.answer;
+    },
+  },
   [CaptchaMode.Matrix]: {
     generate() {
       const [a, d] = [randInt(10), randInt(8)];

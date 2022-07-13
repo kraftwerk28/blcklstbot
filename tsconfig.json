@@ -1,8 +1,7 @@
 {
   "compilerOptions": {
-    "target": "es2017",
+    "target": "esnext",
     "module": "commonjs",
-    "lib": ["ESNext"],
     "outDir": "build/",
     "strict": true,
     "resolveJsonModule": true,
