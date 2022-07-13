@@ -1,12 +1,68 @@
-import { log } from "../logger";
 import { OnMiddleware } from "../types";
 
-// const substRe = /s\/((?:\\\/|[^\/])+)\/((?:\\\/|[^\/])*)(?:\/([mig]*))?(?:$|\s+)/g;
+type ParsedQuery = {
+  rawFrom: string;
+  rawTo: string;
+  flags: string;
+  isStrict: boolean;
+  sep: string;
+};
+
+function parseSedQuery(q: string): ParsedQuery | undefined {
+  // Determine which character is used as a separator
+  // s#foo#bar    s/(.+)/\1$&/gi
+  //  ^   ^        ^    ^    ^
+  const sep = q.match(/^s!?([/#@])/)?.[1]; // TODO: consider more characters
+  // TODO: escape special characters before generating sed regexp
+  if (!sep) return;
+  const parseQueryRe = new RegExp(
+    String.raw`^s(!)?${sep}((?:\\${sep}|[^${sep}])+)${sep}((?:\\${sep}|[^${sep}])*)(?:${sep}([mig]*))?$`,
+  );
+  const sedQueryMatch = q.match(parseQueryRe);
+  if (!sedQueryMatch) return;
+  const [, strictFlag, rawFrom, rawTo, flags] = sedQueryMatch;
+  const isStrict = strictFlag === "!";
+  return { rawFrom, rawTo, flags, isStrict, sep };
+}
+
+export function applySedQueries(
+  inputText: string,
+  queries: string[],
+): string | undefined {
+  let nValidQueries = 0;
+  for (const sedQuery of queries) {
+    const parsedQuery = parseSedQuery(sedQuery);
+    if (!parsedQuery) continue;
+    const { rawFrom, rawTo, flags, isStrict } = parsedQuery;
+    try {
+      const replaceFrom = new RegExp(rawFrom, flags);
+      const newText = inputText.replace(replaceFrom, (...args) => {
+        // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/replace#specifying_a_function_as_a_parameter
+        const capGroups = args.slice(
+          0,
+          args.findIndex(it => typeof it === "number"),
+        );
+        return rawTo.replace(/[\\$](&|\d+)/g, (m, groupIndex) => {
+          if (groupIndex === "&") groupIndex = 0;
+          return capGroups[groupIndex] ?? m;
+        });
+      });
+      if (isStrict && newText === inputText) return;
+      inputText = newText;
+      nValidQueries++;
+    } catch {
+      // Ignore
+    }
+  }
+  if (nValidQueries < queries.length) {
+    return;
+  }
+  return inputText;
+}
 
 export const substitute: OnMiddleware<"text"> = async function (ctx, next) {
   const reply = ctx.message.reply_to_message;
   if (!reply || !("text" in reply)) return next();
-  let finalText = reply.text;
   const sedQueries = ctx.message.text
     .split("\n")
     .map(q => q.trim())
@@ -14,48 +70,7 @@ export const substitute: OnMiddleware<"text"> = async function (ctx, next) {
   if (sedQueries.length === 0) {
     return next();
   }
-  let nValidSedQueries = 0;
-  for (const sedQuery of sedQueries) {
-    const sep = sedQuery.match(/^s\s*([/#@])/)?.[1]; // TODO: more characters
-    // TODO: escape special characters before generating sed regexp
-    if (!sep) continue;
-    const sedRe = new RegExp(
-      String.raw`^s${sep}((?:\\${sep}|[^${sep}])+)${sep}((?:\\${sep}|[^${sep}])*)(?:${sep}([mig]*))$`,
-    );
-    const sedQueryMatch = sedQuery.match(sedRe);
-    if (!sedQueryMatch) {
-      continue;
-    }
-    nValidSedQueries++;
-    log.info(`Applying ${sedQuery} to ${finalText}`);
-    try {
-      const replaceFrom = new RegExp(sedQueryMatch[1], sedQueryMatch[3]);
-      const replaceTo = sedQueryMatch[2].replace(/\\(\d+)/g, (_, d) =>
-        parseInt(d) === 0 ? "$&" : `$${d}`,
-      );
-      finalText = finalText.replace(replaceFrom, replaceTo);
-    } catch {
-      // Ignore
-    }
-  }
-  if (nValidSedQueries < sedQueries.length) {
-    return next();
-  }
+  const finalText = applySedQueries(reply.text, sedQueries);
+  if (!finalText) return next();
   return ctx.reply(finalText, { reply_to_message_id: reply.message_id });
-
-  // for (const match of ctx.message.text.matchAll(substRe)) {
-  //   didMatch = true;
-  //   const replaceTo = match[2]
-  //     .replace(/\\([&\d])/g, '$$$1')
-  //     .replace(/\$0/g, '$$&');
-  //   try {
-  //     // Catch bad regex syntax
-  //     const replaceFrom = new RegExp(match[1], match[3]);
-  //     finalText = finalText.replace(replaceFrom, replaceTo);
-  //     log.info('Regex substitution: %O', { replaceFrom, replaceTo, finalText });
-  //   } catch {}
-  // }
-  // if (!didMatch) return next();
-  // const replyOptions = { reply_to_message_id: reply.message_id };
-  // return ctx.reply(finalText, replyOptions);
 };
