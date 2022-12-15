@@ -80,6 +80,24 @@ async function main() {
     .command('banlist', commands.banList)
     .command('gist', commands.manualGist)
     .action(/^unban:([\d-]+):([\d-]+)$/, middlewares.undoBan)
+    .on('text', async (ctx) => {
+      if (
+        ctx.chat.id === -1001023368582 &&
+        ctx.message.text.match(/ґ/i)
+      ) {
+        let doSend = false;
+        if (ctx.from.id === 382744431 && Math.random() > 0.5) {
+          doSend = true;
+        } else if (Math.random() > 0.9) {
+          doSend = true;
+        }
+        if (!doSend) return;
+        return ctx.replyWithSticker(
+          'CAACAgIAAxkBAAEWQyti2a86_6tRiMuDLYmAHTi5H9WYGAACzQ0AAsYHKEjAhjjbs2vN0ikE',
+          { reply_to_message_id: ctx.message.message_id },
+        );
+      }
+    })
     .catch((err, ctx) => {
       log.error(
         'Error in `bot::catch`\nUpdate: %s\nError: %O',
