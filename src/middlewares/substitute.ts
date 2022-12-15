@@ -40,7 +40,7 @@ export function applySedQueries(
         // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/replace#specifying_a_function_as_a_parameter
         const capGroups = args.slice(
           0,
-          args.findIndex(it => typeof it === "number"),
+          args.findIndex((it) => typeof it === "number"),
         );
         return rawTo.replace(/[\\$](&|\d+)/g, (m, groupIndex) => {
           if (groupIndex === "&") groupIndex = 0;
@@ -65,8 +65,8 @@ export const substitute: OnMiddleware<"text"> = async function (ctx, next) {
   if (!reply || !("text" in reply)) return next();
   const sedQueries = ctx.message.text
     .split("\n")
-    .map(q => q.trim())
-    .filter(q => q.startsWith("s"));
+    .map((q) => q.trim())
+    .filter((q) => q.startsWith("s"));
   if (sedQueries.length === 0) {
     return next();
   }

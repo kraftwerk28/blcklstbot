@@ -1,11 +1,11 @@
-import { Context as TelegrafContext } from 'telegraf';
-import { Message } from 'typegram';
+import { Context as TelegrafContext } from "telegraf";
+import { Message } from "typegram";
 
-import { EventQueue } from '../event-queue';
-import { DbStore } from '../db-store';
-import { EventQueueEvent } from './event-queue';
-import { DbChat, DbUser } from './models';
-import { LocaleContainer } from './utils';
+import { EventQueue } from "../event-queue";
+import { DbStore } from "../db-store";
+import { EventQueueEvent } from "./event-queue";
+import { DbChat, DbUser } from "./models";
+import { LocaleContainer } from "./utils";
 
 export interface Ctx extends TelegrafContext {
   dbStore: DbStore;

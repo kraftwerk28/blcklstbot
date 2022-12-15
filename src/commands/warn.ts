@@ -1,16 +1,16 @@
-import { HearsMiddleware } from '../types';
+import { HearsMiddleware } from "../types";
 import {
   botHasSufficientPermissions,
   messageIsReply,
   repliedMessageIsFromMember,
   senderIsAdmin,
-} from '../guards';
-import { Composer } from '../composer';
-import { bold, userMention, escape } from '../utils/html';
-import { getDbUserFromReply, deleteMessage } from '../middlewares';
-import { MAX_WARNINGS } from '../constants';
-import { report } from './report';
-import { noop, safePromiseAll } from '../utils';
+} from "../guards";
+import { Composer } from "../composer";
+import { bold, userMention, escape } from "../utils/html";
+import { getDbUserFromReply, deleteMessage } from "../middlewares";
+import { MAX_WARNINGS } from "../constants";
+import { report } from "./report";
+import { noop, safePromiseAll } from "../utils";
 
 export const warn = Composer.branchAll(
   [
@@ -49,16 +49,16 @@ export const warn = Composer.branchAll(
       const isLastWarn = newWarningsCount === MAX_WARNINGS;
 
       let text =
-        ctx.t('warn', {
+        ctx.t("warn", {
           reporter: userMention(ctx.from),
           reported: userMention(reportedUser),
-        }) + ' ';
+        }) + " ";
       if (isLastWarn) {
-        text += `(${ctx.t('last_warning')})`;
+        text += `(${ctx.t("last_warning")})`;
       } else {
         text += bold(`(${newWarningsCount} / ${MAX_WARNINGS})`);
       }
-      text += '\n' + ctx.t('report_reason', { reason: escape(warnReason) });
+      text += "\n" + ctx.t("report_reason", { reason: escape(warnReason) });
 
       return safePromiseAll([
         ctx.replyWithHTML(text),

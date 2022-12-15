@@ -1,5 +1,5 @@
-import { senderIsAdmin } from '../guards';
-import { CommandMiddleware } from '../types';
+import { senderIsAdmin } from "../guards";
+import { CommandMiddleware } from "../types";
 
 export const rules: CommandMiddleware = async function (ctx) {
   const isAdmin = await senderIsAdmin(ctx);
@@ -8,15 +8,15 @@ export const rules: CommandMiddleware = async function (ctx) {
   if (msgText.match(/^\/rules(@\w+)?\s+set$/) && isAdmin && reply) {
     await ctx.dbStore.updateChatProp(
       ctx.chat.id,
-      'rules_message_id',
+      "rules_message_id",
       reply.message_id,
     );
     await ctx.deleteMessage();
   } else if (msgText.match(/^\/rules(@\w+)?\s+del(ete)?$/) && isAdmin) {
-    await ctx.dbStore.updateChatProp(ctx.chat.id, 'rules_message_id', null);
+    await ctx.dbStore.updateChatProp(ctx.chat.id, "rules_message_id", null);
     await ctx.deleteMessage();
-  } else if (typeof ctx.dbChat.rules_message_id === 'number') {
-    let replyToId = reply ? reply.message_id : ctx.message.message_id;
+  } else if (typeof ctx.dbChat.rules_message_id === "number") {
+    const replyToId = reply ? reply.message_id : ctx.message.message_id;
     await ctx.telegram.copyMessage(
       ctx.chat.id,
       ctx.chat.id,

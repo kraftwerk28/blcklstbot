@@ -1,6 +1,6 @@
-import { Composer } from '../composer';
-import { isGroupChat, senderIsAdmin } from '../guards';
-import { HearsMiddleware } from '../types';
+import { Composer } from "../composer";
+import { isGroupChat, senderIsAdmin } from "../guards";
+import { HearsMiddleware } from "../types";
 
 export const bangHandler = Composer.guardAll(
   [isGroupChat, senderIsAdmin],

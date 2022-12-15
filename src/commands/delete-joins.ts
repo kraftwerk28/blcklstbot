@@ -1,6 +1,6 @@
-import { Composer } from '../composer';
-import { isGroupChat, senderIsAdmin } from '../guards';
-import { CommandMiddleware } from '../types';
+import { Composer } from "../composer";
+import { isGroupChat, senderIsAdmin } from "../guards";
+import { CommandMiddleware } from "../types";
 
 export const deleteJoins = Composer.guardAll(
   [senderIsAdmin, isGroupChat],
@@ -8,7 +8,7 @@ export const deleteJoins = Composer.guardAll(
     await ctx.deleteMessage();
     await ctx.dbStore.updateChatProp(
       ctx.chat.id,
-      'delete_joins',
+      "delete_joins",
       !ctx.dbChat?.delete_joins,
     );
   } as CommandMiddleware,

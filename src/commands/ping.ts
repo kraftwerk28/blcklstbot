@@ -1,4 +1,4 @@
-import { HearsMiddleware } from '../types';
+import { HearsMiddleware } from "../types";
 
 export const ping: HearsMiddleware = async (ctx) => {
   const seconds = parseInt(ctx.match[1]);
@@ -8,5 +8,5 @@ export const ping: HearsMiddleware = async (ctx) => {
     time: seconds,
     messageId: ctx.message.message_id,
   };
-  ctx.eventQueue.pushDelayed(seconds, 'pong', payload);
-}
+  ctx.eventQueue.pushDelayed(seconds, "pong", payload);
+};

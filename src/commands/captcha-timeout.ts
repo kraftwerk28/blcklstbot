@@ -1,8 +1,8 @@
-import { HearsMiddleware } from '../types';
-import { MIN_CAPTCHA_TIMEOUT, MAX_CAPTCHA_TIMEOUT } from '../constants';
-import { Composer } from '../composer';
-import { isGroupChat, senderIsAdmin } from '../guards';
-import { deleteMessage } from '../middlewares';
+import { HearsMiddleware } from "../types";
+import { MIN_CAPTCHA_TIMEOUT, MAX_CAPTCHA_TIMEOUT } from "../constants";
+import { Composer } from "../composer";
+import { isGroupChat, senderIsAdmin } from "../guards";
+import { deleteMessage } from "../middlewares";
 
 export const captchaTimeout: HearsMiddleware = Composer.branchAll(
   [senderIsAdmin, isGroupChat],
@@ -25,7 +25,7 @@ export const captchaTimeout: HearsMiddleware = Composer.branchAll(
       return;
     }
     await Promise.allSettled([
-      ctx.dbStore.updateChatProp(ctx.chat.id, 'captcha_timeout', seconds),
+      ctx.dbStore.updateChatProp(ctx.chat.id, "captcha_timeout", seconds),
       ctx.deleteMessage(),
     ]);
   } as HearsMiddleware,

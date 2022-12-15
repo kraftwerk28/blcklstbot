@@ -1,18 +1,18 @@
-import { Redis } from 'ioredis';
-import { Telegram } from 'telegraf';
+import { Redis } from "ioredis";
+import { Telegram } from "telegraf";
 
-import { DbStore } from './db-store';
+import { DbStore } from "./db-store";
 import {
   BaseEvent,
   Callback,
   ExtractType,
   MaybePromise,
   PayloadByType,
-} from './types';
+} from "./types";
 
 export class EventQueue<
   Event extends BaseEvent,
-  EventType extends ExtractType<Event> = ExtractType<Event>
+  EventType extends ExtractType<Event> = ExtractType<Event>,
 > {
   private timerId: NodeJS.Timeout | null = null;
   private subscribers: Map<EventType, Callback<Event, EventType>[]> = new Map();
@@ -22,7 +22,7 @@ export class EventQueue<
   constructor(
     private readonly telegram: Telegram,
     private readonly dbStore: DbStore,
-    private readonly sortedSetKey = 'evt_queue:zset',
+    private readonly sortedSetKey = "evt_queue:zset",
     private pollTimeout = 500,
   ) {
     this.pollEvents = this.pollEvents.bind(this);
@@ -33,7 +33,7 @@ export class EventQueue<
 
   setPollTimeout(timeout: number) {
     this.pollTimeout = timeout;
-    if (typeof this.timerId === 'number') {
+    if (typeof this.timerId === "number") {
       clearInterval(this.timerId);
     }
     this.timerId = setInterval(this.pollEvents, timeout);
@@ -77,7 +77,7 @@ export class EventQueue<
       }
     }
     for (const sett of await Promise.allSettled(promises)) {
-      if (sett.status === 'rejected') {
+      if (sett.status === "rejected") {
         for (const callback of this.errorSubscribers) {
           callback(sett.reason as Error);
         }
@@ -97,7 +97,9 @@ export class EventQueue<
       try {
         const { type, payload } = JSON.parse(event);
         this.emit(type, payload);
-      } catch (err) {}
+      } catch (err) {
+        // Noop
+      }
     }
   }
 
@@ -111,7 +113,7 @@ export class EventQueue<
     const rawPayload = JSON.stringify({ type, payload });
     await this.redisClient.zadd(this.sortedSetKey, deadline, rawPayload);
     hash ??= rawPayload;
-    await this.redisClient.set(hash, deadline, 'EX', seconds);
+    await this.redisClient.set(hash, deadline, "EX", seconds);
     return this;
   }
 

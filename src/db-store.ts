@@ -1,11 +1,11 @@
-import { Redis } from 'ioredis';
-import { Knex } from 'knex';
-import { Message } from 'typegram';
+import { Redis } from "ioredis";
+import { Knex } from "knex";
+import { Message } from "typegram";
 import {
   CHATS_TABLE_NAME,
   DYN_COMMANDS_TABLE_NAME,
   USERS_TABLE_NAME,
-} from './constants';
+} from "./constants";
 import {
   AbstractCaptcha,
   DbChat,
@@ -14,8 +14,8 @@ import {
   DbUser,
   DbUserFromTg,
   DbUserMessage,
-} from './types';
-import { deserializeCaptcha, serializeCaptcha } from './captcha';
+} from "./types";
+import { deserializeCaptcha, serializeCaptcha } from "./captcha";
 
 export class DbStore {
   constructor(public readonly knex: Knex, public readonly redisClient: Redis) {}
@@ -79,8 +79,8 @@ export class DbStore {
     const insertQuery = this.knex(table).insert(entity);
     const actioncmd = Object.keys(entity)
       .map((key) => `${key} = excluded.${key}`)
-      .join(', ');
-    const pk = primaryKeys.join(', ');
+      .join(", ");
+    const pk = primaryKeys.join(", ");
     const insertResult = await this.knex.raw(
       `? on conflict(${pk}) do update set ${actioncmd} returning *`,
       [insertQuery],
@@ -97,7 +97,7 @@ export class DbStore {
   }
 
   async addChat(chat: DbChatFromTg): Promise<DbChat> {
-    return this.genericInsert(chat, CHATS_TABLE_NAME, ['id']);
+    return this.genericInsert(chat, CHATS_TABLE_NAME, ["id"]);
   }
 
   async addUser(user: DbUserFromTg, chatId: number): Promise<DbUser> {
@@ -111,8 +111,8 @@ export class DbStore {
       username,
     };
     return this.genericInsert<DbUserFromTg, DbUser>(dbUser, USERS_TABLE_NAME, [
-      'id',
-      'chat_id',
+      "id",
+      "chat_id",
     ]);
     // const insertQuery = this.knex(USERS_TABLE_NAME).insert();
     // const insertResult = await this.knex.raw(
@@ -133,14 +133,14 @@ export class DbStore {
     partialUser: Partial<DbUser> & { id: number; chat_id?: number },
   ) {
     const whereClause: Record<string, number> = { id: partialUser.id };
-    if (typeof partialUser.chat_id === 'number') {
+    if (typeof partialUser.chat_id === "number") {
       whereClause.chat_id = partialUser.chat_id;
     }
     return this.knex(USERS_TABLE_NAME).where(whereClause).update(partialUser);
   }
 
   async addUserMessage(message: Message) {
-    return this.knex('user_messages').insert({
+    return this.knex("user_messages").insert({
       chat_id: message.chat.id,
       user_id: message.from?.id,
       message_id: message.message_id,
@@ -149,9 +149,9 @@ export class DbStore {
   }
 
   async getUserMessages(chatId: number, userId: number): Promise<number[]> {
-    return this.knex<DbUserMessage>('user_messages')
+    return this.knex<DbUserMessage>("user_messages")
       .where({ chat_id: chatId, user_id: userId })
-      .del('message_id');
+      .del("message_id");
   }
 
   async defineCommand(
@@ -170,7 +170,7 @@ export class DbStore {
         global,
       },
       DYN_COMMANDS_TABLE_NAME,
-      ['message_id', 'chat_id'],
+      ["message_id", "chat_id"],
     );
   }
 

@@ -1,14 +1,14 @@
-import { Composer } from '../composer';
-import { Chat } from 'typegram';
-import { code } from '../utils/html';
-import { OnMiddleware } from '../types';
-import { isGroupChat } from '../guards';
+import { Composer } from "../composer";
+import { Chat } from "typegram";
+import { code } from "../utils/html";
+import { OnMiddleware } from "../types";
+import { isGroupChat } from "../guards";
 
-type Middleware = OnMiddleware<'message'>;
+type Middleware = OnMiddleware<"message">;
 
 export const addChatToDatabase: Middleware = Composer.optional(
   isGroupChat,
-  async function(ctx, next) {
+  async function (ctx, next) {
     const chat = ctx.chat as Chat.GroupChat & Chat.UserNameChat;
     const dbChat = {
       id: chat.id,
@@ -23,5 +23,5 @@ export const addChatToDatabase: Middleware = Composer.optional(
       );
     }
     return next();
-  }
+  },
 );

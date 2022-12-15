@@ -1,9 +1,9 @@
 import { Ctx } from "./context";
 
 export enum CaptchaMode {
-  Arithmetic = 'arithmetic',
-  ArithmeticWorded = 'arithmetic_worded',
-  Matrix = 'matrix',
+  Arithmetic = "arithmetic",
+  ArithmeticWorded = "arithmetic_worded",
+  Matrix = "matrix",
 }
 
 type Captcha<Mode extends CaptchaMode, Meta extends Record<string, any>> = {
@@ -47,7 +47,7 @@ export type AbstractCaptcha =
 export type ExtractMeta<M extends CaptchaMode> = Extract<
   AbstractCaptcha,
   { mode: M }
->['meta'];
+>["meta"];
 
 export type CaptchaDefs = {
   [M in CaptchaMode]: {

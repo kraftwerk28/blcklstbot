@@ -2,8 +2,8 @@ import {
   Composer as TelegrafComposer,
   Middleware,
   Context as TelegrafContext,
-} from 'telegraf';
-import { Ctx, GuardPredicate, NonemptyReadonlyArray } from './types';
+} from "telegraf";
+import { Ctx, GuardPredicate, NonemptyReadonlyArray } from "./types";
 
 function mergePredicates<C extends TelegrafContext>(
   predicates: readonly GuardPredicate<C>[],
@@ -13,7 +13,7 @@ function mergePredicates<C extends TelegrafContext>(
 }
 
 export class Composer<
-  C extends TelegrafContext = Ctx
+  C extends TelegrafContext = Ctx,
 > extends TelegrafComposer<C> {
   static guardAll<C extends TelegrafContext = Ctx>(
     predicates: readonly GuardPredicate<C>[],

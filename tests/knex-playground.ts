@@ -1,23 +1,23 @@
-import { Pool } from 'pg';
-import knex from 'knex';
+import { Pool } from "pg";
+import knex from "knex";
 
 // const pool = new Pool({
 //   connectionString: 'postgres://kraftwerk28:271828@localhost',
 // });
 const kn = knex({
-  client: 'pg',
+  client: "pg",
   connection: {
-    connectionString: 'postgres://kraftwerk28:271828@localhost',
+    connectionString: "postgres://kraftwerk28:271828@localhost",
   },
 });
 
 type WithArr = {
-  arr: string[]
+  arr: string[];
 };
 
 (async () => {
-  await kn('has_array').insert({ arr: ['hello', 'world'] });
-  for (const row of await kn<WithArr>('has_array').select()) {
+  await kn("has_array").insert({ arr: ["hello", "world"] });
+  for (const row of await kn<WithArr>("has_array").select()) {
     console.log(row.arr);
   }
   await kn.destroy();

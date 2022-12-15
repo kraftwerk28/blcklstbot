@@ -1,17 +1,17 @@
-import { Chat, User } from 'typegram';
-import { CaptchaMode } from './';
-import { DbOptional } from './utils';
+import { Chat, User } from "typegram";
+import { CaptchaMode } from "./";
+import { DbOptional } from "./utils";
 
-export type ChatLanguageCode = 'uk' | 'en';
+export type ChatLanguageCode = "uk" | "en";
 
 export type DbChatFromTg = Pick<
   Chat.GroupChat & Chat.UserNameChat,
-  'id' | 'title' | 'username'
+  "id" | "title" | "username"
 >;
 
 export type DbUserFromTg = Pick<
   User,
-  'id' | 'first_name' | 'last_name' | 'username' | 'language_code'
+  "id" | "first_name" | "last_name" | "username" | "language_code"
 >;
 
 export type DbChat = DbChatFromTg & {
@@ -48,15 +48,15 @@ export type DbUserMessage = {
 };
 
 export type EnryResponse = {
-  language: string,
-  extension: string,
+  language: string;
+  extension: string;
 };
 
 export type DbDynamicCommand = {
   /** ID of message in special channel where command messages are forwarded */
-  message_id: number,
-  chat_id: DbOptional<number>,
-  command: string,
-  defined_by: number,
-  global: boolean,
+  message_id: number;
+  chat_id: DbOptional<number>;
+  command: string;
+  defined_by: number;
+  global: boolean;
 };

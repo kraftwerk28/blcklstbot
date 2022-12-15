@@ -1,17 +1,17 @@
-import { Markup } from 'telegraf';
+import { Markup } from "telegraf";
 
-import { HearsMiddleware } from '../types';
-import { Composer } from '../composer';
+import { HearsMiddleware } from "../types";
+import { Composer } from "../composer";
 import {
   botHasSufficientPermissions,
   messageIsReply,
   repliedMessageIsFromMember,
   senderIsAdmin,
-} from '../guards';
-import { userMention, escape } from '../utils/html';
-import { getDbUserFromReply, deleteMessage } from '../middlewares';
-import { MAX_WARNINGS } from '../constants';
-import { noop, safePromiseAll } from '../utils';
+} from "../guards";
+import { userMention, escape } from "../utils/html";
+import { getDbUserFromReply, deleteMessage } from "../middlewares";
+import { MAX_WARNINGS } from "../constants";
+import { noop, safePromiseAll } from "../utils";
 
 export const report = Composer.branchAll(
   [
@@ -32,16 +32,16 @@ export const report = Composer.branchAll(
         : ctx.match[1];
       const callbackData = `unban:${ctx.chat.id}:${reportedUser.id}`;
       const inlineKbd = Markup.inlineKeyboard([
-        Markup.button.callback('\u{1f519} Undo', callbackData),
+        Markup.button.callback("\u{1f519} Undo", callbackData),
       ]);
-      let text = ctx.t('report', {
+      let text = ctx.t("report", {
         reporter: userMention(ctx.from),
         reported: userMention(reportedUser),
       });
       // let text =
       //   userMention(ctx.from) + ' banned ' + userMention(ctx.reportedUser);
       if (reason) {
-        text += '\n' + ctx.t('report_reason', { reason: escape(reason) });
+        text += "\n" + ctx.t("report_reason", { reason: escape(reason) });
         // text += `\n${bold('Reason')}: ${}`;
       }
 

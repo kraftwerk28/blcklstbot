@@ -1,22 +1,24 @@
-import { URL } from 'url';
-import crypto from 'crypto';
-import { promises as fs } from 'fs';
-import { Context as TelegrafContext } from 'telegraf';
-import { ChatMember, Message, Update, User } from 'typegram';
-import fetch from 'node-fetch';
-import path from 'path';
+import { URL } from "url";
+import crypto from "crypto";
+import { promises as fs } from "fs";
+import { Context as TelegrafContext } from "telegraf";
+import { ChatMember, Message, Update, User } from "typegram";
+import fetch from "node-fetch";
+import path from "path";
 
-export * as html from './html';
+export * as html from "./html";
 import {
   ChatLanguageCode,
   Ctx,
   EnryResponse,
   GuardPredicate,
   LocaleContainer,
-} from '../types';
-import { log } from '../logger';
+} from "../types";
+import { log } from "../logger";
 
-export function noop() {}
+export function noop() {
+  // Noop
+}
 
 /** Run Promise(s) w/o awaiting and log errors, if any */
 export async function safePromiseAll(
@@ -24,7 +26,7 @@ export async function safePromiseAll(
 ): Promise<void> {
   const results = await Promise.allSettled(Array.isArray(args) ? args : [args]);
   for (const result of results) {
-    if (result.status === 'rejected') {
+    if (result.status === "rejected") {
       log.error(result.reason);
     }
   }
@@ -35,7 +37,7 @@ export function regexp(parts: TemplateStringsArray, ...inBetweens: any[]) {
 }
 
 export function randInt(a: number, b?: number) {
-  if (typeof b === 'number') {
+  if (typeof b === "number") {
     return Math.floor(Math.random() * (b - a)) + a;
   } else {
     return Math.floor(Math.random() * a);
@@ -47,7 +49,7 @@ export function randBool() {
 }
 
 export function csIdGen(len = 8): string {
-  return crypto.randomBytes(len).toString('hex');
+  return crypto.randomBytes(len).toString("hex");
 }
 
 export function ensureEnvExists(name: string): string {
@@ -74,7 +76,7 @@ export function all<C extends TelegrafContext = Ctx>(
     );
 }
 
-export const dev = process.env.NODE_ENV === 'development';
+export const dev = process.env.NODE_ENV === "development";
 
 // export function getUserFromAnyMessage(message: Message): User | null {
 //   if (message.new
@@ -82,7 +84,7 @@ export const dev = process.env.NODE_ENV === 'development';
 export function getCodeFromMessage(msg: Message.TextMessage): string | null {
   if (!msg.entities) return null;
   const codeEntities = msg.entities.filter(
-    (e) => e.type === 'pre' || e.type === 'code',
+    (e) => e.type === "pre" || e.type === "code",
   );
   if (codeEntities.length !== 1) {
     // TODO:  Need to merge multiple entities into one
@@ -97,17 +99,17 @@ export function getCodeFromMessage(msg: Message.TextMessage): string | null {
   return null;
 }
 
-const OUT_OF_CHAT_STATUS: ChatMember['status'][] = ['left', 'kicked'];
-const IN_CHAT_STATUS: ChatMember['status'][] = [
-  'member',
-  'administrator',
-  'creator',
+const OUT_OF_CHAT_STATUS: ChatMember["status"][] = ["left", "kicked"];
+const IN_CHAT_STATUS: ChatMember["status"][] = [
+  "member",
+  "administrator",
+  "creator",
 ];
 
 export function getNewMembersFromUpdate(
   update: Update.ChatMemberUpdate | Update.MessageUpdate,
 ): User[] | null {
-  if ('chat_member' in update) {
+  if ("chat_member" in update) {
     const chatMember = update.chat_member;
     const oldMember = chatMember.old_chat_member;
     const newMember = chatMember.new_chat_member;
@@ -119,7 +121,7 @@ export function getNewMembersFromUpdate(
     } else {
       return null;
     }
-  } else if ('new_chat_members' in update.message) {
+  } else if ("new_chat_members" in update.message) {
     return update.message.new_chat_members;
   } else {
     return null;
@@ -129,7 +131,7 @@ export function getNewMembersFromUpdate(
 export function getLeftMemberFromUpdate(
   update: Update.ChatMemberUpdate | Update.MessageUpdate,
 ): User | null {
-  if ('chat_member' in update) {
+  if ("chat_member" in update) {
     const chatMember = update.chat_member;
     const oldMember = chatMember.old_chat_member;
     const newMember = chatMember.new_chat_member;
@@ -141,7 +143,7 @@ export function getLeftMemberFromUpdate(
     } else {
       return null;
     }
-  } else if ('left_chat_member' in update.message) {
+  } else if ("left_chat_member" in update.message) {
     return update.message.left_chat_member;
   } else {
     return null;
@@ -153,9 +155,9 @@ export async function runTreeSitterHighlight(
   code: string,
 ): Promise<NodeJS.ReadableStream | null> {
   const hlServerUrl = new URL(process.env.TREE_SITTER_SERVER_HOST!);
-  hlServerUrl.searchParams.append('lang', lang);
+  hlServerUrl.searchParams.append("lang", lang);
   const response = await fetch(hlServerUrl, {
-    method: 'POST',
+    method: "POST",
     body: code,
   });
   if (response.status === 200) {
@@ -166,7 +168,7 @@ export async function runTreeSitterHighlight(
 
 export async function runEnry(code: string): Promise<EnryResponse | null> {
   const response = await fetch(process.env.ENRY_SERVER_HOST!, {
-    method: 'POST',
+    method: "POST",
     body: code,
   });
   if (response.status !== 200) return null;
@@ -189,7 +191,7 @@ export async function uploadToGist(
     files: { [`${fileStem}.${extension}`]: { language, content: sourceCode } },
   };
   const response = await fetch(url, {
-    method: 'POST',
+    method: "POST",
     headers,
     body: JSON.stringify(body),
   });
@@ -205,13 +207,13 @@ export async function uploadToGist(
 }
 
 export async function loadLocales(): Promise<LocaleContainer> {
-  const dir = 'locales/';
+  const dir = "locales/";
   const files = await fs.readdir(dir);
   const result = {} as LocaleContainer;
   for (const file of files) {
     const fullPath = path.resolve(dir, file);
     const localeName = path.parse(fullPath).name as ChatLanguageCode;
-    const raw = await fs.readFile(fullPath, 'utf-8');
+    const raw = await fs.readFile(fullPath, "utf-8");
     result[localeName] = JSON.parse(raw);
     log.info('Loaded "%s" locale (%s)', localeName, file);
   }

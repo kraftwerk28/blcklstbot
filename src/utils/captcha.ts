@@ -1,7 +1,7 @@
-import { randBool, randInt } from './';
-import { CaptchaMode, ExtractMeta as ExtractCaptchaMeta } from '../types';
-import { log } from '../logger';
-import { DEFAULT_CAPCHA_MODES } from '../constants';
+import { randBool, randInt } from "./";
+import { CaptchaMode, ExtractMeta as ExtractCaptchaMeta } from "../types";
+import { log } from "../logger";
+import { DEFAULT_CAPCHA_MODES } from "../constants";
 
 export class Captcha<Mode extends CaptchaMode = CaptchaMode> {
   constructor(public mode: Mode, public meta: ExtractCaptchaMeta<Mode>) {}
@@ -28,7 +28,7 @@ export class Captcha<Mode extends CaptchaMode = CaptchaMode> {
   private static matrixDenomCaptcha() {
     const [a, d] = [randInt(10), randInt(8)];
     const [b, c] = [randInt(4), randInt(7)];
-    let answer = a * d - c * b;
+    const answer = a * d - c * b;
     const matrix = [
       [a, b],
       [c, d],
@@ -48,7 +48,7 @@ export class Captcha<Mode extends CaptchaMode = CaptchaMode> {
         captcha = this.matrixDenomCaptcha();
         break;
     }
-    log.info('New captcha: %O', captcha);
+    log.info("New captcha: %O", captcha);
     return captcha;
   }
 
