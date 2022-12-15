@@ -8,5 +8,6 @@
   "captcha_remaining": "You have {seconds} seconds.",
   "forgive": "{forgiver} forgived {reported}.",
   "banlist_title": "Users banned in current chat (click user to unban them):",
-  "banlist_empty": "No banned users here so far..."
+  "banlist_empty": "No banned users here so far...",
+  "upload_to_gist": "A message with source code by {user} was moved to {gist_link}"
 }

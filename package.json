@@ -8,7 +8,7 @@
     "watch": "tsc -w --inlineSourceMap",
     "build": "tsc",
     "nodemon": "NODE_ENV=development nodemon build/",
-    "dev": "NODE_ENV=development node build/src/",
+    "dev": "NODE_ENV=development node build/",
     "lint": "eslint --ignore-path .gitignore --fix .",
     "build:clean": "rm -r dist/*",
     "deploy-db": "psql -d blcklstbot -f ./db.sql",
