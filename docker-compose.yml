@@ -4,14 +4,18 @@ services:
     build: ./
     image: kraftwerk28/blcklstbot
     environment:
-      NODE_ENV: "production"
+      NODE_ENV: production
       # NODE_ENV: 'development'
+      LOG_LEVEL: debug
     env_file: .env.prod
     # env_file: .env.local-compose
     depends_on:
       - redis
     restart: "unless-stopped"
-    command: [node, index.js]
+    command:
+      - node
+      - --es-module-specifier-resolution=node
+      - index
 
   redis:
     image: redis:alpine

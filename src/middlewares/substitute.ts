@@ -16,7 +16,7 @@ function parseSedQuery(q: string): ParsedQuery | undefined {
   // TODO: escape special characters before generating sed regexp
   if (!sep) return;
   const parseQueryRe = new RegExp(
-    String.raw`^s(!)?${sep}((?:\\${sep}|[^${sep}])+)${sep}((?:\\${sep}|[^${sep}])*)(?:${sep}([mig]*))?$`,
+    String.raw`^s(!)?${sep}((?:\\${sep}|[^${sep}])+)${sep}((?:\\${sep}|[^${sep}])*)(?:${sep}([gimsu]*))?$`,
   );
   const sedQueryMatch = q.match(parseQueryRe);
   if (!sedQueryMatch) return;

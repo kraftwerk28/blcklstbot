@@ -71,6 +71,52 @@ async function main() {
       regexp`^\/(un)?def(global)?(?:@${username})?\s+(\w+)$`,
       commands.defMessage,
     )
+    .hears(regexp`^!when\s+(.*)$`, async (ctx, next) => {
+      if (!ctx.match[1]) {
+        return next();
+      }
+      const sentence = ctx.match[1].trim();
+      const segmenter = new Intl.Segmenter(ctx.dbChat.language_code, {
+        granularity: "word",
+      });
+      const segments = Array.from(segmenter.segment(sentence));
+      const words = segments.filter((seg) => seg.isWordLike);
+      const wordRatio = words.length / segments.length;
+      if (wordRatio < 0.42) {
+        return;
+      }
+      log.debug(
+        { words: JSON.stringify(words), wordRatio },
+        "!when bang command",
+      );
+
+      const hash = crypto.createHash("sha256");
+      const hashBuf = hash.update(ctx.match[1].trim()).digest();
+
+      let timestamp = 0;
+      for (let i = 0; i < 8; i++) {
+        timestamp ^= hashBuf.readUInt32LE(i * 4);
+      }
+      timestamp = Math.abs(timestamp) % (365 * 3 * 24 * 60 * 60);
+
+      const when = new Date(Date.now() + timestamp * 1000);
+      const datePart = when.toLocaleString(ctx.dbChat.language_code, {
+        dateStyle: "long",
+        timeZone: "Europe/Kiev",
+      });
+      const weekDayPart = when.toLocaleString(ctx.dbChat.language_code, {
+        weekday: "short",
+        timeZone: "Europe/Kiev",
+      });
+      const answerText = ctx.t("predicc", {
+        fact: sentence,
+        weekday: weekDayPart,
+        date: datePart,
+      });
+      await ctx.reply(answerText, {
+        reply_to_message_id: ctx.message.message_id,
+      });
+    })
     .hears(regexp`^!(\w+)$`, commands.bangHandler)
     .command("rules", commands.rules)
     .command("settings", commands.groupSettings)
@@ -81,7 +127,21 @@ async function main() {
     .command("banlist", commands.banList)
     .command("gist", commands.manualGist)
     .action(/^unban:([\d-]+):([\d-]+)$/, middlewares.undoBan)
-    .on("text", async (ctx) => {
+    .hears(
+      /^\s*[шщ]\s*[оo]\s+п\s*[оo]\s+[рp]\s*[уyоo]\s*[сc]\s*н\s*[іi]\s*\?\s*$/i,
+      async (ctx) => {
+        const stickers = [
+          "CAACAgIAAxkBAAEbIHZjn4JyuHfzG9_pohwU0VVeBdmaVQACkSAAAkBw4UhCMrX_h7J8cywE",
+          "CAACAgIAAxkBAAEbIHhjn4J7TqjL2-jW1ghd5-84PsSFlAACiCEAAuQAAeBIbwWqyKE7fxgsBA",
+          "CAACAgIAAxkBAAEbIHxjn4J_N2nD5amyWKu7VtCLzO1eeAACeCQAAjTo4EgYi4nuXYgHQywE",
+        ];
+        const stickerId = stickers[Math.floor(Math.random() * 3)];
+        return ctx.replyWithSticker(stickerId, {
+          reply_to_message_id: ctx.message.message_id,
+        });
+      },
+    )
+    .on("text", async (ctx, next) => {
       if (ctx.chat.id === -1001023368582 && ctx.message.text.match(/ґ/i)) {
         let doSend = false;
         if (ctx.from.id === 382744431 && Math.random() > 0.5) {
@@ -94,6 +154,8 @@ async function main() {
           "CAACAgIAAxkBAAEWQyti2a86_6tRiMuDLYmAHTi5H9WYGAACzQ0AAsYHKEjAhjjbs2vN0ikE",
           { reply_to_message_id: ctx.message.message_id },
         );
+      } else {
+        return next();
       }
     })
     .catch((err, ctx) => {
