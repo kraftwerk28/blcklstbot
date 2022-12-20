@@ -202,16 +202,13 @@ async function main() {
       log.info("Launching in webhook mode");
       const { WEBHOOK_DOMAIN, WEBHOOK_PORT, SERVER_PORT, BOT_TOKEN } =
         process.env;
-      const proxyPrefix = "/blcklstbot";
-      const webhookCallback = bot.webhookCallback(
-        `${proxyPrefix}/${BOT_TOKEN}`,
-      );
+      const webhookCallback = bot.webhookCallback(`/${BOT_TOKEN}`);
       await bot.telegram.setWebhook(
-        `https://${WEBHOOK_DOMAIN}:${WEBHOOK_PORT}${proxyPrefix}/${BOT_TOKEN}`,
+        `https://${WEBHOOK_DOMAIN}:${WEBHOOK_PORT}/blcklstbot/${BOT_TOKEN}`,
         { drop_pending_updates: true },
       );
       const server = createServer(async (req, res) => {
-        if (req.url === `${proxyPrefix}/metrics`) {
+        if (req.url === "/metrics") {
           try {
             const raw = await getRawMetrics();
             return res
