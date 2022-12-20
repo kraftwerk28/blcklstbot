@@ -2,6 +2,7 @@ import { Telegraf } from "telegraf";
 import util from "util";
 import * as path from "path";
 import * as crypto from "crypto";
+import { createServer } from "http";
 
 import { Composer } from "./composer";
 import { Ctx } from "./types";
@@ -10,6 +11,7 @@ import { initLogger, log } from "./logger";
 import { noop, regexp } from "./utils";
 import * as middlewares from "./middlewares";
 import * as commands from "./commands";
+import { registerPromHandlers, getRawMetrics } from "./prometheus";
 
 async function main() {
   if (process.env.NODE_ENV === "development") {
@@ -39,6 +41,8 @@ async function main() {
   bot.botInfo ??= botInfo;
   const username = botInfo.username;
   const composer2 = new Composer();
+
+  registerPromHandlers(bot);
 
   bot
     .use(composer2)
@@ -196,16 +200,39 @@ async function main() {
       break;
     case "production": {
       log.info("Launching in webhook mode");
-      const { WEBHOOK_PATH, WEBHOOK_DOMAIN, WEBHOOK_PORT, SERVER_PORT } =
+      const { WEBHOOK_DOMAIN, WEBHOOK_PORT, SERVER_PORT, BOT_TOKEN } =
         process.env;
-      await bot.launch({
-        dropPendingUpdates: true,
-        webhook: {
-          hookPath: WEBHOOK_PATH,
-          domain: `${WEBHOOK_DOMAIN}:${WEBHOOK_PORT}`,
-          port: parseInt(SERVER_PORT!),
-        },
+      const proxyPrefix = "/blcklstbot";
+      const webhookCallback = bot.webhookCallback(
+        `${proxyPrefix}/${BOT_TOKEN}`,
+      );
+      await bot.telegram.setWebhook(
+        `https://${WEBHOOK_DOMAIN}:${WEBHOOK_PORT}${proxyPrefix}/${BOT_TOKEN}`,
+        { drop_pending_updates: true },
+      );
+      const server = createServer(async (req, res) => {
+        if (req.url === `${proxyPrefix}/metrics`) {
+          try {
+            const raw = await getRawMetrics();
+            return res
+              .writeHead(200, { "Content-Type": "text/plain" })
+              .end(raw);
+          } catch (err) {
+            return res.writeHead(500).end((err as Error).message);
+          }
+        }
+        return webhookCallback(req, res);
       });
+      server.listen(SERVER_PORT);
+
+      // await bot.launch({
+      //   dropPendingUpdates: true,
+      //   webhook: {
+      //     hookPath: WEBHOOK_PATH,
+      //     domain: `${WEBHOOK_DOMAIN}:${WEBHOOK_PORT}`,
+      //     port: parseInt(SERVER_PORT!),
+      //   },
+      // });
       break;
     }
     default:
