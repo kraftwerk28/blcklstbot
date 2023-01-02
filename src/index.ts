@@ -132,14 +132,15 @@ async function main() {
     .command("gist", commands.manualGist)
     .action(/^unban:([\d-]+):([\d-]+)$/, middlewares.undoBan)
     .hears(
-      /^\s*[шщ]\s*[оo]\s+п\s*[оo]\s+[рp]\s*[уyоo]\s*[сc]\s*н\s*[іi]\s*\?\s*$/i,
+      /^\s*[шщ]\s*[оo](?:\s+п\s*[оo])?\s+[рp]\s*[уyоo]\s*[сc]\s*н\s*[іiя]\s*\?\s*$/i,
       async (ctx) => {
         const stickers = [
           "CAACAgIAAxkBAAEbIHZjn4JyuHfzG9_pohwU0VVeBdmaVQACkSAAAkBw4UhCMrX_h7J8cywE",
           "CAACAgIAAxkBAAEbIHhjn4J7TqjL2-jW1ghd5-84PsSFlAACiCEAAuQAAeBIbwWqyKE7fxgsBA",
           "CAACAgIAAxkBAAEbIHxjn4J_N2nD5amyWKu7VtCLzO1eeAACeCQAAjTo4EgYi4nuXYgHQywE",
+          "CAACAgIAAxkBAAEbmeRjswrEf4t_uGxR9DGnMFw7sa0augACDikAAtb4mUlqBe0TO9cFxy0E",
         ];
-        const stickerId = stickers[Math.floor(Math.random() * 3)];
+        const stickerId = stickers[Math.floor(Math.random() * stickers.length)];
         return ctx.replyWithSticker(stickerId, {
           reply_to_message_id: ctx.message.message_id,
         });

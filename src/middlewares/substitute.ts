@@ -75,13 +75,15 @@ export const substitute: OnMiddleware<"text"> = async function (ctx, next) {
   const sent = await ctx.reply(finalText, {
     reply_to_message_id: reply.message_id,
   });
-  // const delay = 5 * 60; // 5 mins
-  // await ctx.eventQueue.pushDelayed(delay, "delete_message", {
-  //   chatId: ctx.chat.id,
-  //   messageId: ctx.message.message_id,
-  // });
-  // await ctx.eventQueue.pushDelayed(delay, "delete_message", {
-  //   chatId: ctx.chat.id,
-  //   messageId: sent.message_id,
-  // });
+  if (ctx.from.id !== ctx.botCreatorId) {
+    const delay = 5 * 60; // 5 mins
+    await ctx.eventQueue.pushDelayed(delay, "delete_message", {
+      chatId: ctx.chat.id,
+      messageId: ctx.message.message_id,
+    });
+    await ctx.eventQueue.pushDelayed(delay, "delete_message", {
+      chatId: ctx.chat.id,
+      messageId: sent.message_id,
+    });
+  }
 };
