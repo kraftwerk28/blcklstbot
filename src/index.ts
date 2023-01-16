@@ -4,7 +4,6 @@ import * as path from "path";
 import * as crypto from "crypto";
 import { createServer } from "http";
 
-import { Composer } from "./composer";
 import { Ctx } from "./types";
 import { extendBotContext } from "./extend-context";
 import { initLogger, log } from "./logger";
@@ -40,12 +39,10 @@ async function main() {
   const botInfo = await bot.telegram.getMe();
   bot.botInfo ??= botInfo;
   const username = botInfo.username;
-  const composer2 = new Composer();
 
   registerPromHandlers(bot);
 
   bot
-    .use(composer2)
     .use(middlewares.getDbChat)
     .on("message", middlewares.addUserToDatabase)
     .on("message", middlewares.trackMemberMessages)

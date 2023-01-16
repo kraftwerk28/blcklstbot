@@ -12,9 +12,9 @@ function parseSedQuery(q: string): ParsedQuery | undefined {
   // Determine which character is used as a separator
   // s#foo#bar    s/(.+)/\1$&/gi
   //  ^   ^        ^    ^    ^
-  const sep = q.match(/^s!?([/#@])/)?.[1]; // TODO: consider more characters
-  // TODO: escape special characters before generating sed regexp
+  let sep = q.match(/^s!?([/#@|+\-"'])/)?.[1];
   if (!sep) return;
+  if ("|+".includes(sep)) sep = `\\${sep}`;
   const parseQueryRe = new RegExp(
     String.raw`^s(!)?${sep}((?:\\${sep}|[^${sep}])+)${sep}((?:\\${sep}|[^${sep}])*)(?:${sep}([gimsu]*))?$`,
   );
@@ -42,10 +42,16 @@ export function applySedQueries(
           0,
           args.findIndex((it) => typeof it === "number"),
         );
-        return rawTo.replace(/[\\$](&|\d+)/g, (m, groupIndex) => {
-          if (groupIndex === "&") groupIndex = 0;
-          return capGroups[groupIndex] ?? m;
-        });
+        return rawTo.replace(
+          /[\\$](?:(&|\d+)|\{(&|\d+)\})/g,
+          (fullMatch, groupIndex1, groupIndex2) => {
+            // groupIndex1 is for indexes w/o braces, i.e. $0, \1
+            // groupIndex2 is for braces, i.e. ${0}, \{1}
+            let groupIndex = groupIndex1 ?? groupIndex2;
+            if (groupIndex === "&") groupIndex = 0;
+            return capGroups[groupIndex] ?? fullMatch;
+          },
+        );
       });
       if (isStrict && newText === inputText) return;
       inputText = newText;
