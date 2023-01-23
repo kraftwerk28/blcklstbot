@@ -129,13 +129,18 @@ async function main() {
     .command("gist", commands.manualGist)
     .action(/^unban:([\d-]+):([\d-]+)$/, middlewares.undoBan)
     .hears(
-      /^\s*[шщ]\s*[оo](?:\s+п\s*[оo])?\s+[рp]\s*[уyоo]\s*[сc]\s*н\s*[іiя]\s*\?\s*$/i,
+      /^\s*[рp]\s*[уyоo]\s*[сc]\s*н\s*[іiя]\s*$/i,
       async (ctx) => {
         const stickers = [
-          "CAACAgIAAxkBAAEbIHZjn4JyuHfzG9_pohwU0VVeBdmaVQACkSAAAkBw4UhCMrX_h7J8cywE",
-          "CAACAgIAAxkBAAEbIHhjn4J7TqjL2-jW1ghd5-84PsSFlAACiCEAAuQAAeBIbwWqyKE7fxgsBA",
-          "CAACAgIAAxkBAAEbIHxjn4J_N2nD5amyWKu7VtCLzO1eeAACeCQAAjTo4EgYi4nuXYgHQywE",
-          "CAACAgIAAxkBAAEbmeRjswrEf4t_uGxR9DGnMFw7sa0augACDikAAtb4mUlqBe0TO9cFxy0E",
+          "CAACAgIAAxkBAAEHZTxjzn3fKGW8EKTmF7HZJpy0aLeoOAACoSMAAgGgeEhLsVmDKNesFi0E",
+          "CAACAgIAAxkBAAEHZT5jzn3jYxKCS3X0lbhJ_r531NUS-wAChx4AAi6CeUiC61hfgNIQdS0E",
+          "CAACAgIAAxkBAAEHZUBjzn30nYi99Jy-ds1cZY0oQVErlgACiCEAAuQAAeBIbwWqyKE7fxgtBA",
+          "CAACAgIAAxkBAAEHZUJjzn38d3l71C8dnrT_njk0qeOQcwACkSAAAkBw4UhCMrX_h7J8cy0E",
+          "CAACAgIAAxkBAAEHZURjzn4GmmCCIaa8JYhTAwakHjA9UAACBx8AAue24UhWLkIYzeB6dC0E",
+          "CAACAgIAAxkBAAEHZUZjzn4nxSEI1hmrhwFyk5lYC2WfYAACeCQAAjTo4EgYi4nuXYgHQy0E",
+          "CAACAgIAAxkBAAEHZUhjzn48V6xzCzvw5lFJ_xjaLbNBpgACDikAAtb4mUlqBe0TO9cFxy0E",
+          "CAACAgIAAxkBAAEHZUpjzn5DBBjurBJpEHQOpG8S5Ad79wACRSgAArpmCUqWfsSAvpcVny0E",
+          "CAACAgIAAxkBAAEHZUxjzn5aPefPlasU7S0su6TSAyR4BwAC2iIAApKlCEpleuIMv6XNDy0E",
         ];
         const stickerId = stickers[Math.floor(Math.random() * stickers.length)];
         return ctx.replyWithSticker(stickerId, {
