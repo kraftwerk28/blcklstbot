@@ -4,10 +4,12 @@ import * as path from "path";
 import * as crypto from "crypto";
 import { createServer } from "http";
 
+import { Composer } from "./composer";
 import { Ctx } from "./types";
 import { extendBotContext } from "./extend-context";
 import { initLogger, log } from "./logger";
 import { noop, regexp } from "./utils";
+import { userMention } from "./utils/html";
 import * as middlewares from "./middlewares";
 import * as commands from "./commands";
 import { registerPromHandlers, getRawMetrics } from "./prometheus";
@@ -41,9 +43,28 @@ async function main() {
   const username = botInfo.username;
 
   registerPromHandlers(bot);
+  const kharonBannedUsers = [
+    389726243, // untainsYD
+    386126266, // Ivan
+    428117822, // faithfullness
+    1785967305, // Maxym (test)
+  ];
 
   bot
     .use(middlewares.getDbChat)
+    .on(
+      "text",
+      Composer.guardAll(
+        [
+          (ctx) => ctx.chat.type === "private",
+          (ctx) => kharonBannedUsers.includes(ctx.from.id),
+        ],
+        async (ctx) => ctx.telegram.sendMessage(
+          -1001023368582,
+          `${userMention(ctx.from)}:\n${ctx.message.text}`,
+        ),
+      ),
+    )
     .on("message", middlewares.addUserToDatabase)
     .on("message", middlewares.trackMemberMessages)
     .on("text", middlewares.substitute)
