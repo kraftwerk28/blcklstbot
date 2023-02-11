@@ -129,7 +129,7 @@ async function main() {
     .command("gist", commands.manualGist)
     .action(/^unban:([\d-]+):([\d-]+)$/, middlewares.undoBan)
     .hears(
-      /^\s*(?:[шщ]\s*[оo](?:\s+п\s*[оo])?\s+)?[рp]\s*[уyоo]\s*[сc]\s*н\s*[іiя]\s*$/i,
+      /^\s*(?:[шщ]\s*[оo](?:\s+п\s*[оo])?\s+)?[рp]\s*[уyоo]\s*[сc]\s*н\s*[іiя]\s*\?\s*$/i,
       async (ctx) => {
         const stickers = [
           "CAACAgIAAxkBAAEHZTxjzn3fKGW8EKTmF7HZJpy0aLeoOAACoSMAAgGgeEhLsVmDKNesFi0E",
