@@ -21,6 +21,14 @@ export type CaptchaTimeoutEvent = BaseEvent<
   }
 >;
 
+export type UnkickAfterCaptcha = BaseEvent<
+  "unkick_after_captcha",
+  {
+    chat_id: number;
+    user_id: number;
+  }
+>;
+
 export type DeleteMessageEvent = BaseEvent<
   "delete_message",
   {
@@ -32,6 +40,7 @@ export type DeleteMessageEvent = BaseEvent<
 export type EventQueueEvent =
   | PongEvent
   | CaptchaTimeoutEvent
+  | UnkickAfterCaptcha
   | DeleteMessageEvent;
 
 export type BaseEvent<

@@ -69,7 +69,7 @@ async function main() {
       commands.setLanguage,
     )
     .hears(
-      regexp`^\/(un)?def(global)?(?:@${username})?\s+(\w+)$`,
+      regexp`^\/(un)?def(global|local)(?:@${username})?\s+(\S+)$`,
       commands.defMessage,
     )
     .hears(regexp`^!when\s+(.*)$`, async (ctx, next) => {
@@ -119,6 +119,7 @@ async function main() {
       });
     })
     .hears(regexp`^!(\w+)$`, commands.bangHandler)
+    .hears(regexp`^!(.+)$`, commands.runBash)
     .command("rules", commands.rules)
     .command("settings", commands.groupSettings)
     .command("help", commands.help)
@@ -183,15 +184,49 @@ async function main() {
     .on("captcha_timeout", async ({ telegram, payload }) => {
       const { chatId, userId, captchaMessageId, newChatMemberMessageId } =
         payload;
-      await telegram.kickChatMember(chatId, userId);
-      await telegram.unbanChatMember(chatId, userId);
-      await telegram.deleteMessage(chatId, captchaMessageId).catch(noop);
-      await telegram.deleteMessage(chatId, newChatMemberMessageId).catch(noop);
+      const kicked = await telegram.kickChatMember(chatId, userId);
+      const deleted_captcha_message = await telegram
+        .deleteMessage(chatId, captchaMessageId)
+        .catch(noop);
+      const deleted_new_member_message = await telegram
+        .deleteMessage(chatId, newChatMemberMessageId)
+        .catch(noop);
+      await bot.context.eventQueue?.pushDelayed(10, "unkick_after_captcha", {
+        chat_id: chatId,
+        user_id: userId,
+      });
+      log.info(
+        {
+          chat: { id: chatId },
+          user: { id: userId },
+          kicked,
+          deleted_captcha_message,
+          deleted_new_member_message,
+        },
+        "Kicked a member due to captcha timeout",
+      );
+    })
+    .on("unkick_after_captcha", async ({ telegram, payload }) => {
+      const unbanned = await telegram.unbanChatMember(
+        payload.chat_id,
+        payload.user_id,
+      );
+      log.info(
+        {
+          chat: { id: payload.chat_id },
+          user: { id: payload.user_id },
+          unbanned,
+        },
+        "Unbanned user after captcha timeout",
+      );
     })
     .on("delete_message", async ({ telegram, payload }) => {
       await telegram
         .deleteMessage(payload.chatId, payload.messageId)
         .catch(noop);
+    })
+    .onError((err) => {
+      log.error(err, "Error in Event Queue");
     });
 
   await bot.telegram.setMyCommands(commands.publicCommands);

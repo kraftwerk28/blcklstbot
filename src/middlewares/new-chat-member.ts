@@ -1,13 +1,14 @@
 import { Message, User } from "typegram";
 
 import { Composer } from "../composer";
-import { safePromiseAll } from "../utils";
+import { noop, safePromiseAll } from "../utils";
 import { Ctx, OnMiddleware, CaptchaMode } from "../types";
 import { generateCaptcha } from "../captcha";
 // import { Captcha } from '../utils/captcha';
 import { code, userMention } from "../utils/html";
 import { captchaHash } from "../utils/event-queue";
 import { botHasSufficientPermissions } from "../guards";
+import { log } from "../logger";
 
 type Middleware = OnMiddleware<"new_chat_members" | "chat_member">;
 
@@ -27,7 +28,7 @@ export const onNewChatMember: Middleware = Composer.guardAll(
   ],
   async function (ctx, next) {
     if (ctx.dbChat.delete_joins) {
-      await ctx.deleteMessage();
+      await ctx.deleteMessage().catch(noop);
     }
     if (!ctx.dbChat.captcha_modes.length) {
       return next();
@@ -51,6 +52,7 @@ async function userCaptcha(ctx: Ctx, user: User) {
   const captchaTimeout = ctx.dbChat.captcha_timeout;
   ctx.dbStore.addPendingCaptcha(ctx.chat!.id, user.id, captcha, captchaTimeout);
   let captchaMessage: Message;
+  log.info({ chat: ctx.chat, user, captcha }, "Generating new captcha");
 
   switch (captcha.mode) {
     case CaptchaMode.Arithmetic: {

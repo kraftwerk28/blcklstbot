@@ -19,12 +19,7 @@ export const checkCaptchaAnswer = Composer.guardAll(
     await ctx.deleteMessage().catch(noop);
     if (correct) {
       await ctx.dbStore.deletePendingCaptcha(chatId, userId);
-      log.info(
-        "User %s (%d) passed captcha %O",
-        userFullName(ctx.from),
-        ctx.from.id,
-        captcha,
-      );
+      log.info({ user: ctx.from, captcha }, "User %s (%d) passed captcha %O");
       const payload = await ctx.eventQueue.removeEvent<"captcha_timeout">(
         captchaHash(chatId, userId),
       );

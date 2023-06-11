@@ -18,6 +18,7 @@ export * from "./banlist";
 export * from "./manual-gist";
 export * from "./def-command";
 export * from "./bang-handler";
+export * from "./bash";
 
 export const publicCommands: BotCommand[] = [
   { command: "ping", description: "Ping myself after n seconds" },

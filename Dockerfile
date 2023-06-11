@@ -15,6 +15,7 @@ RUN npm run build
 
 FROM prod-deps AS app
 WORKDIR /opt/app
+RUN apk add bash
 COPY --from=build /opt/build/build/ ./
 COPY migrations/ migrations/
 COPY locales/ locales/
