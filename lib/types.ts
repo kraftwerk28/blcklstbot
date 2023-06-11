@@ -1,13 +1,13 @@
-import { Composer, Context, Middleware as TfMiddleware } from 'telegraf';
-import { PgClient } from './pg';
-import { VotebanCooldown } from './votebanCD';
-import { BotCommand, Chat, Message, User } from 'typegram';
-import { Api } from './api';
-import { RedisClient } from './redis';
-import { MessageSubType, UpdateType } from 'telegraf/typings/telegram-types';
+import { Composer, Context, Middleware as TfMiddleware } from "telegraf";
+import { PgClient } from "./pg";
+import { VotebanCooldown } from "./votebanCD";
+import { BotCommand, Chat, Message, User } from "typegram";
+import { Api } from "./api";
+import { RedisClient } from "./redis";
+import { MessageSubType, UpdateType } from "telegraf/typings/telegram-types";
 
 type Union2Itx<U> = (U extends unknown ? (k: U) => void : never) extends (
-  k: infer I
+  k: infer I,
 ) => void
   ? I
   : never;
@@ -19,21 +19,26 @@ export function deunionize<T extends object>(t: T): Deun<T> {
 
 export type Middleware = TfMiddleware<Ctx>;
 
-export type CommandHandler = Composer<Ctx>['command'] extends
-  (cmd: string, fn: infer U,) => any ? U : never;
-
-export type OnMiddleware<T extends UpdateType | MessageSubType> =
-  Composer<Ctx>['on'] extends (type: T | T[], ...fns: (infer U)[]) => any
+export type CommandHandler = Composer<Ctx>["command"] extends (
+  cmd: string,
+  fn: infer U,
+) => any
   ? U
   : never;
 
+export type OnMiddleware<T extends UpdateType | MessageSubType> =
+  Composer<Ctx>["on"] extends (type: T | T[], ...fns: (infer U)[]) => any
+    ? U
+    : never;
+
 type MaybeArray<T> = T | T[];
 type NonemptyRoArray<T> = readonly [T, ...T[]];
-type A<T extends UpdateType | MessageSubType> =
-  Composer<Ctx>['on'] extends (
-    updateType: MaybeArray<T>,
-    ...fns: NonemptyRoArray<infer U>
-  ) => Composer<Ctx> ? U : never;
+type A<T extends UpdateType | MessageSubType> = Composer<Ctx>["on"] extends (
+  updateType: MaybeArray<T>,
+  ...fns: NonemptyRoArray<infer U>
+) => Composer<Ctx>
+  ? U
+  : never;
 
 export type Banned = { chatId: number; userId: number; resultMsgId: number };
 
@@ -45,7 +50,7 @@ export interface Ctx extends Context {
   votebans: Map<string, Report>;
   banned: Map<number, Banned>;
   commands: BotCommand[];
-  adminUId: number
+  adminUId: number;
 }
 
 export interface BannedUser {
@@ -59,7 +64,7 @@ export interface BannedUser {
   date: string;
 }
 
-export type BanInfo = Omit<BannedUser, 'id' | 'date'>;
+export type BanInfo = Omit<BannedUser, "id" | "date">;
 
 export interface Report {
   chat: Chat;
@@ -158,4 +163,3 @@ export interface Report {
 //     description: string;
 //   }
 // }
-

@@ -1,14 +1,14 @@
-import { request, RequestOptions } from 'https';
-import qs from 'querystring';
+import { request, RequestOptions } from "https";
+import qs from "querystring";
 
 type RestMethod =
-  | 'GET'
-  | 'HEAD'
-  | 'OPTIONS'
-  | 'POST'
-  | 'PUT'
-  | 'DELETE'
-  | 'PATCH';
+  | "GET"
+  | "HEAD"
+  | "OPTIONS"
+  | "POST"
+  | "PUT"
+  | "DELETE"
+  | "PATCH";
 
 export function rest<T>(
   url: string,
@@ -16,29 +16,29 @@ export function rest<T>(
   headers: Record<string, string> = {},
   query?: Record<string, any>,
   body?: Record<string, any>,
-  options: RequestOptions = {}
+  options: RequestOptions = {},
 ): Promise<T> {
   const callback = (resolve: any, reject: any) => {
     const fullUrl = new URL(url);
     const opts: RequestOptions = {
       method,
-      headers: { 'content-type': 'application/json', ...headers },
+      headers: { "content-type": "application/json", ...headers },
       ...options,
     };
 
     if (query) {
       fullUrl.search = qs.stringify(query);
     }
-    if (method === 'POST') {
-      opts.headers!['content-type'] = 'application/json';
+    if (method === "POST") {
+      opts.headers!["content-type"] = "application/json";
     }
 
     const req = request(fullUrl, opts, (response) => {
-      if (response.statusCode!.toString()[0] !== '2') {
+      if (response.statusCode!.toString()[0] !== "2") {
         console.info(`${method} ${fullUrl.pathname} -> ${response.statusCode}`);
         reject(
-          'Bad Blocklist API response:' +
-          `${response.statusCode} ${response.statusMessage}`
+          "Bad Blocklist API response:" +
+            `${response.statusCode} ${response.statusMessage}`,
         );
         return;
       }
@@ -46,15 +46,15 @@ export function rest<T>(
       console.info(`${method} ${fullUrl.pathname} -> ${response.statusCode}`);
       const data = [] as any[];
       response
-        .on('data', (ch) => data.push(ch))
-        .on('end', () => {
+        .on("data", (ch) => data.push(ch))
+        .on("end", () => {
           const d = Buffer.concat(data).toString();
-          if (response.headers['content-type'] === 'application/json') {
+          if (response.headers["content-type"] === "application/json") {
             resolve(JSON.parse(d));
           }
           resolve(d);
         })
-        .on('error', reject);
+        .on("error", reject);
     });
 
     if (body) {

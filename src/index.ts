@@ -143,7 +143,8 @@ async function main() {
           "CAACAgIAAxkBAAEHZUpjzn5DBBjurBJpEHQOpG8S5Ad79wACRSgAArpmCUqWfsSAvpcVny0E",
           "CAACAgIAAxkBAAEHZUxjzn5aPefPlasU7S0su6TSAyR4BwAC2iIAApKlCEpleuIMv6XNDy0E",
         ];
-        const stickerId = stickers[Math.floor(Math.random() * stickers.length)];
+        const stickerId =
+          stickers[Math.floor(Math.random() * stickers.length)]!;
         return ctx.replyWithSticker(stickerId, {
           reply_to_message_id: ctx.message.message_id,
         });

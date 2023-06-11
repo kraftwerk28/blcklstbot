@@ -10,7 +10,7 @@ export const getDbUserFromReply: Mw = async function (ctx, next) {
   if (ctx.callbackQuery && "data" in ctx.callbackQuery && ctx.match) {
     ctx.reportedUser = await ctx.dbStore.getUser(
       chatId,
-      parseInt(ctx.match[2], 10),
+      parseInt(ctx.match[2]!, 10),
     );
     // const userId = parseInt(ctx.match[2], 10);
     // ctx.reportedUser = await ctx.dbStore.getUser(userId);

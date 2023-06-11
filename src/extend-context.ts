@@ -51,7 +51,7 @@ export async function extendBotContext(bot: Telegraf<Ctx>) {
   ctx.locales = await loadLocales();
   ctx.t = function (s, replaces = {}) {
     if (!this.dbChat) return s;
-    const locale = this.locales![this.dbChat.language_code];
+    const locale = this.locales?.[this.dbChat.language_code];
     if (!locale) return s;
     let value = locale[s];
     if (!value) {
@@ -61,7 +61,7 @@ export async function extendBotContext(bot: Telegraf<Ctx>) {
     if (!value) return s;
     return value.replace(/(?<!{){(\w+)}(?!})/g, (match, key) => {
       if (key in replaces) {
-        return replaces[key].toString();
+        return replaces[key]!.toString();
       } else {
         return match;
       }

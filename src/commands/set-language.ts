@@ -9,7 +9,7 @@ export const setLanguage = Composer.branchAll(
     await ctx.deleteMessage();
     const lang = ctx.match[1] as ChatLanguageCode;
     if (["en", "uk"].includes(lang)) {
-      ctx.dbStore.updateChatProp(ctx.chat.id, "language_code", lang);
+      await ctx.dbStore.updateChatProp(ctx.chat.id, "language_code", lang);
     }
   } as HearsMiddleware,
   deleteMessage,

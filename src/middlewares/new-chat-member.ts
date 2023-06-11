@@ -33,10 +33,14 @@ export const onNewChatMember: Middleware = Composer.guardAll(
     if (!ctx.dbChat.captcha_modes.length) {
       return next();
     }
-    if (ctx.message?.new_chat_members?.length) {
+    if (
+      ctx.message?.new_chat_members &&
+      ctx.message.new_chat_members.length > 0
+    ) {
       const promises = ctx.message.new_chat_members.map((cm) =>
         userCaptcha(ctx, cm),
       );
+      // eslint-disable-next-line @typescript-eslint/no-floating-promises
       safePromiseAll(promises);
       return;
     } else if (ctx.chatMember) {
@@ -50,7 +54,12 @@ export const onNewChatMember: Middleware = Composer.guardAll(
 async function userCaptcha(ctx: Ctx, user: User) {
   const captcha = generateCaptcha(ctx.dbChat.captcha_modes);
   const captchaTimeout = ctx.dbChat.captcha_timeout;
-  ctx.dbStore.addPendingCaptcha(ctx.chat!.id, user.id, captcha, captchaTimeout);
+  await ctx.dbStore.addPendingCaptcha(
+    ctx.chat!.id,
+    user.id,
+    captcha,
+    captchaTimeout,
+  );
   let captchaMessage: Message;
   log.info({ chat: ctx.chat, user, captcha }, "Generating new captcha");
 
@@ -94,9 +103,9 @@ async function userCaptcha(ctx: Ctx, user: User) {
       }
       let expression: string;
       if (isSum) {
-        expression = `${a} × (${b} + ${c})`;
+        expression = `${a!} × (${b!} + ${c!})`;
       } else {
-        expression = `${a} × (${b} - ${c})`;
+        expression = `${a!} × (${b!} - ${c!})`;
       }
       captchaMessage = await ctx.replyWithHTML(
         ctx.t("math_captcha", { user: userMention(user) }) +

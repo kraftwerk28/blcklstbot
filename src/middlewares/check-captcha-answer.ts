@@ -5,7 +5,6 @@ import { botHasSufficientPermissions, isGroupChat } from "../guards";
 import { checkCaptchaAnswer as checkAnswer } from "../captcha";
 import { noop } from "../utils";
 import { log } from "../logger";
-import { userFullName } from "../utils/html";
 
 export const checkCaptchaAnswer = Composer.guardAll(
   [isGroupChat, botHasSufficientPermissions],

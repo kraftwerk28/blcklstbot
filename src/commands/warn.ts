@@ -22,7 +22,7 @@ export const warn = Composer.branchAll(
   Composer.compose([
     getDbUserFromReply,
     async function (ctx, next) {
-      const reportedUser = ctx.reportedUser;
+      const reportedUser = ctx.reportedUser!;
       const chatId = ctx.chat.id;
       let warnReason: string;
 

@@ -4,11 +4,14 @@
     "incremental": true,
     "module": "ESNext",
     "moduleResolution": "Node",
+    "noUncheckedIndexedAccess": true,
+    "noUnusedLocals": true,
     "outDir": "build",
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "strict": true,
     "target": "ESNext"
   },
-  "include": ["src/"]
+  "include": ["src"],
+  "exclude": ["src/captcha/index2.ts"]
 }

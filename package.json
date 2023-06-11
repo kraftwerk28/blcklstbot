@@ -34,9 +34,9 @@
     "build:test": "tsc --outDir test/dist/ --esModuleInterop true test/db.test.ts",
     "deploy-db": "psql -d blcklstbot -f ./db.sql",
     "dev": "NODE_ENV=development node --es-module-specifier-resolution=node build/",
-    "format": "prettier --ignore-path .gitignore --write src tests migrations",
-    "lint": "eslint --ignore-path .gitignore src",
-    "lint:fix": "npm run lint -- --fix",
+    "format": "prettier --ignore-path=.gitignore --write '**/*.{ts,js,mjs}'",
+    "lint": "eslint --ignore-path=.gitignore --ignore-pattern='captcha/index2.ts' src",
+    "lint:fix": "eslint --fix --ignore-path=.gitignore --ignore-pattern='src/captcha/index2.ts' src",
     "nodemon": "NODE_ENV=development nodemon build/",
     "test": "NODE_ENV=development ts-node test/index.test.ts",
     "watch": "tsc -w --inlineSourceMap"

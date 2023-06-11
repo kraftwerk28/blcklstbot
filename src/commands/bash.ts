@@ -18,7 +18,7 @@ export const runBash = async function (ctx, next) {
     ...restEnv
   } = process.env;
   try {
-    const { stdout } = await exec(ctx.match[1], {
+    const { stdout } = await exec(ctx.match[1]!, {
       shell: "/bin/bash",
       // @ts-expect-error type
       env: restEnv,

@@ -76,7 +76,7 @@ const captchas: CaptchaDefs = {
 };
 
 export function generateCaptcha(modes = DEFAULT_CAPCHA_MODES) {
-  const mode = modes[randInt(modes.length)];
+  const mode = modes[randInt(modes.length)]!;
   const meta = captchas[mode].generate();
   const captcha = { mode, meta };
   log.info("New captcha: %O", captcha);

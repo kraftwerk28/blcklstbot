@@ -48,7 +48,7 @@ export const help = Composer.guardAll(
         ", just reply to text message with a pattern(-s) to make proper substitution(-s)",
       "",
       bold("Links:"),
-      ...links.map(([l, t]) => `• ${link(l, t)}`),
+      ...links.map(([l, t]) => `• ${link(l!, t!)}`),
     ];
     await ctx.deleteItSoon()(ctx.message);
     return ctx

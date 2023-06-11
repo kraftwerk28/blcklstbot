@@ -1,5 +1,5 @@
 import { Composer } from "../composer";
-import { isGroupChat, senderIsAdmin } from "../guards";
+import { isGroupChat } from "../guards";
 import { HearsMiddleware } from "../types";
 
 export const bangHandler = Composer.guardAll([isGroupChat], async function (
@@ -7,7 +7,7 @@ export const bangHandler = Composer.guardAll([isGroupChat], async function (
   next,
 ) {
   const reply = ctx.message.reply_to_message;
-  const command = await ctx.dbStore.getCommand(ctx.match[1], ctx.chat.id);
+  const command = await ctx.dbStore.getCommand(ctx.match[1]!, ctx.chat.id);
   if (command) {
     await ctx.tg.copyMessage(
       ctx.chat.id,

@@ -6,7 +6,7 @@ import { deleteMessage } from "../middlewares";
 export const propagateReports = Composer.branchAll(
   [senderIsAdmin, isGroupChat],
   async function (ctx) {
-    ctx.dbStore.updateChatProp(
+    await ctx.dbStore.updateChatProp(
       ctx.chat.id,
       "propagate_bans",
       !ctx.dbChat.propagate_bans,

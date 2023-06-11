@@ -16,6 +16,8 @@ export const addChatToDatabase: Middleware = Composer.optional(
       username: chat.username,
     };
     const inserted = await ctx.dbStore.addChat(dbChat);
+    // FIXME: the genericUpsert doesn't work properly at this moment
+    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
     if (inserted) {
       await ctx.telegram.sendMessage(
         ctx.botCreatorId,

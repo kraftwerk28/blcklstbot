@@ -16,14 +16,14 @@ export const defMessage = Composer.guardAll(
     const isGlobal = match[2] === "global";
 
     const oldCommand = await ctx.dbStore
-      .knex<DbDynamicCommand>(DYN_COMMANDS_TABLE_NAME)
-      .where("command", "=", command)
+      .knex(DYN_COMMANDS_TABLE_NAME)
+      .where("command", command)
       .andWhere("chat_id", "=", chat.id)
-      .first();
+      .first<DbDynamicCommand | undefined>();
 
     if (oldCommand) {
       const deletedCommand = await ctx.dbStore
-        .knex<DbDynamicCommand>(DYN_COMMANDS_TABLE_NAME)
+        .knex<DbDynamicCommand[]>(DYN_COMMANDS_TABLE_NAME)
         .where("message_id", "=", oldCommand.message_id)
         .andWhere("chat_id", "=", oldCommand.chat_id)
         .andWhere("global", "=", isGlobal)

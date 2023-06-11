@@ -12,7 +12,7 @@ export interface Ctx extends TelegrafContext {
   eventQueue: EventQueue<EventQueueEvent>;
   botCreatorId: number;
   dbChat: DbChat;
-  reportedUser: DbUser;
+  reportedUser: DbUser | undefined;
   /**
    * Delete message after some time
    * Usage: await ctx.reply(...).then(ctx.deleteItSoon);

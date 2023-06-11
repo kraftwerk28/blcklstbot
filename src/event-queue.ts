@@ -96,7 +96,7 @@ export class EventQueue<
     for (const event of events) {
       try {
         const { type, payload } = JSON.parse(event);
-        this.emit(type, payload);
+        await this.emit(type, payload);
       } catch (err) {
         // Noop
       }
@@ -131,7 +131,7 @@ export class EventQueue<
       await this.redisClient.del(hash);
 
       try {
-        return JSON.parse(rawPayloads[0]).payload;
+        return JSON.parse(rawPayloads[0]!).payload;
       } catch {
         return null;
       }

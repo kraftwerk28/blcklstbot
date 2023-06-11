@@ -7,21 +7,19 @@ enum CaptchaType {
 }
 
 type MatrixDenominatorCaptcha = {
-  matrix: number[][],
-  answer: number,
-}
+  matrix: number[][];
+  answer: number;
+};
 
 type MathExpressionCaptcha = {
-  expression: string,
-  answer: number,
-}
+  expression: string;
+  answer: number;
+};
 
-type CaptchaData =
-  | MatrixDenominatorCaptcha
-  | MathExpressionCaptcha;
+type CaptchaData = MatrixDenominatorCaptcha | MathExpressionCaptcha;
 
 export class Captcha {
-  constructor(private type: CaptchaType, private data: CaptchaData) { }
+  constructor(private type: CaptchaType, private data: CaptchaData) {}
 
   static generate(type: CaptchaType) {
     switch (type) {
@@ -33,7 +31,9 @@ export class Captcha {
   }
 
   private static genMatrixCaptcha() {
-    let [a, b, c, d] = Array(4).fill(0).map(() => randInt(10));
+    let [a, b, c, d] = Array(4)
+      .fill(0)
+      .map(() => randInt(10));
     let answer = a * d - c * b;
     if (answer < 0) {
       if (Math.random() < 0.5) {
@@ -42,7 +42,13 @@ export class Captcha {
         d *= -1;
       }
     }
-    const data: MatrixDenominatorCaptcha = { matrix: [[a, b], [c, d]], answer };
+    const data: MatrixDenominatorCaptcha = {
+      matrix: [
+        [a, b],
+        [c, d],
+      ],
+      answer,
+    };
     return new Captcha(CaptchaType.MatrixDenominator, data);
   }
 
@@ -54,9 +60,9 @@ export class Captcha {
     switch (this.type) {
       // TODO
       case CaptchaType.MatrixDenominator:
-        return 'Find following matrix denominator:';
+        return "Find following matrix denominator:";
       case CaptchaType.MathExpression:
-        return 'Solve following math expression:';
+        return "Solve following math expression:";
     }
   }
 

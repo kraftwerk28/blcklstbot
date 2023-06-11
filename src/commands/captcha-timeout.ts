@@ -7,7 +7,7 @@ import { deleteMessage } from "../middlewares";
 export const captchaTimeout: HearsMiddleware = Composer.branchAll(
   [senderIsAdmin, isGroupChat],
   async function (ctx) {
-    const seconds = parseInt(ctx.match[1]);
+    const seconds = parseInt(ctx.match[1]!);
     const replyOptions = { reply_to_message_id: ctx.message.message_id };
     if (seconds < MIN_CAPTCHA_TIMEOUT) {
       await ctx

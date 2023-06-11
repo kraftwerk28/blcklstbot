@@ -64,14 +64,14 @@ export class DbStore {
       .update({ [prop]: value });
   }
 
-  private async genericUpdate<T extends { id: number }>(
-    table: string,
-    partial: Partial<T> & { id: number },
-  ) {
-    return this.knex(table).where({ id: partial.id }).update(partial);
-  }
+  // private async genericUpdate<T extends { id: number }>(
+  //   table: string,
+  //   partial: Partial<T> & { id: number },
+  // ) {
+  //   return this.knex(table).where({ id: partial.id }).update(partial);
+  // }
 
-  private async genericInsert<T extends object, U extends T = T>(
+  private async genericUpsert<T extends object, U extends T = T>(
     entity: T,
     table: string,
     primaryKeys: (keyof U)[],
@@ -97,7 +97,7 @@ export class DbStore {
   }
 
   async addChat(chat: DbChatFromTg): Promise<DbChat> {
-    return this.genericInsert(chat, CHATS_TABLE_NAME, ["id"]);
+    return this.genericUpsert(chat, CHATS_TABLE_NAME, ["id"]);
   }
 
   async addUser(user: DbUserFromTg, chatId: number): Promise<DbUser> {
@@ -110,7 +110,7 @@ export class DbStore {
       language_code,
       username,
     };
-    return this.genericInsert<DbUserFromTg, DbUser>(dbUser, USERS_TABLE_NAME, [
+    return this.genericUpsert<DbUserFromTg, DbUser>(dbUser, USERS_TABLE_NAME, [
       "id",
       "chat_id",
     ]);
@@ -161,7 +161,7 @@ export class DbStore {
     messageId: number,
     global: boolean,
   ) {
-    return this.genericInsert<DbDynamicCommand>(
+    return this.genericUpsert<DbDynamicCommand>(
       {
         chat_id: chatId,
         message_id: messageId,

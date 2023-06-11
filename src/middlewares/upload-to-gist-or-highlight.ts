@@ -3,7 +3,7 @@ import { OnMiddleware } from "../types";
 import { botHasSufficientPermissions, isGroupChat } from "../guards";
 import { getCodeFromMessage, runEnry, uploadToGist } from "../utils";
 import { log } from "../logger";
-import { escape, link, userMention } from "../utils/html";
+import { escape, userMention } from "../utils/html";
 
 const GIST_UPLOAD_LINE_COUNT_THRESHOLD = 16;
 

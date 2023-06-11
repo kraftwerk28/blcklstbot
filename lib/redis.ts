@@ -1,6 +1,6 @@
-import IORedis, { Redis } from 'ioredis';
-import { isDev } from './utils';
-import { EventEmitter } from 'events';
+import IORedis, { Redis } from "ioredis";
+import { isDev } from "./utils";
+import { EventEmitter } from "events";
 
 export class RedisClient extends EventEmitter {
   private client: Redis;
@@ -9,7 +9,7 @@ export class RedisClient extends EventEmitter {
 
   constructor() {
     super();
-    const host = isDev() ? '127.0.0.1' : process.env.REDIS_HOST;
+    const host = isDev() ? "127.0.0.1" : process.env.REDIS_HOST;
     this.client = new IORedis({ host });
   }
 
@@ -28,15 +28,15 @@ export class RedisClient extends EventEmitter {
   /** Get all sus user messages */
   async getSusUserMessages(chatId: number, userId: number) {
     const ids = await this.client.lrange(`del:${chatId}:${userId}`, 0, -1);
-    return ids.map(n => parseInt(n));
+    return ids.map((n) => parseInt(n));
   }
 
   async checkBotAdminStatus(chatId: number) {
     const result = await this.client.get(`admin:${chatId}`);
     switch (result) {
-      case 'true':
+      case "true":
         return true;
-      case 'false':
+      case "false":
         return false;
       default:
         return null;

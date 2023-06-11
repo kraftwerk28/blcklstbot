@@ -90,7 +90,7 @@ export function getCodeFromMessage(msg: Message.TextMessage): string | null {
     // TODO:  Need to merge multiple entities into one
     return null;
   }
-  const { length, offset } = codeEntities[0];
+  const { length, offset } = codeEntities[0]!;
   // Return only if the whole message is code
   if (offset === 0 && length === msg.text.length) {
     const codeSource = msg.text.slice(offset, offset + length);
@@ -200,7 +200,7 @@ export async function uploadToGist(
   }
   try {
     const responseJson = await response.json();
-    return `${responseJson.html_url}#file-${fileStem}-${extension}`;
+    return `${responseJson.html_url as string}#file-${fileStem}-${extension}`;
   } catch {
     return null;
   }

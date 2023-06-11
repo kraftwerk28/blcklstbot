@@ -1,4 +1,4 @@
-import { MessageEntity, User } from "typegram";
+import { MessageEntity } from "typegram";
 import { MentionableUser } from "../types";
 
 export function bold(text: string) {
@@ -44,13 +44,15 @@ const ENTITY_TYPE_TAGS: { [K in MessageEntity["type"]]?: string } = {
 export function applyHtmlEntities(raw: string, entities: MessageEntity[]) {
   let result = raw;
   for (let i = entities.length - 1; i >= 0; i--) {
-    const entity = entities[i];
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const entity = entities[i]!;
     let tagStart: string, tagEnd: string;
     if (entity.type === "text_link") {
       tagStart = `<a href="${entity.url}">`;
       tagEnd = "<a>";
     } else if (entity.type in ENTITY_TYPE_TAGS) {
-      const tagStr = ENTITY_TYPE_TAGS[entity.type];
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const tagStr = ENTITY_TYPE_TAGS[entity.type]!;
       tagStart = `<${tagStr}>`;
       tagEnd = `</${tagStr}>`;
     } else {

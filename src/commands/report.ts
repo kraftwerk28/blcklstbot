@@ -24,12 +24,10 @@ export const report = Composer.branchAll(
     getDbUserFromReply,
     async function (ctx) {
       await ctx.deleteMessage().catch(noop);
-      const isLastWarn = ctx.reportedUser.warnings_count === MAX_WARNINGS;
-      const reportedUser = ctx.reportedUser;
+      const reportedUser = ctx.reportedUser!;
+      const isLastWarn = reportedUser.warnings_count === MAX_WARNINGS;
 
-      const reason = isLastWarn
-        ? ctx.reportedUser.warn_ban_reason
-        : ctx.match[1];
+      const reason = isLastWarn ? reportedUser.warn_ban_reason : ctx.match[1];
       const callbackData = `unban:${ctx.chat.id}:${reportedUser.id}`;
       const inlineKbd = Markup.inlineKeyboard([
         Markup.button.callback("\u{1f519} Undo", callbackData),
@@ -54,13 +52,13 @@ export const report = Composer.branchAll(
       );
 
       if (ctx.dbChat.propagate_bans) {
-        ctx.dbStore.updateUser({
+        await ctx.dbStore.updateUser({
           id: reportedUser.id,
           banned: true,
           warn_ban_reason: reason,
         });
       } else {
-        ctx.dbStore.updateUser({
+        await ctx.dbStore.updateUser({
           chat_id: ctx.chat.id,
           id: reportedUser.id,
           banned: true,

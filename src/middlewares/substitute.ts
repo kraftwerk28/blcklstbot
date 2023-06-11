@@ -20,9 +20,10 @@ function parseSedQuery(q: string): ParsedQuery | undefined {
   );
   const sedQueryMatch = q.match(parseQueryRe);
   if (!sedQueryMatch) return;
-  const [, strictFlag, rawFrom, rawTo, flags] = sedQueryMatch;
+  type SedQueryMatch = [string, string, string, string, string];
+  const [, strictFlag, rawFrom, rawTo, flags] = sedQueryMatch as SedQueryMatch;
   const isStrict = strictFlag === "!";
-  return { rawFrom, rawTo, flags, isStrict, sep };
+  return { rawFrom: rawFrom, rawTo: rawTo, flags, isStrict, sep };
 }
 
 export function applySedQueries(
