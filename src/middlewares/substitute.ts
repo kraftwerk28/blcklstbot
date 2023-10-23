@@ -69,16 +69,25 @@ export function applySedQueries(
 
 export const substitute: OnMiddleware<"text"> = async function (ctx, next) {
   const reply = ctx.message.reply_to_message;
-  if (!reply || !("text" in reply)) return next();
+  if (!reply) return next();
+
+  let inputText;
+  if ("text" in reply) {
+    inputText = reply.text;
+  } else if ("caption" in reply) {
+    inputText = reply.caption;
+  }
+  if (!inputText) return next();
+
   const sedQueries = ctx.message.text
     .split("\n")
     .map((q) => q.trim())
     .filter((q) => q.startsWith("s"));
-  if (sedQueries.length === 0) {
-    return next();
-  }
-  const finalText = applySedQueries(reply.text, sedQueries);
+  if (sedQueries.length === 0) return next();
+
+  const finalText = applySedQueries(inputText, sedQueries);
   if (!finalText) return next();
+
   const sent = await ctx.reply(finalText, {
     reply_to_message_id: reply.message_id,
   });
