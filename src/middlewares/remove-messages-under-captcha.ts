@@ -1,10 +1,13 @@
-import { Composer } from "../composer";
-import { botHasSufficientPermissions, isGroupChat } from "../guards";
-import { OnMiddleware } from "../types";
+import { Composer } from "../composer.js";
+import { botHasSufficientPermissions, isGroupChat } from "../guards/index.js";
+import { OnMiddleware } from "../types/index.js";
 
-export const removeMessagesUnderCaptcha = Composer.guardAll(
-  [isGroupChat, botHasSufficientPermissions],
-  async function (ctx, next) {
+const composer = new Composer();
+export default composer;
+composer
+  .on("message")
+  .chatType(["group", "supergroup"])
+  .use(botHasSufficientPermissions, async (ctx, next) => {
     // Text messages are already handled by other middleware
     if ("text" in ctx.message) {
       return next();
@@ -17,5 +20,4 @@ export const removeMessagesUnderCaptcha = Composer.guardAll(
       await ctx.deleteMessage();
     }
     return next();
-  } as OnMiddleware<"message">,
-);
+  });

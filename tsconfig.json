@@ -5,7 +5,7 @@
     "module": "ESNext",
     "moduleResolution": "Node",
     "noUncheckedIndexedAccess": true,
-    "noUnusedLocals": true,
+    // "noUnusedLocals": true,
     "outDir": "build",
     "resolveJsonModule": true,
     "skipLibCheck": true,

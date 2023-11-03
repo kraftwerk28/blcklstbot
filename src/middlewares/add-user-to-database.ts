@@ -1,11 +1,12 @@
-import { Composer } from "../composer";
-import { OnMiddleware } from "../types";
-import { isGroupChat } from "../guards";
+import { Composer } from "../composer.js";
 
-export const addUserToDatabase: OnMiddleware<"message"> = Composer.optional(
-  isGroupChat,
-  async function (ctx, next) {
+const composer = new Composer();
+export default composer;
+
+composer
+  .on("message")
+  .chatType(["group", "supergroup"])
+  .use(async (ctx, next) => {
     await ctx.dbStore.addUser(ctx.from, ctx.chat.id);
     return next();
-  } as OnMiddleware<"message">,
-);
+  });

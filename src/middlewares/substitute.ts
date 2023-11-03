@@ -1,4 +1,6 @@
-import { OnMiddleware } from "../types";
+import { Composer } from "../composer.js";
+import { messageIsReply } from "../guards/index.js";
+import { OnMiddleware } from "../types/index.js";
 
 type ParsedQuery = {
   rawFrom: string;
@@ -67,9 +69,10 @@ export function applySedQueries(
   return inputText;
 }
 
-export const substitute: OnMiddleware<"text"> = async function (ctx, next) {
+const composer = new Composer();
+export default composer;
+composer.filter(messageIsReply).on("message:text", async (ctx, next) => {
   const reply = ctx.message.reply_to_message;
-  if (!reply) return next();
 
   let inputText;
   if ("text" in reply) {
@@ -102,4 +105,4 @@ export const substitute: OnMiddleware<"text"> = async function (ctx, next) {
       messageId: sent.message_id,
     });
   }
-};
+});

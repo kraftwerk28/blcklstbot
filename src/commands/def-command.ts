@@ -1,14 +1,18 @@
-import { Composer } from "../composer";
-import { DYN_COMMANDS_TABLE_NAME } from "../constants";
-import { isGroupChat, senderIsAdmin } from "../guards";
-import { log } from "../logger";
-import { DbDynamicCommand, HearsMiddleware } from "../types";
+import { Composer } from "../composer.js";
+import { DYN_COMMANDS_TABLE_NAME } from "../constants.js";
+import { messageIsReply, senderIsAdmin } from "../guards/index.js";
+import { log } from "../logger.js";
+import { DbDynamicCommand } from "../types/index.js";
 
-/** Registers message that will be responded to !<command> */
-export const defMessage = Composer.guardAll(
-  [isGroupChat, senderIsAdmin],
-  async function (ctx) {
-    const { chat, from, match, tg, message } = ctx;
+const composer = new Composer();
+
+composer
+  .chatType(["group", "supergroup"])
+  .filter(messageIsReply)
+  .hears(/^\/(un)?def(global|local)(?:@${username})?\s+(\S+)$/)
+  .use(senderIsAdmin)
+  .use(async (ctx) => {
+    const { chat, from, match, message } = ctx;
     const cmdChannelId = +process.env.COMMANDS_CHANNEL_ID!;
     const reply = message.reply_to_message;
     const command = match[3];
@@ -32,7 +36,7 @@ export const defMessage = Composer.guardAll(
         .then((rows) => rows[0]);
 
       if (deletedCommand) {
-        await tg
+        await ctx.api
           .deleteMessage(cmdChannelId, oldCommand.message_id)
           .catch((err) => log.error(err, "Failed to delete the old message"));
       }
@@ -44,9 +48,7 @@ export const defMessage = Composer.guardAll(
       }
     }
 
-    if (!reply) return;
-
-    const forwardedMsg = await tg.forwardMessage(
+    const forwardedMsg = await ctx.api.forwardMessage(
       cmdChannelId,
       chat.id,
       reply.message_id,
@@ -64,5 +66,6 @@ export const defMessage = Composer.guardAll(
       .returning("*")
       .then((rows) => rows[0]);
     log.info({ command: newCommand }, "Defined a new command");
-  } as HearsMiddleware,
-);
+  });
+
+export default composer;

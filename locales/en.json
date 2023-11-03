@@ -10,5 +10,6 @@
   "banlist_title": "Users banned in current chat (click user to unban them):",
   "banlist_empty": "No banned users here so far...",
   "upload_to_gist": "A message with source code by {user} was moved to {gist_link}",
-  "predicc": "{fact} likely at {weekday}, {date}"
+  "predicc": "{fact} likely at {weekday}, {date}",
+  "admin_only_action": "This action is intended for administrators only"
 }

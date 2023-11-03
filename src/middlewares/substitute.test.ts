@@ -2,7 +2,7 @@
 import test from "node:test";
 import assert from "node:assert";
 
-import { applySedQueries } from "./substitute";
+import { applySedQueries } from "./substitute.js";
 
 test("substitution", async () => {
   const inputMsgText = "hello, world!";

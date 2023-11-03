@@ -1,13 +1,15 @@
-import { Context as TelegrafContext } from "telegraf";
-import { Message } from "typegram";
+// import { Context as TelegrafContext } from "telegraf";
+import { Message } from "grammy/types";
+import { Context as GrammyContext } from "grammy";
 
-import { EventQueue } from "../event-queue";
-import { DbStore } from "../db-store";
-import { EventQueueEvent } from "./event-queue";
-import { DbChat, DbUser } from "./models";
-import { LocaleContainer } from "./utils";
+import { EventQueue } from "../event-queue.js";
+import { DbStore } from "../db-store.js";
+import { EventQueueEvent } from "./event-queue.js";
+import { DbChat, DbUser } from "./models.js";
+import { LocaleContainer } from "./utils.js";
+import { Logger } from "pino";
 
-export interface Ctx extends TelegrafContext {
+export interface Context extends GrammyContext {
   dbStore: DbStore;
   eventQueue: EventQueue<EventQueueEvent>;
   botCreatorId: number;
@@ -21,4 +23,5 @@ export interface Ctx extends TelegrafContext {
   tryDeleteMsg(messageId?: number): Promise<true>;
   locales: LocaleContainer;
   t(s: string, replaces?: Record<string, string | number>): string;
+  log: Logger;
 }

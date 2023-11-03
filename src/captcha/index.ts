@@ -1,7 +1,7 @@
-import { DEFAULT_CAPCHA_MODES } from "../constants";
-import { log } from "../logger";
-import { Ctx, CaptchaMode, CaptchaDefs, AbstractCaptcha } from "../types";
-import { randBool, randInt } from "../utils";
+import { DEFAULT_CAPCHA_MODES } from "../constants.js";
+import { log } from "../logger.js";
+import { Context, CaptchaMode, CaptchaDefs, AbstractCaptcha } from "../types/index.js";
+import { randBool, randInt } from "../utils/index.js";
 
 const captchas: CaptchaDefs = {
   [CaptchaMode.Arithmetic]: {
@@ -23,9 +23,9 @@ const captchas: CaptchaDefs = {
       }
       return { expression, answer };
     },
-    check(ctx: Ctx, meta) {
-      if (!(ctx.message && "text" in ctx.message)) return false;
-      return parseInt(ctx.message?.text) === meta.answer;
+    check(ctx: Context, meta) {
+      if (!ctx.message?.text) return false;
+      return parseInt(ctx.message.text) === meta.answer;
     },
   },
   [CaptchaMode.ArithmeticWorded]: {
@@ -52,8 +52,8 @@ const captchas: CaptchaDefs = {
         nthTermToStringify: randInt(0, 3),
       };
     },
-    check(ctx: Ctx, meta) {
-      if (!(ctx.message && "text" in ctx.message)) return false;
+    check(ctx: Context, meta) {
+      if (!ctx.message?.text) return false;
       return parseInt(ctx.message?.text) === meta.answer;
     },
   },
@@ -69,7 +69,7 @@ const captchas: CaptchaDefs = {
       return { matrix, answer };
     },
     check(ctx, meta) {
-      if (!(ctx.message && "text" in ctx.message)) return false;
+      if (!ctx.message?.text) return false;
       return parseInt(ctx.message?.text) === meta.answer;
     },
   },
@@ -97,7 +97,7 @@ export function deserializeCaptcha(raw: string): AbstractCaptcha | null {
 }
 
 export function checkCaptchaAnswer(
-  ctx: Ctx,
+  ctx: Context,
   captcha: AbstractCaptcha,
 ): boolean {
   const { mode, meta } = captcha;

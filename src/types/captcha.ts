@@ -1,4 +1,4 @@
-import { Ctx } from "./context";
+import { Context } from "../types/index.js";
 
 export enum CaptchaMode {
   Arithmetic = "arithmetic",
@@ -51,7 +51,7 @@ export type ExtractMeta<M extends CaptchaMode> = Extract<
 
 export type CaptchaDefs = {
   [M in CaptchaMode]: {
-    check(ctx: Ctx, meta: ExtractMeta<M>): boolean;
+    check(ctx: Context, meta: ExtractMeta<M>): boolean;
     generate(): ExtractMeta<M>;
   };
 };

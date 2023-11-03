@@ -1,11 +1,11 @@
 import { Redis } from "ioredis";
 import { Knex } from "knex";
-import { Message } from "typegram";
+import { Message } from "grammy/types";
 import {
   CHATS_TABLE_NAME,
   DYN_COMMANDS_TABLE_NAME,
   USERS_TABLE_NAME,
-} from "./constants";
+} from "./constants.js";
 import {
   AbstractCaptcha,
   DbChat,
@@ -14,8 +14,8 @@ import {
   DbUser,
   DbUserFromTg,
   DbUserMessage,
-} from "./types";
-import { deserializeCaptcha, serializeCaptcha } from "./captcha";
+} from "./types/index.js";
+import { deserializeCaptcha, serializeCaptcha } from "./captcha/index.js";
 
 export class DbStore {
   constructor(public readonly knex: Knex, public readonly redisClient: Redis) {}
@@ -58,10 +58,12 @@ export class DbStore {
     id: number,
     prop: K,
     value: T[K],
-  ) {
+  ): Promise<T> {
     return this.knex(table)
       .where({ id })
-      .update({ [prop]: value });
+      .update({ [prop]: value })
+      .returning("*")
+      .then((rows) => rows[0]);
   }
 
   // private async genericUpdate<T extends { id: number }>(

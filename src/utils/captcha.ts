@@ -1,7 +1,7 @@
 import { randBool, randInt } from "./";
-import { CaptchaMode, ExtractMeta as ExtractCaptchaMeta } from "../types";
-import { log } from "../logger";
-import { DEFAULT_CAPCHA_MODES } from "../constants";
+import { CaptchaMode, ExtractMeta as ExtractCaptchaMeta } from "../types/captcha.js";
+import { log } from "../logger.js";
+import { DEFAULT_CAPCHA_MODES } from "../constants.js";
 
 export class Captcha<Mode extends CaptchaMode = CaptchaMode> {
   constructor(public mode: Mode, public meta: ExtractCaptchaMeta<Mode>) {}

@@ -1,12 +1,16 @@
 import cp from "node:child_process";
 import util from "node:util";
-import { HearsMiddleware } from "../types";
-import { escape, code } from "../utils/html";
+import { escape, code } from "../utils/html.js";
+import { Composer } from "../composer.js";
 
 const exec = util.promisify(cp.exec);
 
-export const runBash = async function (ctx, next) {
-  if (ctx.from.id !== ctx.botCreatorId) return next();
+const composer = new Composer();
+
+composer.on("message:text").hears(/^!(.+)$/, async (ctx, next) => {
+  if (ctx.from.id !== ctx.botCreatorId) {
+    return next();
+  }
   const {
     BOT_TOKEN,
     PG_CONNECTION_STRING,
@@ -32,4 +36,6 @@ export const runBash = async function (ctx, next) {
   } catch {
     // Noop
   }
-} as HearsMiddleware;
+});
+
+export default composer;

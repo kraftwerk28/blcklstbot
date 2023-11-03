@@ -1,18 +1,19 @@
-import { OnMiddleware } from "../types";
-import { code, escape } from "../utils/html";
-import { getCodeFromMessage } from "../utils";
-import { Composer } from "../composer";
-import { isGroupChat } from "../guards";
+import { code, escape } from "../utils/html.js";
+import { getCodeFromMessage } from "../utils/index.js";
+import { Composer } from "../composer.js";
 
-export const highlightCode: OnMiddleware<"text"> = Composer.optional(
-  isGroupChat,
-  async function (ctx, next) {
+const composer = new Composer();
+export default composer;
+
+composer
+  .on("message")
+  .chatType(["group", "supergroup"])
+  .use(async (ctx, next) => {
     if (!ctx.dbChat.replace_code_with_pic || !ctx.message.entities) {
       return next();
     }
     const sourceCode = getCodeFromMessage(ctx.message);
     if (!sourceCode) return next();
-    await ctx.replyWithHTML(code(escape(sourceCode)));
+    await ctx.reply(code(escape(sourceCode)), { parse_mode: "HTML" });
     return next();
-  } as OnMiddleware<"text">,
-);
+  });

@@ -1,33 +1,29 @@
-import { HearsMiddleware } from "../types";
-import {
-  botHasSufficientPermissions,
-  messageIsReply,
-  repliedMessageIsFromMember,
-  senderIsAdmin,
-} from "../guards";
-import { Composer } from "../composer";
-import { bold, userMention, escape } from "../utils/html";
-import { getDbUserFromReply, deleteMessage } from "../middlewares";
-import { MAX_WARNINGS } from "../constants";
-import { report } from "./report";
-import { noop, safePromiseAll } from "../utils";
+import { botHasSufficientPermissions, senderIsAdmin } from "../guards/index.js";
+import { bold, userMention, escape } from "../utils/html.js";
+import { MAX_WARNINGS } from "../constants.js";
+import report from "./report.js";
+import { noop, safePromiseAll } from "../utils/index.js";
+import { Composer } from "../composer.js";
+import obtainReportedUser from "../middlewares/get-reported-user.js";
 
-export const warn = Composer.branchAll(
-  [
+const composer = new Composer();
+
+export default composer;
+
+composer
+  .on("message")
+  .command("warn")
+  .use(
     botHasSufficientPermissions,
+    obtainReportedUser,
     senderIsAdmin,
-    messageIsReply,
-    repliedMessageIsFromMember,
-  ],
-  Composer.compose([
-    getDbUserFromReply,
-    async function (ctx, next) {
+    async (ctx, next) => {
       const reportedUser = ctx.reportedUser!;
       const chatId = ctx.chat.id;
       let warnReason: string;
 
       if (reportedUser.warnings_count === MAX_WARNINGS) {
-        return report(ctx, next);
+        return report.middleware()(ctx, next);
       }
       await ctx.deleteMessage().catch(noop);
 
@@ -61,7 +57,7 @@ export const warn = Composer.branchAll(
       text += "\n" + ctx.t("report_reason", { reason: escape(warnReason) });
 
       return safePromiseAll([
-        ctx.replyWithHTML(text),
+        ctx.reply(text, { parse_mode: "HTML" }),
         ctx.dbStore.updateUser({
           id: reportedUser.id,
           chat_id: chatId,
@@ -69,7 +65,5 @@ export const warn = Composer.branchAll(
           warn_ban_reason: warnReason,
         }),
       ]);
-    } as HearsMiddleware,
-  ]),
-  deleteMessage,
-);
+    },
+  );

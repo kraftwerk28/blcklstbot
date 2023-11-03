@@ -1,7 +1,7 @@
+import { type FilterQuery, type Bot } from "grammy";
 import { Counter, register } from "prom-client";
-import type { Telegraf } from "telegraf";
-import type { MessageSubType } from "telegraf/typings/telegram-types";
-import type { Ctx } from "./types";
+
+import type { Context } from "./types/index.js";
 
 const promMessageCounter = new Counter({
   name: "tg_messages_total",
@@ -9,19 +9,18 @@ const promMessageCounter = new Counter({
   labelNames: ["media_type"],
 });
 
-const promUpdateTypes: MessageSubType[] = [
-  "text",
-  "photo",
-  "sticker",
-  "photo",
-  "video",
+const promUpdateTypes: FilterQuery[] = [
+  "message:text",
+  "message:photo",
+  "message:sticker",
+  "message:photo",
+  "message:video",
 ];
 
-export function registerPromHandlers(bot: Telegraf<Ctx>) {
+export function registerPromHandlers(bot: Bot<Context>) {
   for (const msgSubType of promUpdateTypes) {
-    bot.on(msgSubType, (_ctx, next) => {
+    bot.on(msgSubType, (_ctx) => {
       promMessageCounter.inc({ media_type: msgSubType });
-      return next();
     });
   }
 }

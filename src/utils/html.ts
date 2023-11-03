@@ -1,5 +1,5 @@
-import { MessageEntity } from "typegram";
-import { MentionableUser } from "../types";
+import { MessageEntity } from "grammy/types";
+import { MentionableUser } from "../types/utils.js";
 
 export function bold(text: string) {
   return "<b>" + text + "</b>";

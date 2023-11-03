@@ -1,7 +1,12 @@
-import { HearsMiddleware } from "../types";
+import { Composer } from "../composer.js";
 
-export const ping: HearsMiddleware = async (ctx) => {
-  const seconds = parseInt(ctx.match[1]!);
+const composer = new Composer();
+
+composer.on("message").command("ping", async (ctx, next) => {
+  const argMatch = ctx.match.match(/^(\d+)(?:\s+(.+))?$/);
+  if (!argMatch) return next();
+  const [, secondsStr] = argMatch;
+  const seconds = parseInt(secondsStr!);
   const payload = {
     chatId: ctx.chat.id,
     text: ctx.match[2],
@@ -9,4 +14,6 @@ export const ping: HearsMiddleware = async (ctx) => {
     messageId: ctx.message.message_id,
   };
   await ctx.eventQueue.pushDelayed(seconds, "pong", payload);
-};
+});
+
+export default composer;

@@ -1,14 +1,17 @@
-import { Composer } from "../composer";
-import { captchaHash } from "../utils/event-queue";
-import { OnMiddleware } from "../types";
-import { botHasSufficientPermissions, isGroupChat } from "../guards";
-import { checkCaptchaAnswer as checkAnswer } from "../captcha";
-import { noop } from "../utils";
-import { log } from "../logger";
+import { Composer } from "../composer.js";
+import { captchaHash } from "../utils/event-queue.js";
+import { checkCaptchaAnswer as checkAnswer } from "../captcha/index.js";
+import { noop } from "../utils/index.js";
+import { log } from "../logger.js";
+import { botHasSufficientPermissions } from "../guards/index.js";
 
-export const checkCaptchaAnswer = Composer.guardAll(
-  [isGroupChat, botHasSufficientPermissions],
-  async function (ctx, next) {
+const composer = new Composer();
+export default composer;
+
+composer
+  .on("message")
+  .chatType(["group", "supergroup"])
+  .use(botHasSufficientPermissions, async (ctx, next) => {
     const chatId = ctx.chat.id;
     const userId = ctx.from.id;
 
@@ -23,7 +26,6 @@ export const checkCaptchaAnswer = Composer.guardAll(
         captchaHash(chatId, userId),
       );
       if (!payload) return;
-      await ctx.telegram.deleteMessage(chatId, payload.captchaMessageId);
+      await ctx.api.deleteMessage(chatId, payload.captchaMessageId);
     }
-  } as OnMiddleware<"text">,
-);
+  });

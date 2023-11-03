@@ -1,54 +1,51 @@
-import { Markup } from "telegraf";
+import { InlineKeyboard } from "grammy";
 
-import { HearsMiddleware } from "../types";
-import { Composer } from "../composer";
-import {
-  botHasSufficientPermissions,
-  messageIsReply,
-  repliedMessageIsFromMember,
-  senderIsAdmin,
-} from "../guards";
-import { userMention, escape } from "../utils/html";
-import { getDbUserFromReply, deleteMessage } from "../middlewares";
-import { MAX_WARNINGS } from "../constants";
-import { noop, safePromiseAll } from "../utils";
+import { Composer } from "../composer.js";
+import { botHasSufficientPermissions, senderIsAdmin } from "../guards/index.js";
+import { userMention, escape } from "../utils/html.js";
+import { MAX_WARNINGS } from "../constants.js";
+import { safePromiseAll } from "../utils/index.js";
+import obtainReportedUser from "../middlewares/get-reported-user.js";
 
-export const report = Composer.branchAll(
-  [
+const composer = new Composer();
+
+const noop = () => {
+  // Noop
+};
+
+composer
+  .on("message")
+  .command("report")
+  .use(
     botHasSufficientPermissions,
+    obtainReportedUser,
     senderIsAdmin,
-    messageIsReply,
-    repliedMessageIsFromMember,
-  ],
-  Composer.compose([
-    getDbUserFromReply,
-    async function (ctx) {
+    async (ctx) => {
       await ctx.deleteMessage().catch(noop);
       const reportedUser = ctx.reportedUser!;
       const isLastWarn = reportedUser.warnings_count === MAX_WARNINGS;
-
       const reason = isLastWarn ? reportedUser.warn_ban_reason : ctx.match[1];
+
       const callbackData = `unban:${ctx.chat.id}:${reportedUser.id}`;
-      const inlineKbd = Markup.inlineKeyboard([
-        Markup.button.callback("\u{1f519} Undo", callbackData),
-      ]);
+      const inlineKbd = new InlineKeyboard().text(
+        "\u{1f519} Undo",
+        callbackData,
+      );
       let text = ctx.t("report", {
         reporter: userMention(ctx.from),
         reported: userMention(reportedUser),
       });
-      // let text =
-      //   userMention(ctx.from) + ' banned ' + userMention(ctx.reportedUser);
       if (reason) {
         text += "\n" + ctx.t("report_reason", { reason: escape(reason) });
-        // text += `\n${bold('Reason')}: ${}`;
       }
 
       const allUserMessageIds = await ctx.dbStore.getUserMessages(
         ctx.chat.id,
         reportedUser.id,
       );
+      // TODO: will this fail if count of message is too large?
       await Promise.allSettled(
-        allUserMessageIds.map((id) => ctx.deleteMessage(id)),
+        allUserMessageIds.map((id) => ctx.api.deleteMessage(ctx.chat.id, id)),
       );
 
       if (ctx.dbChat.propagate_bans) {
@@ -68,10 +65,10 @@ export const report = Composer.branchAll(
       }
 
       return safePromiseAll([
-        ctx.kickChatMember(reportedUser.id),
-        ctx.replyWithHTML(text, { reply_markup: inlineKbd.reply_markup }),
+        ctx.banChatMember(reportedUser.id),
+        ctx.reply(text, { parse_mode: "HTML", ...inlineKbd }),
       ]);
-    } as HearsMiddleware,
-  ]),
-  deleteMessage,
-);
+    },
+  );
+
+export default composer;

@@ -1,15 +1,15 @@
-import { Composer } from "../composer";
-import { captchaHash } from "../utils/event-queue";
-import { OnMiddleware } from "../types";
-import { botHasSufficientPermissions } from "../guards";
-import { noop, safePromiseAll } from "../utils";
+import { Composer } from "../composer.js";
+import { captchaHash } from "../utils/event-queue.js";
+import { botHasSufficientPermissions } from "../guards/index.js";
+import { noop, safePromiseAll } from "../utils/index.js";
 
-type Middleware = OnMiddleware<"left_chat_member" | "chat_member">;
+const composer = new Composer();
 
-export const leftChatMember = Composer.optional(
-  botHasSufficientPermissions,
-  async function (ctx, next) {
-    if (!ctx.message) return next();
+export default composer;
+
+composer
+  .on("message:left_chat_member")
+  .use(botHasSufficientPermissions, async (ctx, next) => {
     await ctx.deleteMessage().catch(noop);
     // NOTE: this middleware works on two update types, so the
     // `left_chat_member` might actually be undefined
@@ -20,13 +20,12 @@ export const leftChatMember = Composer.optional(
       if (payload) {
         // eslint-disable-next-line @typescript-eslint/no-floating-promises
         safePromiseAll([
-          ctx.deleteMessage(payload.captchaMessageId),
-          ctx.deleteMessage(payload.newChatMemberMessageId),
+          ctx.api.deleteMessage(ctx.chat.id, payload.captchaMessageId),
+          ctx.api.deleteMessage(ctx.chat.id, payload.newChatMemberMessageId),
         ]);
       }
     } else if (ctx.chatMember) {
       // TODO:
     }
     return next();
-  } as Middleware,
-);
+  });

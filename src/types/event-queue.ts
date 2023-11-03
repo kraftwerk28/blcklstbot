@@ -1,4 +1,4 @@
-import { Ctx } from "./context";
+import { Context as BotContext } from "./context.js";
 import { MaybePromise } from "./utils";
 
 export type PongEvent = BaseEvent<
@@ -46,7 +46,7 @@ export type EventQueueEvent =
 export type BaseEvent<
   T extends string = any,
   P extends Record<string | number, any> = any,
-  Pk = (keyof P)[],
+  Pk = string[],
 > = {
   /** Event type */
   type: T;
@@ -70,16 +70,16 @@ export type EventPrimaryKeys<
   T extends ExtractType<E>,
 > = Extract<E, { type: T }>["pkArray"];
 
-export type Context<
+export type EventContext<
   Event extends BaseEvent,
   Type extends ExtractType<Event>,
-> = Pick<Ctx, "telegram" | "dbStore"> & {
+> = Pick<BotContext, "api" | "dbStore"> & {
   type: Type;
   payload: PayloadByType<Event, Type>;
 };
 
 export type Callback<E extends BaseEvent, T extends ExtractType<E>> = (
-  ctx: Context<E, T>,
+  ctx: EventContext<E, T>,
 ) => MaybePromise<void>;
 
 export type IgnorePredicate<E extends BaseEvent, T extends ExtractType<E>> = (

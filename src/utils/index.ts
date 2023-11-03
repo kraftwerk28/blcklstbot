@@ -1,20 +1,19 @@
 import { URL } from "url";
 import crypto from "crypto";
 import { promises as fs } from "fs";
-import { Context as TelegrafContext } from "telegraf";
-import { ChatMember, Message, Update, User } from "typegram";
-import fetch from "node-fetch";
+import { fetch } from "undici";
 import path from "path";
+import { Message, ChatMember } from "grammy/types";
 
-export * as html from "./html";
+export * as html from "./html.js";
 import {
   ChatLanguageCode,
-  Ctx,
   EnryResponse,
   GuardPredicate,
   LocaleContainer,
-} from "../types";
-import { log } from "../logger";
+  Context,
+} from "../types/index.js";
+import { log } from "../logger.js";
 
 export function noop() {
   // Noop
@@ -67,28 +66,28 @@ export function idGenerator(initial = 0) {
   return () => id++;
 }
 
-export function all<C extends TelegrafContext = Ctx>(
-  ...predicates: GuardPredicate<C>[]
-) {
-  return (ctx: C) =>
-    Promise.all(predicates.map((p) => p(ctx))).then((results) =>
-      results.every(Boolean),
-    );
-}
+// export function all<C extends Context = Context>(
+//   ...predicates: GuardPredicate<C>[]
+// ) {
+//   return (ctx: C) =>
+//     Promise.all(predicates.map((p) => p(ctx))).then((results) =>
+//       results.every(Boolean),
+//     );
+// }
 
 export const dev = process.env.NODE_ENV === "development";
 
 // export function getUserFromAnyMessage(message: Message): User | null {
 //   if (message.new
 // }
-export function getCodeFromMessage(msg: Message.TextMessage): string | null {
-  if (!msg.entities) return null;
+export function getCodeFromMessage(msg: Message): string | undefined {
+  if (!msg.entities || !msg.text) return;
   const codeEntities = msg.entities.filter(
     (e) => e.type === "pre" || e.type === "code",
   );
   if (codeEntities.length !== 1) {
     // TODO:  Need to merge multiple entities into one
-    return null;
+    return;
   }
   const { length, offset } = codeEntities[0]!;
   // Return only if the whole message is code
@@ -96,7 +95,6 @@ export function getCodeFromMessage(msg: Message.TextMessage): string | null {
     const codeSource = msg.text.slice(offset, offset + length);
     return codeSource;
   }
-  return null;
 }
 
 const OUT_OF_CHAT_STATUS: ChatMember["status"][] = ["left", "kicked"];
@@ -106,54 +104,51 @@ const IN_CHAT_STATUS: ChatMember["status"][] = [
   "creator",
 ];
 
-export function getNewMembersFromUpdate(
-  update: Update.ChatMemberUpdate | Update.MessageUpdate,
-): User[] | null {
-  if ("chat_member" in update) {
-    const chatMember = update.chat_member;
-    const oldMember = chatMember.old_chat_member;
-    const newMember = chatMember.new_chat_member;
-    if (
-      OUT_OF_CHAT_STATUS.includes(oldMember.status) &&
-      IN_CHAT_STATUS.includes(newMember.status)
-    ) {
-      return [newMember.user];
-    } else {
-      return null;
-    }
-  } else if ("new_chat_members" in update.message) {
-    return update.message.new_chat_members;
-  } else {
-    return null;
-  }
-}
+// export function getNewMembersFromUpdate(
+//   update: Update.ChatMemberUpdate | Update.MessageUpdate,
+// ): User[] | null {
+//   if ("chat_member" in update) {
+//     const chatMember = update.chat_member;
+//     const oldMember = chatMember.old_chat_member;
+//     const newMember = chatMember.new_chat_member;
+//     if (
+//       OUT_OF_CHAT_STATUS.includes(oldMember.status) &&
+//       IN_CHAT_STATUS.includes(newMember.status)
+//     ) {
+//       return [newMember.user];
+//     } else {
+//       return null;
+//     }
+//   } else if ("new_chat_members" in update.message) {
+//     return update.message.new_chat_members;
+//   } else {
+//     return null;
+//   }
+// }
 
-export function getLeftMemberFromUpdate(
-  update: Update.ChatMemberUpdate | Update.MessageUpdate,
-): User | null {
-  if ("chat_member" in update) {
-    const chatMember = update.chat_member;
-    const oldMember = chatMember.old_chat_member;
-    const newMember = chatMember.new_chat_member;
-    if (
-      IN_CHAT_STATUS.includes(newMember.status) &&
-      OUT_OF_CHAT_STATUS.includes(oldMember.status)
-    ) {
-      return newMember.user;
-    } else {
-      return null;
-    }
-  } else if ("left_chat_member" in update.message) {
-    return update.message.left_chat_member;
-  } else {
-    return null;
-  }
-}
+// export function getLeftMemberFromUpdate(
+//   update: Update.ChatMemberUpdate | Update.MessageUpdate,
+// ): User | null {
+//   if ("chat_member" in update) {
+//     const chatMember = update.chat_member;
+//     const oldMember = chatMember.old_chat_member;
+//     const newMember = chatMember.new_chat_member;
+//     if (
+//       IN_CHAT_STATUS.includes(newMember.status) &&
+//       OUT_OF_CHAT_STATUS.includes(oldMember.status)
+//     ) {
+//       return newMember.user;
+//     } else {
+//       return null;
+//     }
+//   } else if ("left_chat_member" in update.message) {
+//     return update.message.left_chat_member;
+//   } else {
+//     return null;
+//   }
+// }
 
-export async function runTreeSitterHighlight(
-  lang: string,
-  code: string,
-): Promise<NodeJS.ReadableStream | null> {
+export async function runTreeSitterHighlight(lang: string, code: string) {
   const hlServerUrl = new URL(process.env.TREE_SITTER_SERVER_HOST!);
   hlServerUrl.searchParams.append("lang", lang);
   const response = await fetch(hlServerUrl, {
@@ -161,18 +156,17 @@ export async function runTreeSitterHighlight(
     body: code,
   });
   if (response.status === 200) {
-    return response.body;
+    return response.body ?? undefined;
   }
-  return null;
 }
 
-export async function runEnry(code: string): Promise<EnryResponse | null> {
+export async function runEnry(code: string): Promise<EnryResponse | undefined> {
   const response = await fetch(process.env.ENRY_SERVER_HOST!, {
     method: "POST",
     body: code,
   });
-  if (response.status !== 200) return null;
-  return response.json();
+  if (!response.ok) return;
+  return (await response.json()) as Promise<EnryResponse>;
 }
 
 export async function uploadToGist(
@@ -199,7 +193,7 @@ export async function uploadToGist(
     return null;
   }
   try {
-    const responseJson = await response.json();
+    const responseJson = (await response.json()) as { html_url: string };
     return `${responseJson.html_url as string}#file-${fileStem}-${extension}`;
   } catch {
     return null;

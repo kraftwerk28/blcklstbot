@@ -1,14 +1,14 @@
 import { Redis } from "ioredis";
-import { Telegram } from "telegraf";
+import { Api } from "grammy";
 
-import { DbStore } from "./db-store";
+import { DbStore } from "./db-store.js";
 import {
   BaseEvent,
   Callback,
   ExtractType,
-  MaybePromise,
   PayloadByType,
-} from "./types";
+} from "./types/index.js";
+import { MaybePromise } from "./types/utils.js";
 
 export class EventQueue<
   Event extends BaseEvent,
@@ -20,7 +20,7 @@ export class EventQueue<
   private redisClient: Redis;
 
   constructor(
-    private readonly telegram: Telegram,
+    private readonly telegram: Api,
     private readonly dbStore: DbStore,
     private readonly sortedSetKey = "evt_queue:zset",
     private pollTimeout = 500,
@@ -66,7 +66,7 @@ export class EventQueue<
   ): Promise<void> {
     const callbacks = this.subscribers.get(type);
     const promises: Promise<void>[] = [];
-    const baseContext = { telegram: this.telegram, dbStore: this.dbStore };
+    const baseContext = { api: this.telegram, dbStore: this.dbStore };
     if (callbacks) {
       const data = Object.assign({ type, payload }, baseContext);
       for (const callback of callbacks) {

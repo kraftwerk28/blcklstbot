@@ -3,50 +3,49 @@ import {
   NarrowedContext,
   Middleware as TMiddleware,
   Types,
+  Middleware,
 } from "telegraf";
-import { Update, User } from "typegram";
-import { Ctx } from "./context";
-import { ChatLanguageCode } from "./models";
+import { User } from "typegram";
+import { Context } from "./context.js";
+import { ChatLanguageCode } from "./models.js";
 
 export type MaybePromise<T = any> = T | Promise<T>;
 
 export type DbOptional<T> = T | null;
 
 /** Utility for typing `bot.on('foo', fooMiddleware)` */
-export type OnMiddleware<
-  U extends Types.UpdateType | Types.MessageSubType,
-  C extends TelegrafContext = Ctx,
-> = TMiddleware<MatchedContext<C, U>>;
+// export type OnMiddleware<
+//   U extends Types.UpdateType | Types.MessageSubType,
+//   C extends TelegrafContext = Ctx,
+// > = TMiddleware<MatchedContext<C, U>>;
 
-export type ActionMiddleware<C extends TelegrafContext = Ctx> = TMiddleware<
-  MatchedContext<C & { match: RegExpExecArray }, "callback_query">
->;
+export type OnMiddleware = never;
 
-export type CommandMiddleware<C extends TelegrafContext = Ctx> = TMiddleware<
-  MatchedContext<C, "text">
->;
+// export type ActionMiddleware<C extends Context = Context> = TMiddleware<
+//   MatchedContext<C & { match: RegExpExecArray }, "callback_query">
+// >;
 
-export type HearsMiddleware<C extends TelegrafContext = Ctx> = TMiddleware<
-  MatchedContext<C & { match: RegExpExecArray }, "text">
->;
+export type CommandMiddleware = never;
 
-export type GuardPredicate<C extends TelegrafContext = Ctx> =
-  | ((ctx: C) => boolean)
-  | ((ctx: C) => Promise<boolean>);
+// export type HearsMiddleware<C extends TelegrafContext = Context> = TMiddleware<
+//   MatchedContext<C & { match: RegExpExecArray }, "text">
+// >;
 
-export type MatchedContext<
-  C extends TelegrafContext,
-  T extends Types.UpdateType | Types.MessageSubType,
-> = NarrowedContext<C, MountMap[T]>;
+export type GuardPredicate = never
 
-type MountMap = {
-  [T in Types.UpdateType]: Extract<Update, Record<T, object>>;
-} & {
-  [T in Types.MessageSubType]: {
-    message: Extract<Update.MessageUpdate["message"], Record<T, unknown>>;
-    update_id: number;
-  };
-};
+// export type MatchedContext<
+//   C extends TelegrafContext,
+//   T extends Types.UpdateType | Types.MessageSubType,
+// > = NarrowedContext<C, Types.MountMap[T]>;
+
+// type MountMap = {
+//   [T in Types.UpdateType]: Extract<Update, Record<T, object>>;
+// } & {
+//   [T in Types.MessageSubType]: {
+//     message: Extract<Update.MessageUpdate["message"], Record<T, unknown>>;
+//     update_id: number;
+//   };
+// };
 
 export type NonemptyReadonlyArray<T> = readonly [T, ...T[]];
 

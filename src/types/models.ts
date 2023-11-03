@@ -1,6 +1,6 @@
 import { Chat, User } from "typegram";
-import { CaptchaMode } from "./";
-import { DbOptional } from "./utils";
+import { CaptchaMode } from "./captcha.js";
+import { DbOptional } from "./utils.js";
 
 export type ChatLanguageCode = "uk" | "en";
 

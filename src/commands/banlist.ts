@@ -1,13 +1,16 @@
-import { Markup } from "telegraf";
-import { Composer } from "../composer";
-import { isGroupChat, senderIsAdmin } from "../guards";
-import { deleteMessage } from "../middlewares";
-import { CommandMiddleware, DbUser } from "../types";
-import { userFullName } from "../utils/html";
+import { InlineKeyboard } from "grammy";
+import { Composer } from "../composer.js";
+import { senderIsAdmin } from "../guards/index.js";
+import type { DbUser } from "../types/index.js";
+import { userFullName } from "../utils/html.js";
 
-export const banList = Composer.branchAll(
-  [senderIsAdmin, isGroupChat],
-  async function (ctx) {
+const c = new Composer();
+
+c.on("message")
+  .command("banlist")
+  .chatType(["group", "supergroup"])
+  .use(senderIsAdmin)
+  .use(async (ctx) => {
     const chatId = ctx.chat.id;
     const bannedUsers: DbUser[] = await ctx.dbStore
       .knex("users")
@@ -17,7 +20,7 @@ export const banList = Composer.branchAll(
       await ctx.reply(ctx.t("banlist_empty")).then(ctx.deleteItSoon());
       return;
     }
-    const { reply_markup } = Markup.inlineKeyboard(
+    const reply_markup = new InlineKeyboard(
       bannedUsers.map((user) => {
         let buttonText = userFullName(user);
         if (user.banned_timestamp) {
@@ -25,12 +28,12 @@ export const banList = Composer.branchAll(
             " (" + user.banned_timestamp.toLocaleDateString("uk-UA") + ")";
         }
         const cbData = `unban:${chatId}:${user.id}`;
-        return [Markup.button.callback(buttonText, cbData)];
+        return [InlineKeyboard.text(buttonText, cbData)];
       }),
     );
     await ctx
-      .replyWithHTML(ctx.t("banlist_title"), { reply_markup })
+      .reply(ctx.t("banlist_title"), { reply_markup, parse_mode: "HTML" })
       .then(ctx.deleteItSoon());
-  } as CommandMiddleware,
-  deleteMessage,
-);
+  });
+
+export default c;

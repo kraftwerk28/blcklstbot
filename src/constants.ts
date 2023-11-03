@@ -1,4 +1,4 @@
-import { CaptchaMode } from "./types";
+import { CaptchaMode } from "./types/captcha.js";
 
 export const CHATS_TABLE_NAME = "chats";
 export const USERS_TABLE_NAME = "users";

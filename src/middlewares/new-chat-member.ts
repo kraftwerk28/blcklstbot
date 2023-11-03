@@ -1,57 +1,51 @@
-import { Message, User } from "typegram";
+import { Message, User } from "grammy/types";
 
-import { Composer } from "../composer";
-import { noop, safePromiseAll } from "../utils";
-import { Ctx, OnMiddleware, CaptchaMode } from "../types";
-import { generateCaptcha } from "../captcha";
-// import { Captcha } from '../utils/captcha';
-import { code, userMention } from "../utils/html";
-import { captchaHash } from "../utils/event-queue";
-import { botHasSufficientPermissions } from "../guards";
-import { log } from "../logger";
+import { Composer } from "../composer.js";
+import { noop, safePromiseAll } from "../utils/index.js";
+import { CaptchaMode, Context } from "../types/index.js";
+import { generateCaptcha } from "../captcha/index.js";
+import { code, userMention } from "../utils/html.js";
+import { captchaHash } from "../utils/event-queue.js";
+import { botHasSufficientPermissions } from "../guards/index.js";
+import { log } from "../logger.js";
 
-type Middleware = OnMiddleware<"new_chat_members" | "chat_member">;
-
-/**
- * Creates capthca.
- * Also registers user in DB for messages tracking
- */
-export const onNewChatMember: Middleware = Composer.guardAll(
-  [
-    async function (ctx) {
-      // `/me` also wants to pass captcha so ima about to comment dis :)
-      // if (ctx.from?.id === ctx.botCreatorId) return false;
-      const cm = await ctx.getChatMember(ctx.from!.id);
-      return cm.status === "member";
-    },
-    botHasSufficientPermissions,
-  ],
-  async function (ctx, next) {
+const composer = new Composer();
+export default composer;
+composer
+  .on("message:new_chat_members")
+  .use(botHasSufficientPermissions, async (ctx, next) => {
     if (ctx.dbChat.delete_joins) {
       await ctx.deleteMessage().catch(noop);
     }
     if (!ctx.dbChat.captcha_modes.length) {
       return next();
     }
-    if (
-      ctx.message?.new_chat_members &&
-      ctx.message.new_chat_members.length > 0
-    ) {
-      const promises = ctx.message.new_chat_members.map((cm) =>
-        userCaptcha(ctx, cm),
-      );
-      // eslint-disable-next-line @typescript-eslint/no-floating-promises
-      safePromiseAll(promises);
-      return;
-    } else if (ctx.chatMember) {
-      // TODO
-      return;
-    }
+    const promises = ctx.message.new_chat_members.map((cm) =>
+      userCaptcha(ctx, cm),
+    );
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
+    safePromiseAll(promises);
     return next();
-  } as Middleware,
-);
+  });
 
-async function userCaptcha(ctx: Ctx, user: User) {
+/**
+ * Creates capthca.
+ * Also registers user in DB for messages tracking
+ */
+// export const onNewChatMember: Middleware = Composer.guardAll(
+//   [
+//     async function (ctx) {
+//       // `/me` also wants to pass captcha so ima about to comment dis :)
+//       // if (ctx.from?.id === ctx.botCreatorId) return false;
+//       const cm = await ctx.getChatMember(ctx.from!.id);
+//       return cm.status === "member";
+//     },
+//     botHasSufficientPermissions,
+//   ],
+//   async function (ctx, next) {} as Middleware,
+// );
+
+async function userCaptcha(ctx: Context, user: User) {
   const captcha = generateCaptcha(ctx.dbChat.captcha_modes);
   const captchaTimeout = ctx.dbChat.captcha_timeout;
   await ctx.dbStore.addPendingCaptcha(
@@ -65,12 +59,13 @@ async function userCaptcha(ctx: Ctx, user: User) {
 
   switch (captcha.mode) {
     case CaptchaMode.Arithmetic: {
-      captchaMessage = await ctx.replyWithHTML(
+      captchaMessage = await ctx.reply(
         ctx.t("math_captcha", { user: userMention(user) }) +
           "\n" +
           code(captcha.meta.expression) +
           "\n" +
           ctx.t("captcha_remaining", { seconds: ctx.dbChat.captcha_timeout }),
+        { parse_mode: "HTML" },
       );
       break;
     }
@@ -107,12 +102,13 @@ async function userCaptcha(ctx: Ctx, user: User) {
       } else {
         expression = `${a!} × (${b!} - ${c!})`;
       }
-      captchaMessage = await ctx.replyWithHTML(
+      captchaMessage = await ctx.reply(
         ctx.t("math_captcha", { user: userMention(user) }) +
           "\n" +
           code(expression) +
           "\n" +
           ctx.t("captcha_remaining", { seconds: ctx.dbChat.captcha_timeout }),
+        { parse_mode: "HTML" },
       );
       break;
     }
@@ -120,12 +116,13 @@ async function userCaptcha(ctx: Ctx, user: User) {
       const matrixText = captcha.meta.matrix
         .map((row) => "| " + row.join(" ") + " |")
         .join("\n");
-      captchaMessage = await ctx.replyWithHTML(
+      captchaMessage = await ctx.reply(
         ctx.t("matrix_captcha", { user: userMention(user) }) +
           "\n" +
           code(matrixText) +
           "\n" +
           ctx.t("captcha_remaining", { seconds: ctx.dbChat.captcha_timeout }),
+        { parse_mode: "HTML" },
       );
       break;
     }

@@ -1,21 +1,20 @@
-import { Composer } from "../composer";
-import {
-  botHasSufficientPermissions,
-  isGroupChat,
-  senderIsAdmin,
-} from "../guards";
-import { CommandMiddleware } from "../types";
+import { Composer } from "../composer.js";
+import { senderIsAdmin } from "../guards/index.js";
 
-export const beautifyCode = Composer.guardAll(
-  [botHasSufficientPermissions, senderIsAdmin, isGroupChat],
-  async function (ctx) {
-    await Promise.all([
-      ctx.dbStore.updateChatProp(
-        ctx.chat.id,
-        "replace_code_with_pic",
-        !ctx.dbChat?.replace_code_with_pic,
-      ),
-      ctx.deleteMessage(),
-    ]);
-  } as CommandMiddleware,
-);
+// const composer = new Composer();
+//
+// composer
+//   .chatType(["group", "supergroup"])
+//   .use(senderIsAdmin)
+//   .command("toggle_beautify", async (ctx) => {
+//     await Promise.all([
+//       ctx.dbStore.updateChatProp(
+//         ctx.chat.id,
+//         "replace_code_with_pic",
+//         !ctx.dbChat?.replace_code_with_pic,
+//       ),
+//       ctx.deleteMessage(),
+//     ]);
+//   });
+//
+// export default composer;
