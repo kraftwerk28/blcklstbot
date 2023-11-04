@@ -8,11 +8,10 @@ composer
   .filter(messageIsReply)
   .use(senderIsAdmin)
   .use(async (ctx) => {
-    await ctx.deleteMessage();
-    await ctx.api.deleteMessage(
-      ctx.chat.id,
-      ctx.message.reply_to_message.message_id,
-    );
+    await ctx.deleteMessage().catch(ctx.log.error);
+    await ctx.api
+      .deleteMessage(ctx.chat.id, ctx.message.reply_to_message.message_id)
+      .catch(ctx.log.error);
   });
 
 export default composer;

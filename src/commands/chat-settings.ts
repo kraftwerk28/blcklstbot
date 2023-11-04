@@ -230,7 +230,8 @@ cbQueryComposer.callbackQuery("close", async (ctx, next) => {
   return next();
 });
 
-cbQueryComposer.use((ctx) => {
+// Catch all
+cbQueryComposer.callbackQuery(/.+/, (ctx) => {
   return ctx.answerCallbackQuery(String.raw`¯\_(ツ)_/¯`);
 });
 

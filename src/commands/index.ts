@@ -19,6 +19,10 @@
 // export * from "./def-command.js";
 // export * from "./bang-handler.js";
 // export * from "./bash.js";
+export { default as chatSettings } from "./chat-settings.js";
+export { default as report } from "./report.js";
+export { default as warn } from "./warn.js";
+export { default as ping } from "./ping.js";
 
 // export const publicCommands: BotCommand[] = [
 //   { command: "ping", description: "Ping myself after n seconds" },

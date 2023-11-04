@@ -3,7 +3,9 @@ import { botHasSufficientPermissions, isGroupChat } from "../guards/index.js";
 import { OnMiddleware } from "../types/index.js";
 
 const composer = new Composer();
+
 export default composer;
+
 composer
   .on("message")
   .chatType(["group", "supergroup"])

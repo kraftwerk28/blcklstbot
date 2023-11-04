@@ -2,7 +2,6 @@ import { Composer } from "../composer.js";
 import { captchaHash } from "../utils/event-queue.js";
 import { checkCaptchaAnswer as checkAnswer } from "../captcha/index.js";
 import { noop } from "../utils/index.js";
-import { log } from "../logger.js";
 import { botHasSufficientPermissions } from "../guards/index.js";
 
 const composer = new Composer();
@@ -21,7 +20,7 @@ composer
     await ctx.deleteMessage().catch(noop);
     if (correct) {
       await ctx.dbStore.deletePendingCaptcha(chatId, userId);
-      log.info({ user: ctx.from, captcha }, "User %s (%d) passed captcha %O");
+      ctx.log.info({ user: ctx.from, captcha }, "User completed the captcha");
       const payload = await ctx.eventQueue.removeEvent<"captcha_timeout">(
         captchaHash(chatId, userId),
       );

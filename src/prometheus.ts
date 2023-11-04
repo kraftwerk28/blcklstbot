@@ -1,13 +1,19 @@
-import { type FilterQuery, type Bot } from "grammy";
+import { type FilterQuery } from "grammy";
 import { Counter, register } from "prom-client";
 
-import type { Context } from "./types/index.js";
+import { Composer } from "./composer.js";
 
 const promMessageCounter = new Counter({
   name: "tg_messages_total",
   help: "Message counter",
   labelNames: ["media_type"],
 });
+
+export function getRawMetrics() {
+  return register.metrics();
+}
+
+export const composer = new Composer();
 
 const promUpdateTypes: FilterQuery[] = [
   "message:text",
@@ -17,14 +23,10 @@ const promUpdateTypes: FilterQuery[] = [
   "message:video",
 ];
 
-export function registerPromHandlers(bot: Bot<Context>) {
-  for (const msgSubType of promUpdateTypes) {
-    bot.on(msgSubType, (_ctx) => {
-      promMessageCounter.inc({ media_type: msgSubType });
-    });
-  }
-}
-
-export function getRawMetrics() {
-  return register.metrics();
+for (const msgSubType of promUpdateTypes) {
+  composer.on(msgSubType, (_ctx, next) => {
+    const media_type = msgSubType.slice("message:".length);
+    promMessageCounter.inc({ media_type });
+    return next();
+  });
 }

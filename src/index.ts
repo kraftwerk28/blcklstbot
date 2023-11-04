@@ -1,4 +1,4 @@
-import { Bot } from "grammy";
+import { Bot, webhookCallback as makeWebhookCallback } from "grammy";
 import util from "util";
 import * as path from "path";
 import * as crypto from "crypto";
@@ -15,15 +15,14 @@ import { loadLocales, noop, regexp } from "./utils/index.js";
 import { getRawMetrics } from "./prometheus.js";
 import { BOT_SERVICE_MESSAGES_TIMEOUT } from "./constants.js";
 
-import bangHandler from "./commands/bang-handler.js";
-import bash from "./commands/bash.js";
-import chatSettings from "./commands/chat-settings.js";
 import { DbStore } from "./db-store.js";
 import { EventQueue } from "./event-queue.js";
 import { Message } from "grammy/types";
 
-import addChatToDatabase from "./middlewares/add-chat-to-database.js";
-import addUserToDatabase from "./middlewares/add-chat-to-database.js";
+import * as m from "./middlewares/index.js";
+import * as c from "./commands/index.js";
+
+import { composer as promComposer } from "./prometheus.js";
 
 async function main() {
   if (process.env.NODE_ENV === "development") {
@@ -53,6 +52,59 @@ async function main() {
   const dbStore = new DbStore(knex, redisClient);
   const eventQueue = new EventQueue(bot.api, dbStore);
   const botCreatorId = parseInt(process.env.KRAFTWERK28_UID);
+
+  eventQueue
+    .on("pong", async ({ api, payload }) => {
+      const text = payload.text ?? "Pong";
+      await api.sendMessage(payload.chatId, text, {
+        reply_to_message_id: payload.messageId,
+      });
+    })
+    .on("captcha_timeout", async ({ api, payload }) => {
+      const { chatId, userId, captchaMessageId, newChatMemberMessageId } =
+        payload;
+      const kicked = await api.kickChatMember(chatId, userId);
+      const deleted_captcha_message = await api
+        .deleteMessage(chatId, captchaMessageId)
+        .catch(noop);
+      const deleted_new_member_message = await api
+        .deleteMessage(chatId, newChatMemberMessageId)
+        .catch(noop);
+      await eventQueue.pushDelayed(10, "unkick_after_captcha", {
+        chat_id: chatId,
+        user_id: userId,
+      });
+      log.info(
+        {
+          chat: { id: chatId },
+          user: { id: userId },
+          kicked,
+          deleted_captcha_message,
+          deleted_new_member_message,
+        },
+        "Kicked a member due to captcha timeout",
+      );
+    })
+    .on("unkick_after_captcha", async ({ api, payload }) => {
+      const unbanned = await api.unbanChatMember(
+        payload.chat_id,
+        payload.user_id,
+      );
+      log.info(
+        {
+          chat: { id: payload.chat_id },
+          user: { id: payload.user_id },
+          unbanned,
+        },
+        "Unbanned user after captcha timeout",
+      );
+    })
+    .on("delete_message", async ({ api, payload }) => {
+      await api.deleteMessage(payload.chatId, payload.messageId).catch(noop);
+    })
+    .onError((err) => {
+      log.error(err, "Error in Event Queue");
+    });
 
   function deleteItSoon(this: Context) {
     return async (msg: Message) => {
@@ -89,25 +141,79 @@ async function main() {
     });
   };
 
+  // Extend context
   bot.use((ctx, next) => {
-    ctx.dbStore = dbStore;
-    ctx.eventQueue = eventQueue;
-    ctx.botCreatorId = botCreatorId;
-    ctx.deleteItSoon = deleteItSoon;
-    ctx.locales = locales;
-    ctx.t = t;
-    ctx.log = log;
+    Object.assign(ctx, {
+      dbStore,
+      eventQueue,
+      botCreatorId,
+      deleteItSoon,
+      locales,
+      t,
+      log,
+    });
     return next();
   });
 
-  bot.use(addChatToDatabase);
-  bot.use(addUserToDatabase);
+  bot.use(promComposer);
 
-  bot.use(bash);
-  bot.use(bangHandler);
-  bot.use(chatSettings);
+  bot.use(m.addChatToDatabase);
+  bot.use(m.addUserToDatabase);
+  bot.use(m.substitute);
+  bot.use(m.bash);
+  bot.use(m.bangHandler);
+  bot.use(m.newChatMember);
+  bot.use(m.leftChatMember);
+  bot.use(m.checkCaptchaAnswer);
+  bot.use(m.removeMessagesUnderCaptcha);
+  bot.use(m.uploadToGistOrHighlight);
 
-  await bot.start();
+  bot.use(c.chatSettings);
+  bot.use(c.report);
+  bot.use(c.warn);
+  bot.use(c.ping);
+
+  bot.catch(async (err) => {
+    if (err.ctx.callbackQuery !== undefined) {
+      await err.ctx.answerCallbackQuery(
+        "An error occured while processing your request :(",
+      );
+    }
+    err.ctx.log.error({
+      err: {
+        name: err.name,
+        message: err.message,
+        stack: err.stack,
+        cause: err.cause,
+      },
+      update: err.ctx.update,
+    });
+  });
+
+  if (process.env.NODE_ENV === "development") {
+    await bot.start({ drop_pending_updates: true });
+  } else {
+    const { WEBHOOK_DOMAIN, WEBHOOK_PORT, SERVER_PORT, BOT_TOKEN } =
+      process.env;
+    const webhookCallback = makeWebhookCallback(bot, "http");
+    const server = createServer(async (req, res) => {
+      if (req.url === "/metrics") {
+        try {
+          const raw = await getRawMetrics();
+          return res.writeHead(200, { "Content-Type": "text/plain" }).end(raw);
+        } catch (err) {
+          return res.writeHead(500).end((err as Error).message);
+        }
+      }
+      return webhookCallback(req, res);
+    });
+    server.listen(SERVER_PORT);
+    await bot.api.setWebhook(
+      `https://${WEBHOOK_DOMAIN}:${WEBHOOK_PORT}/blcklstbot/${BOT_TOKEN}`,
+      { drop_pending_updates: true },
+    );
+    log.info("Setting webhook");
+  }
   log.info("Bot started");
 }
 
