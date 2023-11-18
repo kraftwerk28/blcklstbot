@@ -18,7 +18,10 @@ import {
 import { deserializeCaptcha, serializeCaptcha } from "./captcha/index.js";
 
 export class DbStore {
-  constructor(public readonly knex: Knex, public readonly redisClient: Redis) {}
+  constructor(
+    public readonly knex: Knex,
+    public readonly redisClient: Redis,
+  ) {}
 
   private captchaRedisKey(chatId: number, userId: number) {
     return `captcha:${chatId}:${userId}`;
@@ -104,7 +107,7 @@ export class DbStore {
 
   async addUser(user: DbUserFromTg, chatId: number): Promise<DbUser> {
     const { id, first_name, last_name, language_code, username } = user;
-    const dbUser = {
+    const entity = {
       id,
       chat_id: chatId,
       first_name,
@@ -112,17 +115,10 @@ export class DbStore {
       language_code,
       username,
     };
-    return this.genericUpsert<DbUserFromTg, DbUser>(dbUser, USERS_TABLE_NAME, [
+    return this.genericUpsert<DbUserFromTg, DbUser>(entity, USERS_TABLE_NAME, [
       "id",
       "chat_id",
     ]);
-    // const insertQuery = this.knex(USERS_TABLE_NAME).insert();
-    // const insertResult = await this.knex.raw(
-    //   '? on conflict(id, chat_id) do update ' +
-    //     'set id = excluded.id, chat_id = excluded.chat_id returning *',
-    //   [insertQuery],
-    // );
-    // return insertResult.rows[0];
   }
 
   async getUser(chatId: number, userId: number): Promise<DbUser> {
@@ -142,12 +138,16 @@ export class DbStore {
   }
 
   async addUserMessage(message: Message) {
-    return this.knex("user_messages").insert({
+    const entity = {
       chat_id: message.chat.id,
       user_id: message.from?.id,
       message_id: message.message_id,
       timestamp: new Date(message.date * 1000),
-    });
+    };
+    return this.genericUpsert(entity, "user_messages", [
+      "chat_id",
+      "message_id",
+    ]);
   }
 
   async getUserMessages(chatId: number, userId: number): Promise<number[]> {

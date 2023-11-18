@@ -7,7 +7,7 @@
 // export * from "./help.js";
 // export * from "./captcha-timeout.js";
 // export * from "./beautify-code.js";
-// export * from "./del-message.js";
+export { default as delMessage } from "./del-message.js";
 // export * from "./report.js";
 // export * from "./warn.js";
 // export * from "./code-pic.js";

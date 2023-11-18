@@ -10,6 +10,10 @@ composer
   .use(async (ctx, next) => {
     if ("new_chat_members" in ctx.message || "left_chat_member" in ctx.message)
       return next();
-    await ctx.dbStore.addUserMessage(ctx.message);
+    try {
+      await ctx.dbStore.addUserMessage(ctx.message);
+    } catch (err) {
+      ctx.log.error(err);
+    }
     return next();
   });

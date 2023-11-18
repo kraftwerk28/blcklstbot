@@ -27,7 +27,7 @@ composer
       }
       await ctx.deleteMessage().catch(noop);
 
-      const reasonFromCommand = ctx.match[1];
+      const reasonFromCommand = ctx.match;
       if (reportedUser.warnings_count === 0) {
         if (reasonFromCommand) {
           warnReason = reasonFromCommand;

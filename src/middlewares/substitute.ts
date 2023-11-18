@@ -69,40 +69,56 @@ export function applySedQueries(
   return inputText;
 }
 
-const composer = new Composer();
-export default composer;
-composer.filter(messageIsReply).on("message:text", async (ctx, next) => {
-  const reply = ctx.message.reply_to_message;
-
-  let inputText;
-  if ("text" in reply) {
-    inputText = reply.text;
-  } else if ("caption" in reply) {
-    inputText = reply.caption;
-  }
-  if (!inputText) return next();
-
-  const sedQueries = ctx.message.text
+function runSubstituteOnText(text: string, substitute: string) {
+  const sedQueries = substitute
     .split("\n")
     .map((q) => q.trim())
     .filter((q) => q.startsWith("s"));
-  if (sedQueries.length === 0) return next();
+  if (sedQueries.length === 0) return;
+  return applySedQueries(text, sedQueries);
+}
 
-  const finalText = applySedQueries(inputText, sedQueries);
+const composer = new Composer();
+
+export default composer;
+
+composer.on("edited_message:text", async (ctx, next) => {
+  const key = `substitute:${ctx.editedMessage.message_id}`;
+  const replyMessageId = await ctx.dbStore.redisClient
+    .get(key)
+    .then((raw) => (raw ? parseInt(raw) : undefined));
+  if (replyMessageId === undefined) return next();
+  const reply = ctx.editedMessage.reply_to_message;
+  if (!reply) return next();
+  const inputText = reply.text ?? reply.caption;
+  if (!inputText) return next();
+  const finalText = runSubstituteOnText(inputText, ctx.editedMessage.text);
   if (!finalText) return next();
+  await ctx.api.editMessageText(ctx.chat.id, replyMessageId, finalText);
+});
 
+composer.filter(messageIsReply).on("message:text", async (ctx, next) => {
+  const reply = ctx.message.reply_to_message;
+  const inputText = reply.text ?? reply.caption;
+  if (!inputText) return next();
+  const finalText = runSubstituteOnText(inputText, ctx.message.text);
+  if (!finalText) return next();
   const sent = await ctx.reply(finalText, {
     reply_to_message_id: reply.message_id,
   });
-  if (ctx.from.id !== ctx.botCreatorId) {
-    const delay = 5 * 60; // 5 mins
-    await ctx.eventQueue.pushDelayed(delay, "delete_message", {
-      chatId: ctx.chat.id,
-      messageId: ctx.message.message_id,
-    });
-    await ctx.eventQueue.pushDelayed(delay, "delete_message", {
-      chatId: ctx.chat.id,
-      messageId: sent.message_id,
-    });
-  }
+  await ctx.dbStore.redisClient.set(
+    `substitute:${ctx.message.message_id}`,
+    sent.message_id,
+  );
+  // if (ctx.from.id !== ctx.botCreatorId) {
+  //   const delay = 5 * 60; // 5 mins
+  //   await ctx.eventQueue.pushDelayed(delay, "delete_message", {
+  //     chatId: ctx.chat.id,
+  //     messageId: ctx.message.message_id,
+  //   });
+  //   await ctx.eventQueue.pushDelayed(delay, "delete_message", {
+  //     chatId: ctx.chat.id,
+  //     messageId: sent.message_id,
+  //   });
+  // }
 });

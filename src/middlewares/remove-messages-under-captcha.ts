@@ -1,6 +1,6 @@
 import { Composer } from "../composer.js";
-import { botHasSufficientPermissions, isGroupChat } from "../guards/index.js";
-import { OnMiddleware } from "../types/index.js";
+import { botHasSufficientPermissions } from "../guards/index.js";
+import { noop } from "../utils/index.js";
 
 const composer = new Composer();
 
@@ -19,7 +19,7 @@ composer
       ctx.from.id,
     );
     if (captcha) {
-      await ctx.deleteMessage();
+      await ctx.deleteMessage().catch(noop);
     }
     return next();
   });

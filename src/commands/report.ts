@@ -24,7 +24,7 @@ composer
       await ctx.deleteMessage().catch(noop);
       const reportedUser = ctx.reportedUser!;
       const isLastWarn = reportedUser.warnings_count === MAX_WARNINGS;
-      const reason = isLastWarn ? reportedUser.warn_ban_reason : ctx.match[1];
+      const reason = isLastWarn ? reportedUser.warn_ban_reason : ctx.match;
 
       const callbackData = `unban:${ctx.chat.id}:${reportedUser.id}`;
       const inlineKbd = new InlineKeyboard().text(
@@ -66,7 +66,7 @@ composer
 
       return safePromiseAll([
         ctx.banChatMember(reportedUser.id),
-        ctx.reply(text, { parse_mode: "HTML", ...inlineKbd }),
+        ctx.reply(text, { parse_mode: "HTML", reply_markup: inlineKbd }),
       ]);
     },
   );

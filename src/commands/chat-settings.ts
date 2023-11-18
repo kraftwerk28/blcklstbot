@@ -2,6 +2,7 @@ import { InlineKeyboard } from "grammy";
 import { Composer } from "../composer.js";
 
 import { CaptchaMode, ChatLanguageCode, Context } from "../types/index.js";
+import { senderIsAdmin } from "../guards/index.js";
 
 const isEnabledEmoji = (b: boolean) => {
   // return b ? '\u2705' : '\u26d4';
@@ -109,7 +110,7 @@ const composer = new Composer();
 
 const composer2 = composer.chatType(["group", "supergroup"]);
 
-composer2.command("settings", async (ctx) => {
+composer2.command("settings", senderIsAdmin, async (ctx) => {
   return ctx.reply("Settings:", {
     reply_to_message_id: ctx.message.message_id,
     reply_markup: buildSettingsKeyboard(ctx),
@@ -135,7 +136,7 @@ const refreshKbdComposer = new Composer().use(async (ctx) => {
   } catch {
     // Noop
   }
-  return ctx.answerCallbackQuery("Done!");
+  return ctx.answerCallbackQuery();
 });
 
 cbQueryComposer

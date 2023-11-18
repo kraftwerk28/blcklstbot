@@ -8,7 +8,7 @@ export { default as bash } from "./bash.js";
 export { default as bangHandler } from "./bang-handler.js";
 // export * from "./undo-ban.js";
 // export * from "./highlight-code.js";
-// export * from "./track-member-messages.js";
+export { default as trackMemberMessages } from "./track-member-messages.js";
 // export * from "./get-db-user-from-reply.js";
 // export * from "./delete-message.js";
 export { default as addUserToDatabase } from "./add-user-to-database.js";
