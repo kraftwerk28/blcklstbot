@@ -37,11 +37,20 @@ export type DeleteMessageEvent = BaseEvent<
   }
 >;
 
+export type UnmuteEvent = BaseEvent<
+  "unmute",
+  {
+    chat_id: number;
+    user_id: number;
+  }
+>;
+
 export type EventQueueEvent =
   | PongEvent
   | CaptchaTimeoutEvent
   | UnkickAfterCaptcha
-  | DeleteMessageEvent;
+  | DeleteMessageEvent
+  | UnmuteEvent;
 
 export type BaseEvent<
   T extends string = any,

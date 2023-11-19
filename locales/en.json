@@ -11,5 +11,6 @@
   "banlist_empty": "No banned users here so far...",
   "upload_to_gist": "A message with source code by {user} was moved to {gist_link}",
   "predicc": "{fact} likely at {weekday}, {date}",
-  "admin_only_action": "This action is intended for administrators only"
+  "admin_only_action": "This action is intended for administrators only",
+  "mute_list_empty": "The Mute List is still empty."
 }

@@ -10,6 +10,10 @@ class BadDurationError extends Error {
   }
 }
 
+const MINUTE = 60;
+const HOUR = MINUTE * 60;
+const DAY = HOUR * 24;
+
 export function parse(raw: string): number;
 export function parse(raw: string | undefined, fallback: string): number;
 export function parse(raw?: string, fallback?: string): number {
@@ -23,9 +27,24 @@ export function parse(raw?: string, fallback?: string): number {
   const minutes = parseInt(match[3] ?? "");
   const seconds = parseInt(match[4] ?? "");
   let result = 0;
-  if (!Number.isNaN(days)) result += days * 24 * 60 * 60;
-  if (!Number.isNaN(hours)) result += hours * 60 * 60;
-  if (!Number.isNaN(minutes)) result += minutes * 60;
+  if (!Number.isNaN(days)) result += days * DAY;
+  if (!Number.isNaN(hours)) result += hours * HOUR;
+  if (!Number.isNaN(minutes)) result += minutes * MINUTE;
   if (!Number.isNaN(seconds)) result += seconds;
   return result;
+}
+
+export function stringify(seconds: number) {
+  const days = Math.floor(seconds / DAY);
+  seconds -= days * DAY;
+  const hours = Math.floor(seconds / HOUR);
+  seconds -= hours * HOUR;
+  const minutes = Math.floor(seconds / MINUTE);
+  seconds -= minutes * MINUTE;
+  let ret = "";
+  if (days > 0) ret += days + "d";
+  if (hours > 0) ret += hours + "h";
+  if (minutes > 0) ret += minutes + "m";
+  if (seconds > 0 || !ret) ret += seconds + "s";
+  return ret;
 }

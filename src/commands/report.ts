@@ -6,6 +6,7 @@ import { userMention, escape } from "../utils/html.js";
 import { MAX_WARNINGS } from "../constants.js";
 import { safePromiseAll } from "../utils/index.js";
 import obtainReportedUser from "../middlewares/get-reported-user.js";
+import splitArgs from "../middlewares/split-args.js";
 
 const composer = new Composer();
 
@@ -14,8 +15,9 @@ const noop = () => {
 };
 
 composer
+  .chatType(["group", "supergroup"])
   .on("message")
-  .command("report")
+  .command("report", splitArgs)
   .use(
     botHasSufficientPermissions,
     obtainReportedUser,
@@ -24,7 +26,9 @@ composer
       await ctx.deleteMessage().catch(noop);
       const reportedUser = ctx.reportedUser!;
       const isLastWarn = reportedUser.warnings_count === MAX_WARNINGS;
-      const reason = isLastWarn ? reportedUser.warn_ban_reason : ctx.match;
+      const reason = isLastWarn
+        ? reportedUser.warn_ban_reason
+        : ctx.commandArgs.shift();
 
       const callbackData = `unban:${ctx.chat.id}:${reportedUser.id}`;
       const inlineKbd = new InlineKeyboard().text(

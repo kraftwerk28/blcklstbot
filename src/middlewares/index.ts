@@ -7,5 +7,6 @@ export { default as bash } from "./bash.js";
 export { default as bangHandler } from "./bang-handler.js";
 export { default as trackMemberMessages } from "./track-member-messages.js";
 export { default as resolveDbUser } from "./resolve-db-user.js";
-export { default as resolveDbChat } from "./resolve-db-chat";
+export { default as resolveDbChat } from "./resolve-db-chat.js";
 export { default as uploadToGistOrHighlight } from "./upload-to-gist-or-highlight.js";
+export { default as muter } from "./muter.js";

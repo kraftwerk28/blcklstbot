@@ -6,41 +6,45 @@ const middleware: MiddlewareFn<
   Filter<CommandContext<Context>, "message">
 > = async (ctx, next) => {
   if (ctx.reportedUser !== undefined) return next();
-  let dbUser: DbUser | undefined;
+  // ctx.remainingArgs = ctx.match.split(/\s+/).filter(Boolean);
   if (ctx.message.reply_to_message?.from) {
     const { from } = ctx.message.reply_to_message;
-    dbUser = await ctx.dbStore.getUser(ctx.chat.id, from.id);
-  } else {
-    const maybeUserId = parseInt(ctx.match);
+    ctx.reportedUser = await ctx.dbStore.getUser(ctx.chat.id, from.id);
+  } else if (ctx.commandArgs.length) {
+    const userIdentifier = ctx.commandArgs.shift()!;
+    const maybeUserId = parseInt(userIdentifier);
     if (!Number.isNaN(maybeUserId)) {
-      dbUser = await ctx.dbStore.getUser(ctx.chat.id, parseInt(ctx.match));
+      ctx.reportedUser = await ctx.dbStore.getUser(ctx.chat.id, maybeUserId);
     }
-    if (ctx.match && !dbUser) {
-      dbUser = await ctx.dbStore
+    if (!ctx.reportedUser) {
+      ctx.reportedUser = await ctx.dbStore
         .knex<DbUser>(USERS_TABLE_NAME)
-        .where({ username: ctx.match.replace(/^@/, "") })
+        .where({ username: userIdentifier.replace(/^@/, "") })
         .orWhere(
           ctx.dbStore.knex.raw(
             "trim(first_name || ' ' || coalesce(last_name, '')) = ?",
-            ctx.match,
+            userIdentifier,
           ),
         )
         .first();
     }
   }
-  const logData = {
-    text: ctx.message.text,
-    reply: ctx.message.reply_to_message,
-    db_user: dbUser,
-  };
-  if (dbUser) {
-    ctx.log.info(logData, "Resolved reported user");
+  if (ctx.reportedUser) {
+    ctx.log.info(
+      {
+        text: ctx.message.text,
+        reply: ctx.message.reply_to_message,
+        reported_user: ctx.reportedUser,
+      },
+      "Resolved reported user",
+    );
+    return next();
   } else {
-    ctx.log.warn(logData, "Could not resolve reported user");
-    return;
+    ctx.log.warn(
+      { text: ctx.message.text, reply: ctx.message.reply_to_message },
+      "Could not resolve reported user",
+    );
   }
-  ctx.reportedUser = dbUser;
-  return next();
 };
 
 export default middleware;

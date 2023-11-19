@@ -5,6 +5,7 @@ import report from "./report.js";
 import { noop, safePromiseAll } from "../utils/index.js";
 import { Composer } from "../composer.js";
 import obtainReportedUser from "../middlewares/get-reported-user.js";
+import splitArgs from "../middlewares/split-args.js";
 
 const composer = new Composer();
 
@@ -12,7 +13,7 @@ export default composer;
 
 composer
   .on("message")
-  .command("warn")
+  .command("warn", splitArgs)
   .use(
     botHasSufficientPermissions,
     obtainReportedUser,
@@ -27,7 +28,7 @@ composer
       }
       await ctx.deleteMessage().catch(noop);
 
-      const reasonFromCommand = ctx.match;
+      const reasonFromCommand = ctx.commandArgs.shift();
       if (reportedUser.warnings_count === 0) {
         if (reasonFromCommand) {
           warnReason = reasonFromCommand;

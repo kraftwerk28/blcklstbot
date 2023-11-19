@@ -4,8 +4,9 @@ import { IncomingMessage, ServerResponse, createServer } from "http";
 import createKnex from "knex";
 import IORedis from "ioredis";
 import events from "node:events";
+import pg from "pg";
 
-import { Context } from "./types/index.js";
+import { Context, EventQueueEvent } from "./types/index.js";
 import { initLogger, log } from "./logger.js";
 import { loadLocales, noop } from "./utils/index.js";
 import { getRawMetrics } from "./prometheus.js";
@@ -20,6 +21,8 @@ import * as m from "./middlewares/index.js";
 import * as c from "./commands/index.js";
 
 import { composer as promComposer } from "./prometheus.js";
+
+const { types: pgTypes } = pg;
 
 async function main() {
   if (process.env.NODE_ENV === "development") {
@@ -37,6 +40,10 @@ async function main() {
     retryStrategy: (times) => (times < 5 ? 1 : null),
   });
   log.info("Connecting to Postgres...");
+
+  // NOTE: Using parseInt for BIGINT's here is presumably safe
+  pgTypes.setTypeParser(pgTypes.builtins.INT8, parseInt);
+
   const knex = createKnex({
     client: "pg",
     connection: {
@@ -47,7 +54,7 @@ async function main() {
   await knex.migrate.latest();
   log.info("Latest DB migration: %s", await knex.migrate.currentVersion());
   const dbStore = new DbStore(knex, redisClient);
-  const eventQueue = new EventQueue(bot.api, dbStore);
+  const eventQueue = new EventQueue<EventQueueEvent>(bot.api, dbStore);
   const botCreatorId = parseInt(process.env.KRAFTWERK28_UID);
 
   eventQueue
@@ -99,6 +106,12 @@ async function main() {
     .on("delete_message", async ({ api, payload }) => {
       await api.deleteMessage(payload.chatId, payload.messageId).catch(noop);
     })
+    .on("unmute", async ({ api, payload }) => {
+      await api.restrictChatMember(payload.chat_id, payload.user_id, {
+        can_send_messages: true,
+        can_send_other_messages: true,
+      });
+    })
     .onError((err) => {
       log.error(err, "Error in Event Queue");
     });
@@ -121,7 +134,7 @@ async function main() {
   }
   const locales = await loadLocales();
   const t: Context["t"] = function (this: Context, s, replaces = {}) {
-    this.dbChat;
+    if (!this.dbChat) return s;
     const locale = this.locales[this.dbChat.language_code ?? "en"];
     let value = locale[s];
     if (!value) {
@@ -165,6 +178,49 @@ async function main() {
   bot.use(m.newChatMember);
   bot.use(m.leftChatMember);
   bot.use(m.removeMessagesUnderCaptcha);
+  bot.use(m.muter);
+
+  bot
+    .on("message")
+    .hears(
+      /^\s*(?:[шщ]\s*[оo](?:\s+п\s*[оo])?\s+)?[рp]\s*[уyоo]\s*[сc]\s*н\s*[іiя]\s*\?\s*$/i,
+      async (ctx) => {
+        const stickers = [
+          "CAACAgIAAxkBAAEHZTxjzn3fKGW8EKTmF7HZJpy0aLeoOAACoSMAAgGgeEhLsVmDKNesFi0E",
+          "CAACAgIAAxkBAAEHZT5jzn3jYxKCS3X0lbhJ_r531NUS-wAChx4AAi6CeUiC61hfgNIQdS0E",
+          "CAACAgIAAxkBAAEHZUBjzn30nYi99Jy-ds1cZY0oQVErlgACiCEAAuQAAeBIbwWqyKE7fxgtBA",
+          "CAACAgIAAxkBAAEHZUJjzn38d3l71C8dnrT_njk0qeOQcwACkSAAAkBw4UhCMrX_h7J8cy0E",
+          "CAACAgIAAxkBAAEHZURjzn4GmmCCIaa8JYhTAwakHjA9UAACBx8AAue24UhWLkIYzeB6dC0E",
+          "CAACAgIAAxkBAAEHZUZjzn4nxSEI1hmrhwFyk5lYC2WfYAACeCQAAjTo4EgYi4nuXYgHQy0E",
+          "CAACAgIAAxkBAAEHZUhjzn48V6xzCzvw5lFJ_xjaLbNBpgACDikAAtb4mUlqBe0TO9cFxy0E",
+          "CAACAgIAAxkBAAEHZUpjzn5DBBjurBJpEHQOpG8S5Ad79wACRSgAArpmCUqWfsSAvpcVny0E",
+          "CAACAgIAAxkBAAEHZUxjzn5aPefPlasU7S0su6TSAyR4BwAC2iIAApKlCEpleuIMv6XNDy0E",
+        ];
+        const stickerId =
+          stickers[Math.floor(Math.random() * stickers.length)]!;
+        return ctx.replyWithSticker(stickerId, {
+          reply_to_message_id: ctx.message.message_id,
+        });
+      },
+    );
+
+  bot.on("message:text", async (ctx, next) => {
+    if (ctx.chat.id === -1001023368582 && ctx.message.text.match(/ґ/i)) {
+      let doSend = false;
+      if (ctx.from.id === 382744431 && Math.random() > 0.5) {
+        doSend = true;
+      } else if (Math.random() > 0.9) {
+        doSend = true;
+      }
+      if (!doSend) return;
+      return ctx.replyWithSticker(
+        "CAACAgIAAxkBAAEWQyti2a86_6tRiMuDLYmAHTi5H9WYGAACzQ0AAsYHKEjAhjjbs2vN0ikE",
+        { reply_to_message_id: ctx.message.message_id },
+      );
+    } else {
+      return next();
+    }
+  });
 
   bot.use(c.chatSettings);
   bot.use(c.report);
@@ -172,31 +228,41 @@ async function main() {
   bot.use(c.ping);
   bot.use(c.delMessage);
 
-  const errorHandler = async (err: BotError<Context>) => {
-    const { ctx } = err;
-    if (ctx.callbackQuery !== undefined) {
-      try {
-        await ctx.answerCallbackQuery(
-          "An error occured while processing your request :(",
-        );
-      } catch {
-        // Noop
+  const errorHandler = async (err: unknown) => {
+    if (err instanceof BotError) {
+      const { ctx } = err as BotError<Context>;
+      if (ctx.callbackQuery) {
+        await ctx.answerCallbackQuery("Unexpected error occured").catch(noop);
       }
+      const { update } = ctx;
+      // @ts-expect-error we don't need this
+      delete err.ctx;
+      Object.assign(err, { update });
+      log.error(err);
+    } else {
+      log.error(err);
     }
-    ctx.log.error({
-      err: {
-        name: err.name,
-        message: err.message,
-        stack: err.stack,
-        cause: err.cause,
-      },
-      update: ctx.update,
-    });
   };
 
-  bot.catch(errorHandler);
+  await bot.api.setMyCommands([
+    { command: "settings", description: "Change chat settings" },
+    {
+      command: "report",
+      description: "Mention target user or reply to their message to report",
+    },
+    {
+      command: "warn",
+      description: "Mention target user or reply to their message to warn",
+    },
+    {
+      command: "ping",
+      description: "/ping XhYmZs <message> to remind yourself!",
+    },
+  ]);
 
   if (process.env.NODE_ENV === "development") {
+    // NOTE: in grammY, Bot::catch won't work with webhooks, it only makes sense with polling
+    bot.catch(errorHandler);
     await bot.start({ drop_pending_updates: true });
   } else {
     const { WEBHOOK_URL, WEBHOOK_SERVER_PORT } = process.env;
@@ -225,21 +291,7 @@ async function main() {
         try {
           await webhookCallback(req, res);
         } catch (err) {
-          if (err instanceof BotError) {
-            const { ctx } = err as BotError<Context>;
-            if (ctx.callbackQuery) {
-              await ctx
-                .answerCallbackQuery("Unexpected error occured")
-                .catch(noop);
-            }
-            const { update } = ctx;
-            // @ts-expect-error we don't need this
-            delete err.ctx;
-            Object.assign(err, { update });
-            log.error(err);
-          } else {
-            log.error(err);
-          }
+          await errorHandler(err);
           res.end();
         }
       }

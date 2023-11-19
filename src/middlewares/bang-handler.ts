@@ -3,8 +3,10 @@ import { messageIsReply } from "../guards/index.js";
 
 const c = new Composer();
 
-c.hears(/^!(\S+)$/)
-  .chatType(["group", "supergroup"])
+export default c;
+
+c.chatType(["group", "supergroup"])
+  .hears(/^!(\S+)$/)
   .filter(messageIsReply)
   .use(async (ctx, next) => {
     const reply = ctx.message.reply_to_message;
@@ -24,5 +26,3 @@ c.hears(/^!(\S+)$/)
       return next();
     }
   });
-
-export default c;

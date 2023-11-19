@@ -1,7 +1,12 @@
 import { InlineKeyboard } from "grammy";
 import { Composer } from "../composer.js";
 
-import { CaptchaMode, ChatLanguageCode, Context } from "../types/index.js";
+import {
+  CaptchaMode,
+  ChatLanguageCode,
+  Context,
+  GroupChatContext,
+} from "../types/index.js";
 import { senderIsAdmin } from "../guards/index.js";
 
 const isEnabledEmoji = (b: boolean) => {
@@ -49,7 +54,7 @@ function findPrevNextTimIndex(timeout: number) {
   return [prevTimIdx, nextTimIdx] as const;
 }
 
-function buildSettingsKeyboard(ctx: Context) {
+function buildSettingsKeyboard(ctx: GroupChatContext) {
   const { dbChat } = ctx;
   const captchaModeBtns = Object.values(CaptchaMode).map((mode) => {
     const en = isEnabledEmoji(dbChat.captcha_modes.includes(mode));
@@ -128,7 +133,7 @@ const cbQueryComposer = composer2.use(async (ctx, next) => {
   else return ctx.answerCallbackQuery(ctx.t("admin_only_action"));
 });
 
-const refreshKbdComposer = new Composer().use(async (ctx) => {
+const refreshKbdComposer = new Composer<GroupChatContext>().use(async (ctx) => {
   try {
     await ctx.editMessageReplyMarkup({
       reply_markup: buildSettingsKeyboard(ctx),

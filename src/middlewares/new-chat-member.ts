@@ -2,7 +2,7 @@ import { Message, User } from "grammy/types";
 
 import { Composer } from "../composer.js";
 import { noop, safePromiseAll } from "../utils/index.js";
-import { CaptchaMode, Context } from "../types/index.js";
+import { CaptchaMode, Context, GroupChatContext } from "../types/index.js";
 import { generateCaptcha } from "../captcha/index.js";
 import { code, userMention } from "../utils/html.js";
 import { captchaHash } from "../utils/event-queue.js";
@@ -10,8 +10,11 @@ import { botHasSufficientPermissions } from "../guards/index.js";
 import { log } from "../logger.js";
 
 const composer = new Composer();
+
 export default composer;
+
 composer
+  .chatType(["group", "supergroup"])
   .on("message:new_chat_members")
   .use(botHasSufficientPermissions, async (ctx, next) => {
     if (ctx.dbChat.delete_joins) {
@@ -45,7 +48,7 @@ composer
 //   async function (ctx, next) {} as Middleware,
 // );
 
-async function userCaptcha(ctx: Context, user: User) {
+async function userCaptcha(ctx: GroupChatContext, user: User) {
   const captcha = generateCaptcha(ctx.dbChat.captcha_modes);
   const captchaTimeout = ctx.dbChat.captcha_timeout;
   await ctx.dbStore.addPendingCaptcha(
