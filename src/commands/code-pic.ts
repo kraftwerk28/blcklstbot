@@ -2,7 +2,11 @@ import { InputFile } from "grammy";
 import { Composer } from "../composer.js";
 import { messageIsReply } from "../guards/index.js";
 import { log } from "../logger.js";
-import { getCodeFromMessage, runEnry, runTreeSitterHighlight } from "../utils/index.js";
+import {
+  getCodeFromMessage,
+  runEnry,
+  runTreeSitterHighlight,
+} from "../utils/index.js";
 import { Readable } from "node:stream";
 
 export default new Composer()
@@ -20,10 +24,9 @@ export default new Composer()
       sourceCode,
     );
     if (pictureStream) {
-      const r = new Readable()
-      return ctx.replyWithPhoto(
-        new InputFile(pictureStream),
-        { reply_to_message_id: reply.message_id },
-      );
+      const r = new Readable();
+      return ctx.replyWithPhoto(new InputFile(pictureStream), {
+        reply_to_message_id: reply.message_id,
+      });
     }
   });

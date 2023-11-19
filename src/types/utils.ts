@@ -31,7 +31,7 @@ export type CommandMiddleware = never;
 //   MatchedContext<C & { match: RegExpExecArray }, "text">
 // >;
 
-export type GuardPredicate = never
+export type GuardPredicate = never;
 
 // export type MatchedContext<
 //   C extends TelegrafContext,

@@ -1,6 +1,11 @@
 import { DEFAULT_CAPCHA_MODES } from "../constants.js";
 import { log } from "../logger.js";
-import { Context, CaptchaMode, CaptchaDefs, AbstractCaptcha } from "../types/index.js";
+import {
+  Context,
+  CaptchaMode,
+  CaptchaDefs,
+  AbstractCaptcha,
+} from "../types/index.js";
 import { randBool, randInt } from "../utils/index.js";
 
 const captchas: CaptchaDefs = {
