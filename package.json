@@ -35,8 +35,8 @@
     "deploy-db": "psql -d blcklstbot -f ./db.sql",
     "dev": "NODE_ENV=development node --experimental-specifier-resolution=node build/",
     "format": "prettier --ignore-path=.gitignore --write '**/*.{ts,js,mjs}'",
-    "lint": "eslint --ignore-path=.gitignore --ignore-pattern='captcha/index2.ts' src",
-    "lint:fix": "eslint --fix --ignore-path=.gitignore --ignore-pattern='src/captcha/index2.ts' src",
+    "lint": "DEBUG='eslint:cli-engine' eslint --ignore-path=.gitignore .",
+    "lint:fix": "DEBUG='eslint:cli-engine' eslint --fix --ignore-path=.gitignore --ignore-pattern='src/captcha/index2.ts' src",
     "nodemon": "NODE_ENV=development nodemon build/",
     "test": "NODE_ENV=development ts-node test/index.test.ts",
     "watch": "tsc -w --inlineSourceMap"

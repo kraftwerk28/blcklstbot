@@ -8,6 +8,8 @@ parserOptions:
   project: "tsconfig.json"
 plugins:
   - "@typescript-eslint"
+env:
+  node: true
 rules:
   "no-unused-vars": off # see @typescript-eslint/no-unused-vars below
   "quotes":

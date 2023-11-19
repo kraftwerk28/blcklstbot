@@ -14,7 +14,7 @@ export interface Context extends GrammyContext {
   eventQueue: EventQueue<EventQueueEvent>;
   botCreatorId: number;
   dbChat: DbChat;
-  reportedUser: DbUser | undefined;
+  reportedUser?: DbUser;
   /**
    * Delete message after some time
    * Usage: await ctx.reply(...).then(ctx.deleteItSoon);

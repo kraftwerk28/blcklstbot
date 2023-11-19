@@ -6,12 +6,11 @@ const composer = new Composer();
 
 export default composer;
 
-composer.chatType(["group", "supergroup"]).use(async (ctx, next) => {
-  const chat = ctx.chat as Chat.GroupChat & Chat.UserNameChat;
+composer.chatType(["supergroup", "group"]).use(async (ctx, next) => {
   ctx.dbChat = await ctx.dbStore.addChat({
-    id: chat.id,
-    title: chat.title,
-    username: chat.username,
+    id: ctx.chat.id,
+    title: ctx.chat.title,
+    username: ctx.chat.username,
   });
   // FIXME: the genericUpsert doesn't work properly at this moment
   // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions

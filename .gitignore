@@ -70,3 +70,12 @@ deploy.sh
 
 build/
 blcklstbot.zip
+
+src/captcha/index2.ts
+
+# Playground files
+/p.js
+/prom.js
+
+/lib
+/tests

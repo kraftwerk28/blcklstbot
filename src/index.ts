@@ -154,8 +154,8 @@ async function main() {
 
   bot.use(promComposer);
 
-  bot.use(m.addChatToDatabase);
-  bot.use(m.addUserToDatabase);
+  bot.use(m.resolveDbChat);
+  bot.use(m.resolveDbUser);
   bot.use(m.trackMemberMessages);
   bot.use(m.substitute);
   bot.use(m.checkCaptchaAnswer);
