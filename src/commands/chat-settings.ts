@@ -4,10 +4,10 @@ import { Composer } from "../composer.js";
 import {
   CaptchaMode,
   ChatLanguageCode,
-  Context,
   GroupChatContext,
 } from "../types/index.js";
 import { senderIsAdmin } from "../guards/index.js";
+import { noop } from "../utils/index.js";
 
 const isEnabledEmoji = (b: boolean) => {
   // return b ? '\u2705' : '\u26d4';
@@ -115,130 +115,110 @@ const composer = new Composer();
 
 const composer2 = composer.chatType(["group", "supergroup"]);
 
-composer2.command("settings", senderIsAdmin, async (ctx) => {
-  return ctx.reply("Settings:", {
-    reply_to_message_id: ctx.message.message_id,
-    reply_markup: buildSettingsKeyboard(ctx),
-  });
-});
-
-const cbQueryComposer = composer2.use(async (ctx, next) => {
-  if (!ctx.callbackQuery) {
-    return next();
-  }
-  const { from } = ctx.callbackQuery;
-  const cm = await ctx.getChatMember(from.id);
-  if (cm.status === "administrator" || cm.user.id === ctx.botCreatorId)
-    return next();
-  else return ctx.answerCallbackQuery(ctx.t("admin_only_action"));
-});
-
-const refreshKbdComposer = new Composer<GroupChatContext>().use(async (ctx) => {
-  try {
-    await ctx.editMessageReplyMarkup({
+composer2
+  .command("settings")
+  .filter(senderIsAdmin)
+  .use(async (ctx) => {
+    return ctx.reply("Settings:", {
+      reply_to_message_id: ctx.message.message_id,
       reply_markup: buildSettingsKeyboard(ctx),
     });
-  } catch {
-    // Noop
+  });
+
+const cbQueryComposer = composer2
+  .use(async (ctx, next) => {
+    if (!ctx.callbackQuery) {
+      return next();
+    }
+    const { from } = ctx.callbackQuery;
+    const cm = await ctx.getChatMember(from.id);
+    if (cm.status === "administrator" || cm.user.id === ctx.botCreatorId)
+      return next();
+    else return ctx.answerCallbackQuery(ctx.t("admin_only_action"));
+  })
+  .callbackQuery(/.+/, async (ctx, next) => {
+    await next();
+    try {
+      await ctx.editMessageReplyMarkup({
+        reply_markup: buildSettingsKeyboard(ctx),
+      });
+    } catch {
+      // Noop
+    }
+    return ctx.answerCallbackQuery();
+  });
+
+cbQueryComposer.callbackQuery(/^toggle:captcha:(.+)$/, async (ctx) => {
+  const modes = ctx.dbChat.captcha_modes.slice();
+  const mode = ctx.match[1] as CaptchaMode;
+  if (modes.includes(mode)) {
+    modes.splice(modes.indexOf(mode), 1);
+  } else {
+    modes.push(mode);
   }
-  return ctx.answerCallbackQuery();
+  ctx.dbChat = await ctx.dbStore.updateChatProp(
+    ctx.chat.id,
+    "captcha_modes",
+    modes,
+  );
 });
 
-cbQueryComposer
-  .callbackQuery(/^toggle:captcha:(.+)$/, async (ctx, next) => {
-    const modes = ctx.dbChat.captcha_modes.slice();
-    const mode = ctx.match[1] as CaptchaMode;
-    if (modes.includes(mode)) {
-      modes.splice(modes.indexOf(mode), 1);
-    } else {
-      modes.push(mode);
-    }
-    ctx.log.info(
-      { old_modes: ctx.dbChat.captcha_modes, new_modes: modes },
-      "Captcha modes",
-    );
-    ctx.dbChat = await ctx.dbStore.updateChatProp(
-      ctx.chat.id,
-      "captcha_modes",
-      modes,
-    );
-    return next();
-  })
-  .use(refreshKbdComposer);
+cbQueryComposer.callbackQuery("captcha:dec", async (ctx) => {
+  const { dbChat } = ctx;
+  const [prevTimIdx] = findPrevNextTimIndex(dbChat.captcha_timeout);
+  if (prevTimIdx === undefined) {
+    return ctx.answerCallbackQuery();
+  }
+  ctx.dbChat = await ctx.dbStore.updateChatProp(
+    ctx.chat.id,
+    "captcha_timeout",
+    CAPTCHA_TIMEOUTS[prevTimIdx]!,
+  );
+});
 
-cbQueryComposer
-  .callbackQuery("captcha:dec", async (ctx, next) => {
-    const { dbChat } = ctx;
-    const [prevTimIdx] = findPrevNextTimIndex(dbChat.captcha_timeout);
-    if (prevTimIdx === undefined) {
-      return ctx.answerCallbackQuery();
-    }
-    ctx.dbChat = await ctx.dbStore.updateChatProp(
-      ctx.chat.id,
-      "captcha_timeout",
-      CAPTCHA_TIMEOUTS[prevTimIdx]!,
-    );
-    return next();
-  })
-  .use(refreshKbdComposer);
+cbQueryComposer.callbackQuery("captcha:inc", async (ctx) => {
+  const { dbChat } = ctx;
+  const [_, nextTimIdx] = findPrevNextTimIndex(dbChat.captcha_timeout);
+  if (nextTimIdx === undefined) {
+    return ctx.answerCallbackQuery();
+  }
+  ctx.dbChat = await ctx.dbStore.updateChatProp(
+    ctx.chat.id,
+    "captcha_timeout",
+    CAPTCHA_TIMEOUTS[nextTimIdx]!,
+  );
+});
 
-cbQueryComposer
-  .callbackQuery("captcha:inc", async (ctx, next) => {
-    const { dbChat } = ctx;
-    const [_, nextTimIdx] = findPrevNextTimIndex(dbChat.captcha_timeout);
-    if (nextTimIdx === undefined) {
-      return ctx.answerCallbackQuery();
-    }
-    ctx.dbChat = await ctx.dbStore.updateChatProp(
-      ctx.chat.id,
-      "captcha_timeout",
-      CAPTCHA_TIMEOUTS[nextTimIdx]!,
-    );
-    return next();
-  })
-  .use(refreshKbdComposer);
+cbQueryComposer.callbackQuery("toggle:delete_joins", async (ctx) => {
+  ctx.dbChat = await ctx.dbStore.updateChatProp(
+    ctx.chat.id,
+    "delete_joins",
+    !ctx.dbChat.delete_joins,
+  );
+});
 
-cbQueryComposer
-  .callbackQuery("toggle:delete_joins", async (ctx, next) => {
-    ctx.dbChat = await ctx.dbStore.updateChatProp(
-      ctx.chat.id,
-      "delete_joins",
-      !ctx.dbChat.delete_joins,
-    );
-    return next();
-  })
-  .use(refreshKbdComposer);
+cbQueryComposer.callbackQuery("toggle:gist", async (ctx) => {
+  ctx.dbChat = await ctx.dbStore.updateChatProp(
+    ctx.chat.id,
+    "upload_to_gist",
+    !ctx.dbChat.upload_to_gist,
+  );
+});
 
-cbQueryComposer
-  .callbackQuery("toggle:gist", async (ctx, next) => {
-    ctx.dbChat = await ctx.dbStore.updateChatProp(
-      ctx.chat.id,
-      "upload_to_gist",
-      !ctx.dbChat.upload_to_gist,
-    );
-    return next();
-  })
-  .use(refreshKbdComposer);
+cbQueryComposer.callbackQuery(/^set_lang:(\w+)$/, async (ctx) => {
+  ctx.dbChat = await ctx.dbStore.updateChatProp(
+    ctx.chat.id,
+    "language_code",
+    ctx.match[1] as ChatLanguageCode,
+  );
+});
 
-cbQueryComposer
-  .callbackQuery(/^set_lang:(\w+)$/, async (ctx, next) => {
-    ctx.dbChat = await ctx.dbStore.updateChatProp(
-      ctx.chat.id,
-      "language_code",
-      ctx.match[1] as ChatLanguageCode,
-    );
-    return next();
-  })
-  .use(refreshKbdComposer);
-
-cbQueryComposer.callbackQuery("close", async (ctx, next) => {
+cbQueryComposer.callbackQuery("close", async (ctx) => {
+  const reply = ctx.message?.reply_to_message;
+  if (reply) {
+    await ctx.api.deleteMessage(ctx.chat.id, reply.message_id).catch(noop);
+  }
   await ctx.deleteMessage();
-  return next();
-});
-
-// Catch all
-cbQueryComposer.callbackQuery(/.+/, (ctx) => {
-  return ctx.answerCallbackQuery(String.raw`¯\_(ツ)_/¯`);
 });
 
 export default composer;

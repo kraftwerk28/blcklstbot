@@ -9,7 +9,8 @@ export default composer;
 composer
   .on("message")
   .chatType(["group", "supergroup"])
-  .use(botHasSufficientPermissions, async (ctx, next) => {
+  .filter(botHasSufficientPermissions)
+  .use(async (ctx, next) => {
     // Text messages are already handled by other middleware
     if ("text" in ctx.message) {
       return next();

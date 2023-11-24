@@ -6,7 +6,7 @@ const composer = new Composer();
 composer
   .command("del")
   .filter(messageIsReply)
-  .use(senderIsAdmin)
+  .filter(senderIsAdmin)
   .use(async (ctx) => {
     await ctx.deleteMessage().catch(ctx.log.error);
     await ctx.api

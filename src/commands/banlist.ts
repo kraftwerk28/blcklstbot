@@ -9,7 +9,7 @@ const c = new Composer();
 c.on("message")
   .command("banlist")
   .chatType(["group", "supergroup"])
-  .use(senderIsAdmin)
+  .filter(senderIsAdmin)
   .use(async (ctx) => {
     const chatId = ctx.chat.id;
     const bannedUsers: DbUser[] = await ctx.dbStore

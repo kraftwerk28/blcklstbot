@@ -1,36 +1,31 @@
 import { Context } from "../types/index.js";
 import type { Message, Chat } from "grammy/types";
 import type { Middleware, MiddlewareFn } from "grammy";
-import { log } from "../logger.js";
 
-export const botHasSufficientPermissions: Middleware<Context> = async (
-  ctx,
-  next,
+export const botHasSufficientPermissions = async <C extends Context>(
+  ctx: C,
 ) => {
   // TODO: cache chat member with some EXPIRE in redis
   const me = await ctx.getChatMember(ctx.me.id);
   if (me.status !== "administrator" || !me.can_delete_messages) {
-    log.warn(`Bot cannot delete messages in chat ${ctx.chat!.id}`);
-    return;
+    return false;
   }
   // FIXME: doesn't work for some reasons
   // if (!me.can_send_messages) {
   //   return log.warn(`Bot cannot send messages in chat ${ctx.chat.id}`);
   // }
-  return next();
+  return true;
 };
 
 // TODO: turn into a middleware
-export const senderIsAdmin: MiddlewareFn<Context> = async (ctx, next) => {
-  if (!ctx.from) return;
+export const senderIsAdmin = async <C extends Context>(ctx: C) => {
+  if (!ctx.from) return false;
   if (ctx.from.id === ctx.botCreatorId) {
     // XD
-    return next();
+    return true;
   }
   const cm = await ctx.getChatMember(ctx.from.id);
-  if (cm.status === "administrator" || cm.status === "creator") {
-    return next();
-  }
+  return cm.status === "administrator";
 };
 
 type GroupChatContext<C> = C & {

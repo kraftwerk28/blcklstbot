@@ -10,7 +10,8 @@ export default composer;
 composer
   .on("message")
   .chatType(["group", "supergroup"])
-  .use(botHasSufficientPermissions, async (ctx, next) => {
+  .filter(botHasSufficientPermissions)
+  .use(async (ctx, next) => {
     const chatId = ctx.chat.id;
     const userId = ctx.from.id;
 

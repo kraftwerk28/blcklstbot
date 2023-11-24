@@ -19,12 +19,18 @@ const middleware: MiddlewareFn<
     if (!ctx.reportedUser) {
       ctx.reportedUser = await ctx.dbStore
         .knex<DbUser>(USERS_TABLE_NAME)
-        .where({ username: userIdentifier.replace(/^@/, "") })
-        .orWhere(
-          ctx.dbStore.knex.raw(
-            "trim(first_name || ' ' || coalesce(last_name, '')) = ?",
-            userIdentifier,
-          ),
+        .where({ chat_id: ctx.chat.id })
+        .andWhere((qb) =>
+          qb
+            .where({
+              username: userIdentifier.replace(/^@/, ""),
+            })
+            .orWhere(
+              ctx.dbStore.knex.raw(
+                "trim(first_name || ' ' || coalesce(last_name, '')) = ?",
+                userIdentifier,
+              ),
+            ),
         )
         .first();
     }

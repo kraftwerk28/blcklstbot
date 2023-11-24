@@ -39,6 +39,7 @@ export type DbUser = DbUserFromTg & {
   warn_ban_reason: DbOptional<string>;
   banned_timestamp: DbOptional<Date>;
   mute_duration: DbOptional<number>;
+  saved_permissions: DbOptional<Record<string, boolean>>;
 };
 
 export type DbUserMessage = {

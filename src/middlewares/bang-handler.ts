@@ -1,5 +1,4 @@
 import { Composer } from "../composer.js";
-import { messageIsReply } from "../guards/index.js";
 
 const c = new Composer();
 
@@ -7,10 +6,9 @@ export default c;
 
 c.chatType(["group", "supergroup"])
   .hears(/^!(\S+)$/)
-  .filter(messageIsReply)
   .use(async (ctx, next) => {
-    const reply = ctx.message.reply_to_message;
     const [, command] = ctx.match;
+    ctx.log.info({ command });
     if (!command) {
       return next();
     }
@@ -20,7 +18,10 @@ c.chatType(["group", "supergroup"])
         ctx.chat.id,
         +process.env.COMMANDS_CHANNEL_ID!,
         dbCommand.message_id,
-        { reply_to_message_id: reply.message_id ?? ctx.message.message_id },
+        {
+          reply_to_message_id:
+            ctx.message.reply_to_message?.message_id ?? ctx.message.message_id,
+        },
       );
     } else {
       return next();

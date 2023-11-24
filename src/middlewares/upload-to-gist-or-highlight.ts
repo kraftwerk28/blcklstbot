@@ -14,7 +14,8 @@ export default composer;
 composer
   .on("message")
   .chatType(["group", "supergroup"])
-  .use(botHasSufficientPermissions, async (ctx, next) => {
+  .filter(botHasSufficientPermissions)
+  .use(async (ctx, next) => {
     if (!ctx.dbChat.upload_to_gist) return next();
     const sourceCode = getCodeFromMessage(ctx.message);
     if (!sourceCode) return next();

@@ -1,6 +1,5 @@
 import { Composer } from "../composer.js";
 import { messageIsReply } from "../guards/index.js";
-import { OnMiddleware } from "../types/index.js";
 
 type ParsedQuery = {
   rawFrom: string;

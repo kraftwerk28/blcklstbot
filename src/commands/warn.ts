@@ -14,57 +14,54 @@ export default composer;
 composer
   .on("message")
   .command("warn", splitArgs)
-  .use(
-    botHasSufficientPermissions,
-    obtainReportedUser,
-    senderIsAdmin,
-    async (ctx, next) => {
-      const reportedUser = ctx.reportedUser!;
-      const chatId = ctx.chat.id;
-      let warnReason: string;
+  .filter(botHasSufficientPermissions)
+  .filter(senderIsAdmin)
+  .use(obtainReportedUser, async (ctx, next) => {
+    const reportedUser = ctx.reportedUser!;
+    const chatId = ctx.chat.id;
+    let warnReason: string;
 
-      if (reportedUser.warnings_count === MAX_WARNINGS) {
-        return report.middleware()(ctx, next);
-      }
-      await ctx.deleteMessage().catch(noop);
+    if (reportedUser.warnings_count === MAX_WARNINGS) {
+      return report.middleware()(ctx, next);
+    }
+    await ctx.deleteMessage().catch(noop);
 
-      const reasonFromCommand = ctx.commandArgs.shift();
-      if (reportedUser.warnings_count === 0) {
-        if (reasonFromCommand) {
-          warnReason = reasonFromCommand;
-        } else {
-          return next();
-        }
+    const reasonFromCommand = ctx.commandArgs.shift();
+    if (reportedUser.warnings_count === 0) {
+      if (reasonFromCommand) {
+        warnReason = reasonFromCommand;
       } else {
-        warnReason = reportedUser.warn_ban_reason!;
-        if (reasonFromCommand) {
-          warnReason += `, ${reasonFromCommand}`;
-        }
+        return next();
       }
-
-      const newWarningsCount = reportedUser.warnings_count + 1;
-      const isLastWarn = newWarningsCount === MAX_WARNINGS;
-
-      let text =
-        ctx.t("warn", {
-          reporter: userMention(ctx.from),
-          reported: userMention(reportedUser),
-        }) + " ";
-      if (isLastWarn) {
-        text += `(${ctx.t("last_warning")})`;
-      } else {
-        text += bold(`(${newWarningsCount} / ${MAX_WARNINGS})`);
+    } else {
+      warnReason = reportedUser.warn_ban_reason!;
+      if (reasonFromCommand) {
+        warnReason += `, ${reasonFromCommand}`;
       }
-      text += "\n" + ctx.t("report_reason", { reason: escape(warnReason) });
+    }
 
-      return safePromiseAll([
-        ctx.reply(text, { parse_mode: "HTML" }),
-        ctx.dbStore.updateUser({
-          id: reportedUser.id,
-          chat_id: chatId,
-          warnings_count: newWarningsCount,
-          warn_ban_reason: warnReason,
-        }),
-      ]);
-    },
-  );
+    const newWarningsCount = reportedUser.warnings_count + 1;
+    const isLastWarn = newWarningsCount === MAX_WARNINGS;
+
+    let text =
+      ctx.t("warn", {
+        reporter: userMention(ctx.from),
+        reported: userMention(reportedUser),
+      }) + " ";
+    if (isLastWarn) {
+      text += `(${ctx.t("last_warning")})`;
+    } else {
+      text += bold(`(${newWarningsCount} / ${MAX_WARNINGS})`);
+    }
+    text += "\n" + ctx.t("report_reason", { reason: escape(warnReason) });
+
+    return safePromiseAll([
+      ctx.reply(text, { parse_mode: "HTML" }),
+      ctx.dbStore.updateUser({
+        id: reportedUser.id,
+        chat_id: chatId,
+        warnings_count: newWarningsCount,
+        warn_ban_reason: warnReason,
+      }),
+    ]);
+  });

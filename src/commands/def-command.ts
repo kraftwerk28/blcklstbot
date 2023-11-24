@@ -10,7 +10,7 @@ composer
   .chatType(["group", "supergroup"])
   .filter(messageIsReply)
   .hears(/^\/(un)?def(global|local)(?:@${username})?\s+(\S+)$/)
-  .use(senderIsAdmin)
+  .filter(senderIsAdmin)
   .use(async (ctx) => {
     const { chat, from, match, message } = ctx;
     const cmdChannelId = +process.env.COMMANDS_CHANNEL_ID!;

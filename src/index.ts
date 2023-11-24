@@ -107,9 +107,13 @@ async function main() {
       await api.deleteMessage(payload.chatId, payload.messageId).catch(noop);
     })
     .on("unmute", async ({ api, payload }) => {
+      const { saved_permissions } = await dbStore.getUser(
+        payload.chat_id,
+        payload.user_id,
+      );
       await api.restrictChatMember(payload.chat_id, payload.user_id, {
+        ...saved_permissions,
         can_send_messages: true,
-        can_send_other_messages: true,
       });
     })
     .onError((err) => {
@@ -167,17 +171,22 @@ async function main() {
 
   bot.use(promComposer);
 
+  // NOTE: the order is important
   bot.use(m.resolveDbChat);
   bot.use(m.resolveDbUser);
   bot.use(m.trackMemberMessages);
-  bot.use(m.substitute);
-  bot.use(m.checkCaptchaAnswer);
-  bot.use(m.uploadToGistOrHighlight);
-  bot.use(m.bash);
-  bot.use(m.bangHandler);
+
   bot.use(m.newChatMember);
   bot.use(m.leftChatMember);
   bot.use(m.removeMessagesUnderCaptcha);
+
+  bot.use(m.uploadToGistOrHighlight);
+
+  bot.use(m.substitute);
+  bot.use(m.checkCaptchaAnswer);
+  bot.use(m.bangHandler);
+  bot.use(m.bash);
+
   bot.use(m.muter);
 
   bot

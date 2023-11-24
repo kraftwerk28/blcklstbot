@@ -2,7 +2,7 @@ import { Message, User } from "grammy/types";
 
 import { Composer } from "../composer.js";
 import { noop, safePromiseAll } from "../utils/index.js";
-import { CaptchaMode, Context, GroupChatContext } from "../types/index.js";
+import { CaptchaMode, GroupChatContext } from "../types/index.js";
 import { generateCaptcha } from "../captcha/index.js";
 import { code, userMention } from "../utils/html.js";
 import { captchaHash } from "../utils/event-queue.js";
@@ -16,7 +16,8 @@ export default composer;
 composer
   .chatType(["group", "supergroup"])
   .on("message:new_chat_members")
-  .use(botHasSufficientPermissions, async (ctx, next) => {
+  .filter(botHasSufficientPermissions)
+  .use(async (ctx, next) => {
     if (ctx.dbChat.delete_joins) {
       await ctx.deleteMessage().catch(noop);
     }

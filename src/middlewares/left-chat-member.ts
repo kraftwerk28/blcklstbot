@@ -9,7 +9,8 @@ export default composer;
 
 composer
   .on("message:left_chat_member")
-  .use(botHasSufficientPermissions, async (ctx, next) => {
+  .filter(botHasSufficientPermissions)
+  .use(async (ctx, next) => {
     await ctx.deleteMessage().catch(noop);
     // NOTE: this middleware works on two update types, so the
     // `left_chat_member` might actually be undefined

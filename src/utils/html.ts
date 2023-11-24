@@ -22,7 +22,9 @@ export function escape(text: string): string {
 }
 
 export function userFullName(user: MentionableUser) {
-  return user.first_name + (user.last_name ? ` ${user.last_name}` : "");
+  let ret = user.first_name;
+  if (user.last_name) ret += " " + user.last_name;
+  return ret;
 }
 
 export function userMention(user: MentionableUser, preferUsername = true) {
@@ -30,6 +32,10 @@ export function userMention(user: MentionableUser, preferUsername = true) {
     return "@" + user.username;
   }
   return link(`tg://user?id=${user.id}`, userFullName(user));
+}
+
+export function userInfoWithouMention(user: MentionableUser) {
+  return `${userFullName(user)} (${code(user.id)})`;
 }
 
 const ENTITY_TYPE_TAGS: { [K in MessageEntity["type"]]?: string } = {
