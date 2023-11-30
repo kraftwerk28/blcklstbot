@@ -66,6 +66,10 @@ composer2
       mute_duration,
       saved_permissions,
     } = ctx.reportedUser;
+    const reportedChatMember = await ctx.getChatMember(user_id);
+    if (reportedChatMember.status !== "member") {
+      return;
+    }
     await ctx.dbStore.updateUser({
       id: user_id,
       chat_id,
