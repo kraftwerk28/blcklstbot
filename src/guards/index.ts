@@ -25,7 +25,7 @@ export const senderIsAdmin = async <C extends Context>(ctx: C) => {
     return true;
   }
   const cm = await ctx.getChatMember(ctx.from.id);
-  return cm.status === "administrator";
+  return cm.status === "administrator" || cm.status === "creator";
 };
 
 type GroupChatContext<C> = C & {

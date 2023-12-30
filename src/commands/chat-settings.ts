@@ -132,7 +132,11 @@ const cbQueryComposer = composer2
     }
     const { from } = ctx.callbackQuery;
     const cm = await ctx.getChatMember(from.id);
-    if (cm.status === "administrator" || cm.user.id === ctx.botCreatorId)
+    if (
+      cm.status === "administrator" ||
+      cm.status === "creator" ||
+      cm.user.id === ctx.botCreatorId
+    )
       return next();
     else return ctx.answerCallbackQuery(ctx.t("admin_only_action"));
   })
