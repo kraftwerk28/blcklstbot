@@ -1,6 +1,6 @@
 import { Redis } from "ioredis";
 import { Knex } from "knex";
-import { Message } from "grammy/types";
+import { Message, User } from "grammy/types";
 import {
   CHATS_TABLE_NAME,
   DYN_COMMANDS_TABLE_NAME,
@@ -137,13 +137,17 @@ export class DbStore {
     return this.knex(USERS_TABLE_NAME).where(whereClause).update(partialUser);
   }
 
-  async addUserMessage(message: Message) {
+  async addUserMessage(message: Message, from: User) {
     const entity = {
       chat_id: message.chat.id,
-      user_id: message.from?.id,
+      user_id: from.id,
       message_id: message.message_id,
       timestamp: new Date(message.date * 1000),
     };
+    return this.knex<DbUserMessage>("user_messages")
+      .insert(entity)
+      .onConflict()
+      .ignore();
     return this.genericUpsert(entity, "user_messages", [
       "chat_id",
       "message_id",

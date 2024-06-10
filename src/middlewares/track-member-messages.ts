@@ -8,10 +8,10 @@ composer
   .on("message")
   .chatType(["group", "supergroup"])
   .use(async (ctx, next) => {
-    if ("new_chat_members" in ctx.message || "left_chat_member" in ctx.message)
-      return next();
+    if ("new_chat_members" in ctx.message) return next();
+    if ("left_chat_member" in ctx.message) return next();
     try {
-      await ctx.dbStore.addUserMessage(ctx.message);
+      await ctx.dbStore.addUserMessage(ctx.message, ctx.from);
     } catch (err) {
       ctx.log.error(err);
     }

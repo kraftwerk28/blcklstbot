@@ -2,7 +2,7 @@
   "author": "Vsevolod (@kraftwerk28) <kefirchik3@gmail.com>",
   "dependencies": {
     "dotenv": "^9.0.2",
-    "grammy": "^1.19.2",
+    "grammy": "^1.19.3",
     "ioredis": "^5.3.2",
     "knex": "^3.0.1",
     "pg": "^8.5.1",
