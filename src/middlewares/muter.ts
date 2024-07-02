@@ -66,7 +66,7 @@ composer2
       mute_duration,
       saved_permissions,
     } = ctx.reportedUser;
-    const reportedChatMember = await ctx.getChatMember(user_id);
+    const reportedChatMember = await ctx.getChatMemberCached(user_id);
     if (reportedChatMember.status !== "member") {
       return;
     }
@@ -149,7 +149,7 @@ composer2
   .filter(botHasSufficientPermissions)
   .use(async (ctx, next) => {
     const { id: user_id, chat_id, mute_duration } = ctx.dbUser;
-    const currentChatMember = await ctx.getChatMember(user_id);
+    const currentChatMember = await ctx.getChatMemberCached(user_id);
     await ctx.dbStore.updateUser({
       id: user_id,
       chat_id,

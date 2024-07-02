@@ -17,7 +17,6 @@ export type CaptchaTimeoutEvent = BaseEvent<
     chatId: number;
     userId: number;
     captchaMessageId: number;
-    newChatMemberMessageId: number;
   }
 >;
 

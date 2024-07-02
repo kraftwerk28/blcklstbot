@@ -84,7 +84,6 @@ export function generateCaptcha(modes = DEFAULT_CAPCHA_MODES) {
   const mode = modes[randInt(modes.length)]!;
   const meta = captchas[mode].generate();
   const captcha = { mode, meta };
-  log.info("New captcha: %O", captcha);
   return captcha as AbstractCaptcha;
 }
 

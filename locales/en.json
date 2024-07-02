@@ -1,5 +1,6 @@
 {
-  "report": "{reporter} banned {reported}.",
+  "report": "{reported} was banned.",
+  "report_with_reporter": "{reporter} banned {reported}.",
   "report_reason": "<b>Reason</b>: {reason}.",
   "warn": "{reporter} warned {reported}",
   "last_warning": "last warning!",

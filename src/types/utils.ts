@@ -51,6 +51,8 @@ export type NonemptyReadonlyArray<T> = readonly [T, ...T[]];
 
 export type LocaleContainer = Record<ChatLanguageCode, Record<string, string>>;
 
+export type TranslateFn = (s: string, replaces?: Record<string, string | number>) => string;
+
 export type MentionableUser = Pick<
   User,
   "id" | "username" | "first_name" | "last_name"

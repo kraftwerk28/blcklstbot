@@ -1,4 +1,11 @@
-import { Bot, BotError, webhookCallback as makeWebhookCallback } from "grammy";
+import {
+  Bot,
+  BotError,
+  ChatTypeContext,
+  CommandContext,
+  Filter,
+  webhookCallback as makeWebhookCallback,
+} from "grammy";
 import * as path from "path";
 import { IncomingMessage, ServerResponse, createServer } from "http";
 import createKnex from "knex";
@@ -6,21 +13,22 @@ import IORedis from "ioredis";
 import events from "node:events";
 import pg from "pg";
 
-import { Context, EventQueueEvent } from "./types/index.js";
+import { Context, EventQueueEvent, TranslateFn } from "./types/index.js";
 import { initLogger, log } from "./logger.js";
 import { loadLocales, noop } from "./utils/index.js";
 import { getRawMetrics } from "./prometheus.js";
-import { BOT_SERVICE_MESSAGES_TIMEOUT } from "./constants.js";
+import { BOT_SERVICE_MESSAGES_TIMEOUT, MAX_WARNINGS } from "./constants.js";
 import { AsyncFifo } from "./fifo.js";
 
 import { DbStore } from "./db-store.js";
 import { EventQueue } from "./event-queue.js";
-import { Message } from "grammy/types";
+import { Message, Update, User } from "grammy/types";
 
 import * as m from "./middlewares/index.js";
 import * as c from "./commands/index.js";
 
 import { composer as promComposer } from "./prometheus.js";
+import { userMention, escape } from "./utils/html.js";
 
 const { types: pgTypes } = pg;
 
@@ -41,6 +49,7 @@ async function main() {
   });
   log.info("Connecting to Postgres...");
 
+  // NOTE: INT8 is same as uint64_t
   // NOTE: Using parseInt for BIGINT's here is presumably safe
   pgTypes.setTypeParser(pgTypes.builtins.INT8, parseInt);
 
@@ -65,14 +74,10 @@ async function main() {
       });
     })
     .on("captcha_timeout", async ({ api, payload }) => {
-      const { chatId, userId, captchaMessageId, newChatMemberMessageId } =
-        payload;
-      const kicked = await api.banChatMember(chatId, userId);
+      const { chatId, userId, captchaMessageId } = payload;
+      await api.banChatMember(chatId, userId);
       const deleted_captcha_message = await api
         .deleteMessage(chatId, captchaMessageId)
-        .catch(noop);
-      const deleted_new_member_message = await api
-        .deleteMessage(chatId, newChatMemberMessageId)
         .catch(noop);
       await eventQueue.pushDelayed(10, "unkick_after_captcha", {
         chat_id: chatId,
@@ -82,25 +87,17 @@ async function main() {
         {
           chat: { id: chatId },
           user: { id: userId },
-          kicked,
           deleted_captcha_message,
-          deleted_new_member_message,
         },
-        "Kicked a member due to captcha timeout",
+        "Kicked user due to captcha timeout",
       );
     })
     .on("unkick_after_captcha", async ({ api, payload }) => {
-      const unbanned = await api.unbanChatMember(
-        payload.chat_id,
-        payload.user_id,
-      );
+      const { chat_id, user_id } = payload;
+      await api.unbanChatMember(chat_id, user_id);
       log.info(
-        {
-          chat: { id: payload.chat_id },
-          user: { id: payload.user_id },
-          unbanned,
-        },
-        "Unbanned user after captcha timeout",
+        { chat: { id: chat_id }, user: { id: user_id } },
+        "Unbanned user due to captcha kick cooldown",
       );
     })
     .on("delete_message", async ({ api, payload }) => {
@@ -136,8 +133,10 @@ async function main() {
       return msg;
     };
   }
+
   const locales = await loadLocales();
-  const t: Context["t"] = function (this: Context, s, replaces = {}) {
+
+  const t: TranslateFn = function (this: Context, s, replaces = {}) {
     if (!this.dbChat) return s;
     const locale = this.locales[this.dbChat.language_code ?? "en"];
     let value = locale[s];
@@ -155,8 +154,112 @@ async function main() {
     });
   };
 
+  const banUser: Context["banUser"] = async function (
+    reported,
+    reporter,
+    reason,
+  ) {
+    // const callbackData = `unban:${ctx.chat.id}:${reportedUser.id}`;
+    // const inlineKbd = new InlineKeyboard().text("\u{1f519} Undo", callbackData);
+    let banAnnounceText: string;
+    if (reporter) {
+      banAnnounceText = this.t("report_with_reporter", {
+        reporter: userMention(reporter),
+        reported: userMention(reported),
+      });
+    } else {
+      banAnnounceText = this.t("report", {
+        reported: userMention(reported),
+      });
+    }
+    if (reason) {
+      banAnnounceText +=
+        "\n" + this.t("report_reason", { reason: escape(reason) });
+    }
+
+    const allUserMessageIds = await this.dbStore.getUserMessages(
+      this.chat.id,
+      reported.id,
+    );
+    this.log.info({ messages: allUserMessageIds }, "Reported user messages");
+    // TODO: will this fail if count of message is too large?
+    const results = await Promise.allSettled(
+      allUserMessageIds.map(({ message_id }) =>
+        this.api.deleteMessage(this.chat.id, message_id),
+      ),
+    );
+    const deletedCount = results.reduce(
+      (total, result) => (total + result.status === "fulfilled" ? 1 : 0),
+      0,
+    );
+    log.info(
+      {
+        count: deletedCount,
+        total: allUserMessageIds.length,
+      },
+      "Deleted user messages",
+    );
+
+    if (this.dbChat.propagate_bans) {
+      await this.dbStore.updateUser({
+        id: reported.id,
+        banned: true,
+        warn_ban_reason: reason,
+        banned_timestamp: new Date(),
+      });
+    } else {
+      await this.dbStore.updateUser({
+        chat_id: this.chat.id,
+        id: reported.id,
+        banned: true,
+        warn_ban_reason: reason,
+        banned_timestamp: new Date(),
+      });
+    }
+
+    try {
+      await this.deleteMessage().catch(noop);
+      await this.banChatMember(reported.id),
+        await this.reply(banAnnounceText, { parse_mode: "HTML" });
+    } catch (err) {
+      this.log.error(err);
+    }
+  };
+
+  const getChatMemberCached: Context["getChatMemberCached"] = async function (
+    userId,
+  ) {
+    if (!(userId in this._chatMemberCache)) {
+      this._chatMemberCache[userId] = await this.getChatMember(userId);
+    }
+    return this._chatMemberCache[userId]!;
+  };
+
   // Extend context
   bot.use((ctx, next) => {
+    const { message, from, chat } = ctx;
+    const childObj: Record<string, any> = {};
+    if (chat) {
+      childObj.chat = {
+        id: chat.id,
+        title:
+          (chat.type === "group" || chat.type === "supergroup") && chat.title,
+      };
+    }
+    if (from) {
+      childObj.from = {
+        id: from.id,
+        first_name: from.first_name,
+        username: from.username,
+      };
+    }
+    if (message) {
+      childObj.message = {
+        id: message.message_id,
+        thread_id: message.message_thread_id,
+      };
+    }
+    const childLog = log.child(childObj);
     Object.assign(ctx, {
       dbStore,
       eventQueue,
@@ -164,7 +267,10 @@ async function main() {
       deleteItSoon,
       locales,
       t,
-      log,
+      log: childLog,
+      banUser,
+      _chatMemberCache: {},
+      getChatMemberCached,
     });
     return next();
   });
@@ -176,6 +282,7 @@ async function main() {
   bot.use(m.resolveDbUser);
   bot.use(m.trackMemberMessages);
 
+  bot.use(m.casBan)
   bot.use(m.newChatMember);
   bot.use(m.leftChatMember);
   bot.use(m.removeMessagesUnderCaptcha);
@@ -231,8 +338,16 @@ async function main() {
     }
   });
 
+  bot
+    .on("message:sticker")
+    .filter(
+      (ctx) => ctx.chat.id === -1001134294720 && ctx.from.id === 414490047,
+    )
+    .use((ctx) => ctx.react("🤡"));
+
   bot.use(c.chatSettings);
   bot.use(c.report);
+  bot.use(c.banList);
   bot.use(c.warn);
   bot.use(c.ping);
   bot.use(c.delMessage);
@@ -254,27 +369,60 @@ async function main() {
     }
   };
 
-  await bot.api.setMyCommands([
-    { command: "settings", description: "Change chat settings" },
-    {
-      command: "report",
-      description: "Mention target user or reply to their message to report",
-    },
-    {
-      command: "warn",
-      description: "Mention target user or reply to their message to warn",
-    },
-    {
-      command: "ping",
-      description: "/ping XhYmZs <message> to remind yourself!",
-    },
-  ]);
+  // await bot.api.setMyCommands([
+  //   { command: "settings", description: "Change chat settings" },
+  //   {
+  //     command: "report",
+  //     description: "Mention target user or reply to their message to report",
+  //   },
+  //   {
+  //     command: "warn",
+  //     description: "Mention target user or reply to their message to warn",
+  //   },
+  //   {
+  //     command: "ping",
+  //     description: "/ping XhYmZs <message> to remind yourself!",
+  //   },
+  // ]);
+
+  const allowedUpdates: ReadonlyArray<Exclude<keyof Update, "update_id">> = [
+    "message",
+    "edited_message",
+    // "channel_post",
+    // "edited_channel_post",
+    // "business_connection",
+    // "business_message",
+    // "edited_business_message",
+    // "deleted_business_messages",
+    // "message_reaction",
+    // "message_reaction_count",
+    "inline_query",
+    "chosen_inline_result",
+    "callback_query",
+    // "shipping_query",
+    // "pre_checkout_query",
+    // "poll",
+    // "poll_answer",
+    "my_chat_member",
+    "chat_member",
+    // "chat_join_request",
+    // "chat_boost",
+    // "removed_chat_boost",
+  ];
 
   if (process.env.NODE_ENV === "development") {
     // NOTE: in grammY, Bot::catch won't work with webhooks, it only makes sense with polling
     bot.catch(errorHandler);
-    await bot.start({ drop_pending_updates: true });
+    log.info("Starting in long polling mode");
+    await bot.start({
+      drop_pending_updates: true,
+      allowed_updates: allowedUpdates,
+      onStart() {
+        log.info("Bot started");
+      },
+    });
   } else {
+    log.info("Starting in webhook mode");
     const { WEBHOOK_URL, WEBHOOK_SERVER_PORT } = process.env;
     const webhookCallback = makeWebhookCallback(bot, "http");
     type FifoItem = {
@@ -307,10 +455,14 @@ async function main() {
       }
     };
     server.listen({ port: parseInt(WEBHOOK_SERVER_PORT!) });
-    await bot.api.setWebhook(WEBHOOK_URL!, { drop_pending_updates: true });
+    await bot.api.setWebhook(WEBHOOK_URL!, {
+      drop_pending_updates: true,
+      allowed_updates: allowedUpdates,
+    });
     log.info("Webhook is set");
     // eslint-disable-next-line @typescript-eslint/no-floating-promises
     consumeUpdates();
+    log.info("Bot started");
 
     process.on("SIGINT", () => {
       server.close();
@@ -329,7 +481,6 @@ async function main() {
       ]);
     });
   }
-  log.info("Bot started");
 }
 
 main().catch(console.error);

@@ -27,6 +27,7 @@ export type DbChat = DbChatFromTg & {
   delete_joins: boolean;
   propagate_bans: boolean;
   upload_to_gist: boolean;
+  use_cas_ban: boolean;
 };
 
 /** Non-normalized version of User with primary key of (id, chat_id) */

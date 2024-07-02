@@ -154,7 +154,7 @@ export class DbStore {
     ]);
   }
 
-  async getUserMessages(chatId: number, userId: number): Promise<number[]> {
+  async getUserMessages(chatId: number, userId: number) {
     return this.knex<DbUserMessage>("user_messages")
       .where({ chat_id: chatId, user_id: userId })
       .del("message_id");

@@ -1,13 +1,14 @@
 import { Message, User } from "grammy/types";
 
 import { Composer } from "../composer.js";
-import { noop, safePromiseAll } from "../utils/index.js";
 import { CaptchaMode, GroupChatContext } from "../types/index.js";
 import { generateCaptcha } from "../captcha/index.js";
 import { code, userMention } from "../utils/html.js";
 import { captchaHash } from "../utils/event-queue.js";
-import { botHasSufficientPermissions } from "../guards/index.js";
-import { log } from "../logger.js";
+import {
+  botHasSufficientPermissions,
+  chatMemberJoined,
+} from "../guards/index.js";
 
 const composer = new Composer();
 
@@ -16,38 +17,28 @@ export default composer;
 composer
   .chatType(["group", "supergroup"])
   .on("message:new_chat_members")
+  .filter((ctx) => ctx.dbChat.delete_joins)
   .filter(botHasSufficientPermissions)
   .use(async (ctx, next) => {
-    if (ctx.dbChat.delete_joins) {
-      await ctx.deleteMessage().catch(noop);
+    try {
+      await ctx.deleteMessage();
+    } catch (err) {
+      ctx.log.error(err);
     }
-    if (!ctx.dbChat.captcha_modes.length) {
-      return next();
-    }
-    const promises = ctx.message.new_chat_members.map((cm) =>
-      userCaptcha(ctx, cm),
-    );
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
-    safePromiseAll(promises);
     return next();
   });
 
-/**
- * Creates capthca.
- * Also registers user in DB for messages tracking
- */
-// export const onNewChatMember: Middleware = Composer.guardAll(
-//   [
-//     async function (ctx) {
-//       // `/me` also wants to pass captcha so ima about to comment dis :)
-//       // if (ctx.from?.id === ctx.botCreatorId) return false;
-//       const cm = await ctx.getChatMember(ctx.from!.id);
-//       return cm.status === "member";
-//     },
-//     botHasSufficientPermissions,
-//   ],
-//   async function (ctx, next) {} as Middleware,
-// );
+composer
+  .chatType(["group", "supergroup"])
+  .on("chat_member")
+  .filter((ctx) => ctx.dbChat.captcha_modes.length > 0)
+  .filter(chatMemberJoined)
+  .filter(botHasSufficientPermissions)
+  .use(async (ctx, next) => {
+    ctx.log.info({ chat_member: ctx.chatMember }, "User entered the chat");
+    await userCaptcha(ctx, ctx.from);
+    return next();
+  });
 
 async function userCaptcha(ctx: GroupChatContext, user: User) {
   const captcha = generateCaptcha(ctx.dbChat.captcha_modes);
@@ -59,7 +50,7 @@ async function userCaptcha(ctx: GroupChatContext, user: User) {
     captchaTimeout,
   );
   let captchaMessage: Message;
-  log.info({ chat: ctx.chat, user, captcha }, "Generating new captcha");
+  ctx.log.info({ captcha }, "Generating new captcha");
 
   switch (captcha.mode) {
     case CaptchaMode.Arithmetic: {
@@ -139,7 +130,6 @@ async function userCaptcha(ctx: GroupChatContext, user: User) {
       chatId: ctx.chat!.id,
       userId: user.id,
       captchaMessageId: captchaMessage.message_id,
-      newChatMemberMessageId: ctx.message!.message_id,
     },
     captchaHash(ctx.chat!.id, user.id),
   );

@@ -8,10 +8,9 @@ composer
   .on("message")
   .chatType(["group", "supergroup"])
   .use(async (ctx, next) => {
-    if ("new_chat_members" in ctx.message) return next();
-    if ("left_chat_member" in ctx.message) return next();
+    ctx.log.debug("Persisting user message");
     try {
-      await ctx.dbStore.addUserMessage(ctx.message, ctx.from);
+      await ctx.dbStore.addUserMessage(ctx.msg, ctx.from);
     } catch (err) {
       ctx.log.error(err);
     }

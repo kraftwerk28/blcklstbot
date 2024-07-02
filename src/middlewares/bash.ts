@@ -7,9 +7,9 @@ const exec = util.promisify(cp.exec);
 
 const composer = new Composer();
 
-composer.on("message:text").hears(/^!(.+)$/, async (ctx, next) => {
+composer.on("message:text").hears(/^!(.+)$/, async (ctx) => {
   if (ctx.from.id !== ctx.botCreatorId) {
-    return next();
+    return ctx.react("🗿");
   }
   const {
     BOT_TOKEN,

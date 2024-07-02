@@ -4,17 +4,21 @@ import { senderIsAdmin } from "../guards/index.js";
 import type { DbUser } from "../types/index.js";
 import { userFullName } from "../utils/html.js";
 
-const c = new Composer();
+const composer = new Composer();
+export default composer;
 
-c.on("message")
+const composer2 = composer.chatType(["group", "supergroup"]);
+
+composer2
+  .on("message")
   .command("banlist")
-  .chatType(["group", "supergroup"])
   .filter(senderIsAdmin)
   .use(async (ctx) => {
     const chatId = ctx.chat.id;
     const bannedUsers: DbUser[] = await ctx.dbStore
       .knex("users")
-      .where({ chat_id: chatId, banned: true });
+      .where({ chat_id: chatId, banned: true })
+      .limit(10);
     await ctx.deleteItSoon()(ctx.message);
     if (!bannedUsers.length) {
       await ctx.reply(ctx.t("banlist_empty")).then(ctx.deleteItSoon());
@@ -36,4 +40,9 @@ c.on("message")
       .then(ctx.deleteItSoon());
   });
 
-export default c;
+composer2
+  .callbackQuery(/^unban:(.+):(.+)$/)
+  .filter(senderIsAdmin)
+  .use(async (ctx) => {
+    await ctx.answerCallbackQuery("Not implemented");
+  });

@@ -2,7 +2,7 @@
   "author": "Vsevolod (@kraftwerk28) <kefirchik3@gmail.com>",
   "dependencies": {
     "dotenv": "^9.0.2",
-    "grammy": "^1.19.3",
+    "grammy": "^1.25.1",
     "ioredis": "^5.3.2",
     "knex": "^3.0.1",
     "pg": "^8.5.1",
@@ -33,7 +33,7 @@
     "build:clean": "rm -r dist/*",
     "build:test": "tsc --outDir test/dist/ --esModuleInterop true test/db.test.ts",
     "deploy-db": "psql -d blcklstbot -f ./db.sql",
-    "dev": "NODE_ENV=development node --experimental-specifier-resolution=node build/",
+    "dev": "NODE_ENV=development node build/",
     "format": "prettier --ignore-path=.gitignore --write .",
     "lint": "DEBUG='eslint:cli-engine' eslint --ignore-path=.gitignore .",
     "lint:fix": "DEBUG='eslint:cli-engine' eslint --fix --ignore-path=.gitignore --ignore-pattern='src/captcha/index2.ts' src",

@@ -1,5 +1,6 @@
 {
-  "report": "{reporter} заблокували {reported}.",
+  "report": "{reported} заблокований.",
+  "report_with_reporter": "{reporter} заблокували {reported}.",
   "report_reason": "<b>Причина</b>: {reason}.",
   "warn": "{reporter} попереджують {reported}",
   "last_warning": "останнє попередження!",

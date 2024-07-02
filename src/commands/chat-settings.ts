@@ -58,7 +58,7 @@ function buildSettingsKeyboard(ctx: GroupChatContext) {
   const { dbChat } = ctx;
   const captchaModeBtns = Object.values(CaptchaMode).map((mode) => {
     const en = isEnabledEmoji(dbChat.captcha_modes.includes(mode));
-    return InlineKeyboard.text(`${en} ${mode}`, `toggle:captcha:${mode}`);
+    return InlineKeyboard.text(`${en} ${mode}`, `s:toggle:captcha:${mode}`);
   });
 
   const [prevTimIdx, nextTimIdx] = findPrevNextTimIndex(dbChat.captcha_timeout);
@@ -76,19 +76,27 @@ function buildSettingsKeyboard(ctx: GroupChatContext) {
       "+" + reprSeconds(CAPTCHA_TIMEOUTS[nextTimIdx]! - dbChat.captcha_timeout);
   }
   const captchaTimeoutBtns = [
-    InlineKeyboard.text(prevText, "captcha:dec"),
-    InlineKeyboard.text(`Timeout: ${reprSeconds(dbChat.captcha_timeout)}`),
-    InlineKeyboard.text(nextText, "captcha:inc"),
+    InlineKeyboard.text(prevText, "s:captcha:dec"),
+    InlineKeyboard.text(
+      `Timeout: ${reprSeconds(dbChat.captcha_timeout)}`,
+      "s:noop",
+    ),
+    InlineKeyboard.text(nextText, "s:captcha:inc"),
   ];
 
   const deleteJoinsBtn = InlineKeyboard.text(
-    `${isEnabledEmoji(dbChat.delete_joins)} Delete join messages`,
-    "toggle:delete_joins",
+    `${isEnabledEmoji(dbChat.delete_joins)} Delete joins`,
+    "s:toggle:delete_joins",
   );
 
   const uploadToGistBtn = InlineKeyboard.text(
     `${isEnabledEmoji(dbChat.upload_to_gist)} Upload code snippets to Gist`,
-    "toggle:gist",
+    "s:toggle:gist",
+  );
+
+  const toggleCasBanBtn = InlineKeyboard.text(
+    `${isEnabledEmoji(dbChat.use_cas_ban)} Use CAS blocklist`,
+    "s:toggle:cas",
   );
 
   const languageBtns = Object.entries(LANGUAGE_FLAGS).map(
@@ -97,17 +105,17 @@ function buildSettingsKeyboard(ctx: GroupChatContext) {
       if (code === dbChat.language_code) {
         text = "\u2705 " + text;
       }
-      return InlineKeyboard.text(text, `set_lang:${code}`);
+      return InlineKeyboard.text(text, `s:set_lang:${code}`);
     },
   );
 
   return new InlineKeyboard([
     captchaModeBtns,
     captchaTimeoutBtns,
-    [deleteJoinsBtn],
+    [deleteJoinsBtn, toggleCasBanBtn],
     [uploadToGistBtn],
     languageBtns,
-    [InlineKeyboard.text(`${isEnabledEmoji(false)} Close`, "close")],
+    [InlineKeyboard.text(`${isEnabledEmoji(false)} Close`, "s:close")],
   ]);
 }
 
@@ -126,21 +134,26 @@ composer2
   });
 
 const cbQueryComposer = composer2
+
+  // .use(async (ctx, next) => {
+  //   if (!ctx.callbackQuery) {
+  //     return next();
+  //   }
+  //   const { from } = ctx.callbackQuery;
+  //   const cm = await ctx.getChatMember(from.id);
+  //   if (
+  //     cm.status === "administrator" ||
+  //     cm.status === "creator" ||
+  //     cm.user.id === ctx.botCreatorId
+  //   )
+  //     return next();
+  //   else return ctx.answerCallbackQuery(ctx.t("admin_only_action"));
+  // })
+
+  // Handle any button, then redraw the keyboard
+  .callbackQuery(/^s:/)
+  .filter(senderIsAdmin)
   .use(async (ctx, next) => {
-    if (!ctx.callbackQuery) {
-      return next();
-    }
-    const { from } = ctx.callbackQuery;
-    const cm = await ctx.getChatMember(from.id);
-    if (
-      cm.status === "administrator" ||
-      cm.status === "creator" ||
-      cm.user.id === ctx.botCreatorId
-    )
-      return next();
-    else return ctx.answerCallbackQuery(ctx.t("admin_only_action"));
-  })
-  .callbackQuery(/.+/, async (ctx, next) => {
     await next();
     try {
       await ctx.editMessageReplyMarkup({
@@ -152,7 +165,7 @@ const cbQueryComposer = composer2
     return ctx.answerCallbackQuery();
   });
 
-cbQueryComposer.callbackQuery(/^toggle:captcha:(.+)$/, async (ctx) => {
+cbQueryComposer.callbackQuery(/^s:toggle:captcha:(.+)$/, async (ctx) => {
   const modes = ctx.dbChat.captcha_modes.slice();
   const mode = ctx.match[1] as CaptchaMode;
   if (modes.includes(mode)) {
@@ -167,7 +180,7 @@ cbQueryComposer.callbackQuery(/^toggle:captcha:(.+)$/, async (ctx) => {
   );
 });
 
-cbQueryComposer.callbackQuery("captcha:dec", async (ctx) => {
+cbQueryComposer.callbackQuery("s:captcha:dec", async (ctx) => {
   const { dbChat } = ctx;
   const [prevTimIdx] = findPrevNextTimIndex(dbChat.captcha_timeout);
   if (prevTimIdx === undefined) {
@@ -180,7 +193,7 @@ cbQueryComposer.callbackQuery("captcha:dec", async (ctx) => {
   );
 });
 
-cbQueryComposer.callbackQuery("captcha:inc", async (ctx) => {
+cbQueryComposer.callbackQuery("s:captcha:inc", async (ctx) => {
   const { dbChat } = ctx;
   const [_, nextTimIdx] = findPrevNextTimIndex(dbChat.captcha_timeout);
   if (nextTimIdx === undefined) {
@@ -193,7 +206,7 @@ cbQueryComposer.callbackQuery("captcha:inc", async (ctx) => {
   );
 });
 
-cbQueryComposer.callbackQuery("toggle:delete_joins", async (ctx) => {
+cbQueryComposer.callbackQuery("s:toggle:delete_joins", async (ctx) => {
   ctx.dbChat = await ctx.dbStore.updateChatProp(
     ctx.chat.id,
     "delete_joins",
@@ -201,7 +214,7 @@ cbQueryComposer.callbackQuery("toggle:delete_joins", async (ctx) => {
   );
 });
 
-cbQueryComposer.callbackQuery("toggle:gist", async (ctx) => {
+cbQueryComposer.callbackQuery("s:toggle:gist", async (ctx) => {
   ctx.dbChat = await ctx.dbStore.updateChatProp(
     ctx.chat.id,
     "upload_to_gist",
@@ -209,7 +222,15 @@ cbQueryComposer.callbackQuery("toggle:gist", async (ctx) => {
   );
 });
 
-cbQueryComposer.callbackQuery(/^set_lang:(\w+)$/, async (ctx) => {
+cbQueryComposer.callbackQuery("s:toggle:cas", async (ctx) => {
+  ctx.dbChat = await ctx.dbStore.updateChatProp(
+    ctx.chat.id,
+    "use_cas_ban",
+    !ctx.dbChat.use_cas_ban,
+  );
+});
+
+cbQueryComposer.callbackQuery(/^s:set_lang:(\w+)$/, async (ctx) => {
   ctx.dbChat = await ctx.dbStore.updateChatProp(
     ctx.chat.id,
     "language_code",
@@ -217,8 +238,8 @@ cbQueryComposer.callbackQuery(/^set_lang:(\w+)$/, async (ctx) => {
   );
 });
 
-cbQueryComposer.callbackQuery("close", async (ctx) => {
-  const reply = ctx.message?.reply_to_message;
+cbQueryComposer.callbackQuery("s:close", async (ctx) => {
+  const reply = ctx.msg?.reply_to_message;
   if (reply) {
     await ctx.api.deleteMessage(ctx.chat.id, reply.message_id).catch(noop);
   }

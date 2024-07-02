@@ -34,7 +34,9 @@ composer
       }),
       {
         reply_to_message_id: ctx.message.reply_to_message?.message_id,
-        disable_web_page_preview: true,
+        link_preview_options: {
+          is_disabled: true,
+        },
         parse_mode: "HTML",
       },
     );
