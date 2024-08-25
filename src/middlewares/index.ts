@@ -12,3 +12,4 @@ export { default as uploadToGistOrHighlight } from "./upload-to-gist-or-highligh
 export { default as muter } from "./muter.js";
 export { default as casBan } from "./cas-ban.js";
 export { default as slots } from "./slots.js";
+export { default as misc } from "./misc.js";
