@@ -28,6 +28,8 @@ export type DbChat = DbChatFromTg & {
   propagate_bans: boolean;
   upload_to_gist: boolean;
   use_cas_ban: boolean;
+  delete_substitute_prompt: boolean;
+  enable_slots: boolean;
 };
 
 /** Non-normalized version of User with primary key of (id, chat_id) */
@@ -41,6 +43,16 @@ export type DbUser = DbUserFromTg & {
   banned_timestamp: DbOptional<Date>;
   mute_duration: DbOptional<number>;
   saved_permissions: DbOptional<Record<string, boolean>>;
+};
+
+export type DbBalanceTrx = {
+  id: number;
+  user_id: number;
+  diff: number;
+  timestamp: Date;
+  dice_value?: number;
+  dice_emoji?: string;
+  current_balance: number;
 };
 
 export type DbUserMessage = {

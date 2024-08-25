@@ -109,6 +109,13 @@ composer.filter(messageIsReply).on("message:text", async (ctx, next) => {
     `substitute:${ctx.message.message_id}`,
     sent.message_id,
   );
+  if (ctx.dbChat?.delete_substitute_prompt) {
+    try {
+      await ctx.deleteMessage();
+    } catch (err) {
+      ctx.log.error(err);
+    }
+  }
   // if (ctx.from.id !== ctx.botCreatorId) {
   //   const delay = 5 * 60; // 5 mins
   //   await ctx.eventQueue.pushDelayed(delay, "delete_message", {

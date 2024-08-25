@@ -11,3 +11,4 @@ export { default as resolveDbChat } from "./resolve-db-chat.js";
 export { default as uploadToGistOrHighlight } from "./upload-to-gist-or-highlight.js";
 export { default as muter } from "./muter.js";
 export { default as casBan } from "./cas-ban.js";
+export { default as slots } from "./slots.js";

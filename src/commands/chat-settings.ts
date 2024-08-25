@@ -89,14 +89,24 @@ function buildSettingsKeyboard(ctx: GroupChatContext) {
     "s:toggle:delete_joins",
   );
 
-  const uploadToGistBtn = InlineKeyboard.text(
-    `${isEnabledEmoji(dbChat.upload_to_gist)} Upload code snippets to Gist`,
+  const toggleUploadToGistBtn = InlineKeyboard.text(
+    `${isEnabledEmoji(dbChat.upload_to_gist)} Code -> Gist`,
     "s:toggle:gist",
   );
 
   const toggleCasBanBtn = InlineKeyboard.text(
     `${isEnabledEmoji(dbChat.use_cas_ban)} Use CAS blocklist`,
     "s:toggle:cas",
+  );
+
+  const toggleDeleteSubstitutePromptBtn = InlineKeyboard.text(
+    `${isEnabledEmoji(dbChat.delete_substitute_prompt)} Delete s/... message`,
+    "s:toggle:del_subst",
+  );
+
+  const toggleSlotsBtn = InlineKeyboard.text(
+    `${isEnabledEmoji(dbChat.enable_slots)} Play 🎰`,
+    "s:toggle:slots",
   );
 
   const languageBtns = Object.entries(LANGUAGE_FLAGS).map(
@@ -109,13 +119,18 @@ function buildSettingsKeyboard(ctx: GroupChatContext) {
     },
   );
 
+  const closeBtn = InlineKeyboard.text(
+    `${isEnabledEmoji(false)} Close`,
+    "s:close",
+  );
+
   return new InlineKeyboard([
     captchaModeBtns,
     captchaTimeoutBtns,
     [deleteJoinsBtn, toggleCasBanBtn],
-    [uploadToGistBtn],
+    [toggleUploadToGistBtn, toggleDeleteSubstitutePromptBtn],
     languageBtns,
-    [InlineKeyboard.text(`${isEnabledEmoji(false)} Close`, "s:close")],
+    [toggleSlotsBtn, closeBtn],
   ]);
 }
 
@@ -227,6 +242,22 @@ cbQueryComposer.callbackQuery("s:toggle:cas", async (ctx) => {
     ctx.chat.id,
     "use_cas_ban",
     !ctx.dbChat.use_cas_ban,
+  );
+});
+
+cbQueryComposer.callbackQuery("s:toggle:del_subst", async (ctx) => {
+  ctx.dbChat = await ctx.dbStore.updateChatProp(
+    ctx.chat.id,
+    "delete_substitute_prompt",
+    !ctx.dbChat.delete_substitute_prompt,
+  );
+});
+
+cbQueryComposer.callbackQuery("s:toggle:slots", async (ctx) => {
+  ctx.dbChat = await ctx.dbStore.updateChatProp(
+    ctx.chat.id,
+    "enable_slots",
+    !ctx.dbChat.enable_slots,
   );
 });
 

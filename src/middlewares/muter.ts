@@ -13,7 +13,7 @@ type PermissionSet = Omit<
   "user" | "is_member" | "status" | "until_date"
 >;
 
-const extractPermissions = (cm: ChatMember): PermissionSet => {
+export const extractPermissions = (cm: ChatMember): PermissionSet => {
   if (cm.status === "restricted") {
     const { user, is_member, status, until_date, ...permissions } = cm;
     return permissions;

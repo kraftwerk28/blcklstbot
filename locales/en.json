@@ -13,5 +13,12 @@
   "upload_to_gist": "A message with source code by {user} was moved to {gist_link}",
   "predicc": "{fact} likely at {weekday}, {date}",
   "admin_only_action": "This action is intended for administrators only",
-  "mute_list_empty": "The Mute List is still empty."
+  "mute_list_empty": "The Mute List is still empty.",
+  "slot_win": "Ви виграли {amount}крб!",
+  "slot_jp": "💰💰💰Джекпот!💰💰💰 {amount}крб",
+  "slot_empty_wallet": "Баланс на нулі, поповнити на {amount}крб: /tumbochka",
+  "slot_filled_by": "Баланс поповнено на {amount}крб",
+  "slot_current_balance": "Поточний баланс: {balance}крб\nВиграно: {win}крб, програно: {wager}крб",
+  "slot_no_spins": "Ви ще не грали. Нові гравці мають {amount}крб на балансі",
+  "slot_rules": "Слоти\n\n1 спін — -1крб\n3 в ряд крім сімок — +4крб\n3 сімки — +50крб\n\nВідсоток RTP — 96.875%"
 }

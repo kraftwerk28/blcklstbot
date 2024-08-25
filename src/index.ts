@@ -1,11 +1,4 @@
-import {
-  Bot,
-  BotError,
-  ChatTypeContext,
-  CommandContext,
-  Filter,
-  webhookCallback as makeWebhookCallback,
-} from "grammy";
+import { Bot, BotError, webhookCallback as makeWebhookCallback } from "grammy";
 import * as path from "path";
 import { IncomingMessage, ServerResponse, createServer } from "http";
 import createKnex from "knex";
@@ -17,12 +10,12 @@ import { Context, EventQueueEvent, TranslateFn } from "./types/index.js";
 import { initLogger, log } from "./logger.js";
 import { loadLocales, noop } from "./utils/index.js";
 import { getRawMetrics } from "./prometheus.js";
-import { BOT_SERVICE_MESSAGES_TIMEOUT, MAX_WARNINGS } from "./constants.js";
+import { BOT_SERVICE_MESSAGES_TIMEOUT } from "./constants.js";
 import { AsyncFifo } from "./fifo.js";
 
 import { DbStore } from "./db-store.js";
 import { EventQueue } from "./event-queue.js";
-import { Message, Update, User } from "grammy/types";
+import { Message, Update } from "grammy/types";
 
 import * as m from "./middlewares/index.js";
 import * as c from "./commands/index.js";
@@ -282,7 +275,7 @@ async function main() {
   bot.use(m.resolveDbUser);
   bot.use(m.trackMemberMessages);
 
-  bot.use(m.casBan)
+  bot.use(m.casBan);
   bot.use(m.newChatMember);
   bot.use(m.leftChatMember);
   bot.use(m.removeMessagesUnderCaptcha);
@@ -293,8 +286,8 @@ async function main() {
   bot.use(m.checkCaptchaAnswer);
   bot.use(m.bangHandler);
   bot.use(m.bash);
-
   bot.use(m.muter);
+  bot.use(m.slots);
 
   bot
     .on("message")
@@ -320,6 +313,10 @@ async function main() {
       },
     );
 
+  bot.on("callback_query", async (ctx) => {
+    ctx.msg?.chat
+  })
+
   bot.on("message:text", async (ctx, next) => {
     if (ctx.chat.id === -1001023368582 && ctx.message.text.match(/ґ/i)) {
       let doSend = false;
@@ -339,11 +336,18 @@ async function main() {
   });
 
   bot
-    .on("message:sticker")
+    .on(["message:sticker", "message:animation"])
     .filter(
       (ctx) => ctx.chat.id === -1001134294720 && ctx.from.id === 414490047,
     )
     .use((ctx) => ctx.react("🤡"));
+
+  // bot
+  //   .on("message")
+  //   .filter(
+  //     (ctx) => ctx.chat.id === -1002167883618 && ctx.from.id === 5857978484,
+  //   )
+  //   .use((ctx) => ctx.react("🤡"));
 
   bot.use(c.chatSettings);
   bot.use(c.report);
