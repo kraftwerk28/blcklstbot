@@ -290,18 +290,29 @@ async function main() {
   bot.use(m.slots);
   bot.use(m.misc);
 
-  bot
-    .on("message:text")
-    .filter((ctx) => !!ctx.msg.text.match(/mint/i))
-    .filter((ctx) => {
-      if (!ctx.msg.entities) return false;
-      const promoRe = /(?:promo|ref)=/i;
-      return ctx.msg.entities.some(
-        (e) =>
-          (e.type === "text_link" && e.url.match(promoRe)) ||
-          (e.type === "url" && ctx.msg.text.match(promoRe)),
+  const isPromoUrl = (raw: string) => {
+    try {
+      const u = new URL(raw);
+      const paramKeys = Array.from(u.searchParams.keys());
+      const BANNED_KEYS = ["promo", "ref", "claim"];
+      return (
+        u.host.endsWith(".xyz") &&
+        paramKeys.some((k) => BANNED_KEYS.includes(k))
       );
-    })
+    } catch {
+      return false;
+    }
+  };
+  bot
+    .on("msg:entities")
+    .filter((ctx) =>
+      ctx.msg.entities.some(
+        (e) =>
+          (e.type === "text_link" && isPromoUrl(e.url)) ||
+          (e.type === "url" &&
+            isPromoUrl(ctx.msg.text.slice(e.offset, e.offset + e.length))),
+      ),
+    )
     .use((ctx) => ctx.deleteMessage());
 
   bot.use(c.chatSettings);
