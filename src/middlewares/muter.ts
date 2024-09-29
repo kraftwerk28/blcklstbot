@@ -1,6 +1,6 @@
 import { ChatMember, ChatMemberRestricted } from "grammy/types";
 import { Composer } from "../composer.js";
-import { parse, stringify } from "../duration.js";
+import { parse as parseDuration, stringify } from "../duration.js";
 import { botHasSufficientPermissions, senderIsAdmin } from "../guards/index.js";
 import { DbUser } from "../types/index.js";
 import { userInfoWithouMention } from "../utils/html.js";
@@ -56,7 +56,7 @@ composer2
     if (!durationStr) return next();
     let durationSeconds: number;
     try {
-      durationSeconds = parse(durationStr);
+      durationSeconds = parseDuration(durationStr);
     } catch {
       return;
     }

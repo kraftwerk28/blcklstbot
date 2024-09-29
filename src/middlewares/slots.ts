@@ -36,6 +36,7 @@ setInitialBalanceMiddleware.use(async (ctx, next) => {
 
 c2.on("message:dice")
   .filter((ctx) => ctx.msg.dice.emoji === "🎰")
+  .filter((ctx) => !ctx.msg.forward_origin || ctx.chat.id === ctx.botCreatorId)
   .use(setInitialBalanceMiddleware)
   .use(async (ctx, next) => {
     // TODO: add a 2 second delay, to allow animation to run
@@ -48,6 +49,8 @@ c2.on("message:dice")
       .first();
 
     if (!lastTrx) throw new Error("Unreachable");
+
+    const { message_id } = ctx.msg;
 
     // /** Emoji on which the dice throw animation is based */
     // emoji: string;
@@ -77,7 +80,7 @@ c2.on("message:dice")
       case 0b111111 + 1:
         diff = 50;
         await ctx.reply(ctx.t("slot_jp", { amount: diff }), {
-          reply_parameters: { message_id: ctx.msg.message_id },
+          reply_parameters: { message_id },
         });
         break;
       case 0b000000 + 1:
@@ -85,7 +88,14 @@ c2.on("message:dice")
       case 0b101010 + 1:
         diff = 4;
         await ctx.reply(ctx.t("slot_win", { amount: diff }), {
-          reply_parameters: { message_id: ctx.msg.message_id },
+          reply_parameters: { message_id },
+        });
+        break;
+      case 0b101111 + 1:
+      case 0b011111 + 1:
+        diff = -1;
+        await ctx.reply(ctx.t("slot_almost_jp"), {
+          reply_parameters: { message_id },
         });
         break;
       default:
@@ -101,7 +111,9 @@ c2.on("message:dice")
       current_balance: newBalance,
     });
     if (newBalance <= 0) {
-      await ctx.reply(ctx.t("slot_empty_wallet", { amount: INITIAL_BALANCE }));
+      await ctx.reply(ctx.t("slot_empty_wallet", { amount: INITIAL_BALANCE }), {
+        reply_parameters: { message_id },
+      });
       try {
         const permissions = extractPermissions(
           await ctx.getChatMemberCached(ctx.dbUser.id),
@@ -198,8 +210,8 @@ c2.command("tumbochka", async (ctx, next) => {
     ctx.log.error(err);
   }
   return ctx.reply(ctx.t("slot_filled_by", { amount: INITIAL_BALANCE }), {
-    reply_parameters: {
-      message_id: ctx.msg.message_id,
-    },
+    reply_parameters: { message_id: ctx.msg.message_id },
   });
 });
+
+c2.command("rating", async (ctx, next) => {});
