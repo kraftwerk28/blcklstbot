@@ -50,7 +50,10 @@ c2.on("message:dice")
 
     if (!lastTrx) throw new Error("Unreachable");
 
-    const { message_id } = ctx.msg;
+    const {
+      chat: { id: chat_id },
+      message_id,
+    } = ctx.msg;
 
     // /** Emoji on which the dice throw animation is based */
     // emoji: string;
@@ -72,6 +75,7 @@ c2.on("message:dice")
       await ctx.deleteMessage();
       return;
     }
+    const SLOT_ANIM_DURATION = 2;
 
     // With the following distribution, player wins 62 points for 64 bets in
     // average, RTP = 96.875%
@@ -79,23 +83,29 @@ c2.on("message:dice")
     switch (ctx.msg.dice.value) {
       case 0b111111 + 1:
         diff = 50;
-        await ctx.reply(ctx.t("slot_jp", { amount: diff }), {
-          reply_parameters: { message_id },
+        await ctx.eventQueue.pushDelayed(SLOT_ANIM_DURATION, "send_message", {
+          chat_id,
+          text: ctx.t("slot_jp", { amount: diff }),
+          reply_to: message_id,
         });
         break;
       case 0b000000 + 1:
       case 0b010101 + 1:
       case 0b101010 + 1:
         diff = 4;
-        await ctx.reply(ctx.t("slot_win", { amount: diff }), {
-          reply_parameters: { message_id },
+        await ctx.eventQueue.pushDelayed(SLOT_ANIM_DURATION, "send_message", {
+          chat_id,
+          text: ctx.t("slot_win", { amount: diff }),
+          reply_to: message_id,
         });
         break;
       case 0b101111 + 1:
       case 0b011111 + 1:
         diff = -1;
-        await ctx.reply(ctx.t("slot_almost_jp"), {
-          reply_parameters: { message_id },
+        await ctx.eventQueue.pushDelayed(SLOT_ANIM_DURATION, "send_message", {
+          chat_id,
+          text: ctx.t("slot_almost_jp"),
+          reply_to: message_id,
         });
         break;
       default:
@@ -111,24 +121,27 @@ c2.on("message:dice")
       current_balance: newBalance,
     });
     if (newBalance <= 0) {
-      await ctx.reply(ctx.t("slot_empty_wallet", { amount: INITIAL_BALANCE }), {
-        reply_parameters: { message_id },
+      await ctx.eventQueue.pushDelayed(SLOT_ANIM_DURATION, "send_message", {
+        chat_id,
+        text: ctx.t("slot_empty_wallet", { amount: INITIAL_BALANCE }),
+        reply_to: message_id,
       });
-      try {
-        const permissions = extractPermissions(
-          await ctx.getChatMemberCached(ctx.dbUser.id),
-        );
-        await ctx.restrictChatMember(
-          ctx.dbUser.id,
-          {
-            ...permissions,
-            can_send_other_messages: false,
-          },
-          { use_independent_chat_permissions: true },
-        );
-      } catch (err) {
-        ctx.log.error(err);
-      }
+      // // Remove permissions for stickers
+      // try {
+      //   const permissions = extractPermissions(
+      //     await ctx.getChatMemberCached(ctx.dbUser.id),
+      //   );
+      //   await ctx.restrictChatMember(
+      //     ctx.dbUser.id,
+      //     {
+      //       ...permissions,
+      //       can_send_other_messages: false,
+      //     },
+      //     { use_independent_chat_permissions: true },
+      //   );
+      // } catch (err) {
+      //   ctx.log.error(err);
+      // }
     }
   });
 
@@ -155,18 +168,19 @@ c2.command("balance", async (ctx, next) => {
       from "balance_trx"
       where user_id = :user_id and diff > 0 and dice_value is not null
       union all
-      select coalesce(sum(diff), 0)
+      select -coalesce(sum(diff), 0)
       from "balance_trx"
       where user_id = :user_id and diff < 0 and dice_value is not null
     `,
     { user_id },
   );
 
+  const [winRow, lostRow] = totalValues;
   return ctx.reply(
     ctx.t("slot_current_balance", {
       balance: lastTrx.current_balance,
-      win: totalValues[0]!.total,
-      wager: totalValues[1]!.total,
+      win: winRow!.total,
+      wager: lostRow!.total,
     }),
     {
       reply_parameters: {
@@ -213,5 +227,3 @@ c2.command("tumbochka", async (ctx, next) => {
     reply_parameters: { message_id: ctx.msg.message_id },
   });
 });
-
-c2.command("rating", async (ctx, next) => {});

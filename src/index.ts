@@ -15,7 +15,7 @@ import { AsyncFifo } from "./fifo.js";
 
 import { DbStore } from "./db-store.js";
 import { EventQueue } from "./event-queue.js";
-import { Message, Update } from "grammy/types";
+import { Message, Update, ReplyParameters } from "grammy/types";
 
 import * as m from "./middlewares/index.js";
 import * as c from "./commands/index.js";
@@ -104,6 +104,15 @@ async function main() {
       await api.restrictChatMember(payload.chat_id, payload.user_id, {
         ...saved_permissions,
         can_send_messages: true,
+      });
+    })
+    .on("send_message", async ({ api, payload }) => {
+      const reply_parameters =
+        payload.reply_to !== undefined
+          ? { message_id: payload.reply_to }
+          : undefined;
+      await api.sendMessage(payload.chat_id, payload.text, {
+        reply_parameters,
       });
     })
     .onError((err) => {

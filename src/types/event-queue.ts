@@ -44,12 +44,22 @@ export type UnmuteEvent = BaseEvent<
   }
 >;
 
+export type SendMessageEvent = BaseEvent<
+  "send_message",
+  {
+    chat_id: number;
+    text: string;
+    reply_to?: number;
+  }
+>;
+
 export type EventQueueEvent =
   | PongEvent
   | CaptchaTimeoutEvent
   | UnkickAfterCaptcha
   | DeleteMessageEvent
-  | UnmuteEvent;
+  | UnmuteEvent
+  | SendMessageEvent;
 
 export type BaseEvent<
   T extends string = any,
