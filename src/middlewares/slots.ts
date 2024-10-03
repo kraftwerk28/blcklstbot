@@ -77,12 +77,16 @@ c2.on("message:dice")
     }
     const SLOT_ANIM_DURATION = 2;
 
+    const WAGER_AMOUNT = 1;
+    const WIN_AMOUNT = 4;
+    const JP_AMOUNT = 50;
+
     // With the following distribution, player wins 62 points for 64 bets in
     // average, RTP = 96.875%
     let diff = 0;
     switch (ctx.msg.dice.value) {
       case 0b111111 + 1:
-        diff = 50;
+        diff = JP_AMOUNT - WAGER_AMOUNT;
         await ctx.eventQueue.pushDelayed(SLOT_ANIM_DURATION, "send_message", {
           chat_id,
           text: ctx.t("slot_jp", { amount: diff }),
@@ -92,7 +96,7 @@ c2.on("message:dice")
       case 0b000000 + 1:
       case 0b010101 + 1:
       case 0b101010 + 1:
-        diff = 4;
+        diff = WIN_AMOUNT - WAGER_AMOUNT;
         await ctx.eventQueue.pushDelayed(SLOT_ANIM_DURATION, "send_message", {
           chat_id,
           text: ctx.t("slot_win", { amount: diff }),
@@ -101,7 +105,7 @@ c2.on("message:dice")
         break;
       case 0b101111 + 1:
       case 0b011111 + 1:
-        diff = -1;
+        diff = -WAGER_AMOUNT;
         await ctx.eventQueue.pushDelayed(SLOT_ANIM_DURATION, "send_message", {
           chat_id,
           text: ctx.t("slot_almost_jp"),
@@ -109,7 +113,7 @@ c2.on("message:dice")
         });
         break;
       default:
-        diff = -1;
+        diff = -WAGER_AMOUNT;
         break;
     }
     const newBalance = lastTrx.current_balance + diff;
