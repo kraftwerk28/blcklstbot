@@ -1,6 +1,8 @@
 import { Composer } from "grammy";
+import { botHasSufficientPermissions } from "../guards/index.js";
+import { Context } from "../types/index.js";
 
-const composer = new Composer();
+const composer = new Composer<Context>();
 export default composer;
 
 composer
@@ -50,6 +52,38 @@ composer
   .on(["message:sticker", "message:animation"])
   .filter((ctx) => ctx.chat.id === -1001134294720 && ctx.from.id === 414490047)
   .use((ctx) => ctx.react("🤡"));
+
+// NN elephant
+composer
+  .on("message:text")
+  .filter(
+    (ctx) => ctx.from.id === 764043781 && !!ctx.msg.text.match(/^\s*(🐘\s*)+$/),
+  )
+  .use((ctx) => ctx.react("🤡"));
+
+// Forward blacklist
+const CHANNEL_ID_BLOCKLIST = [
+  -1001732054517, // pozdniakov3.0
+];
+const CHANNEL_USERNAME_BLOCKLIST = [
+  "ZOV_Voevoda",
+  "novynypravdy",
+  "ukhylyant_smsbot",
+];
+const CHECK_USER_ID = [764043781, 847814684];
+composer
+  .on("message:forward_origin")
+  .filter(botHasSufficientPermissions)
+  .filter((ctx) => CHECK_USER_ID.includes(ctx.from.id))
+  .filter((ctx) => {
+    if (ctx.msg.forward_origin.type !== "channel") return false;
+    const { chat } = ctx.msg.forward_origin;
+    return (
+      CHANNEL_USERNAME_BLOCKLIST.includes(chat.username ?? "") ||
+      CHANNEL_ID_BLOCKLIST.includes(chat.id)
+    );
+  })
+  .use((ctx) => ctx.deleteMessage());
 
 // Only
 // composer

@@ -67,7 +67,10 @@ composer2
       saved_permissions,
     } = ctx.reportedUser;
     const reportedChatMember = await ctx.getChatMemberCached(user_id);
-    if (reportedChatMember.status !== "member") {
+    if (
+      reportedChatMember.status !== "member" &&
+      reportedChatMember.status !== "restricted"
+    ) {
       return;
     }
     await ctx.dbStore.updateUser({

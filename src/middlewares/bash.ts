@@ -7,25 +7,39 @@ const exec = util.promisify(cp.exec);
 
 const composer = new Composer();
 
+const FORBIDDEN_ENV = new Set([
+  "PG_CONNECTION_STRING",
+  "REDIS_HOST",
+  "API_TOKEN",
+  "API_BASE",
+  "BOT_TOKEN",
+  "WEBHOOK_SERVER_PORT",
+  "WEBHOOK_URL",
+  "KRAFTWERK28_UID",
+  "REPORTS_CHANNEL_ID",
+  "REPORTS_CHANNEL_USERNAME",
+  "TREE_SITTER_SERVER_HOST",
+  "ENRY_SERVER_HOST",
+  "GITHUB_API_HOST",
+  "GITHUB_API_KEY",
+  "GITHUB_GIST_ID",
+  "COMMANDS_CHANNEL_ID",
+  "STACKEXCHANGE_API_KEY",
+  "SPAMWATCH_TOKEN",
+]);
+
 composer.on("message:text").hears(/^!(.+)$/, async (ctx) => {
   if (ctx.from.id !== ctx.botCreatorId) {
     return ctx.react("🗿");
   }
-  const {
-    BOT_TOKEN,
-    PG_CONNECTION_STRING,
-    API_TOKEN,
-    WEBHOOK_PATH,
-    WEBHOOK_DOMAIN,
-    GITHUB_API_KEY,
-    GITHUB_GIST_ID,
-    ...restEnv
-  } = process.env;
+  const env = Object.fromEntries(
+    Object.entries(process.env).filter((e) => !FORBIDDEN_ENV.has(e[0])),
+  );
   try {
     const { stdout } = await exec(ctx.match[1]!, {
       shell: "/bin/bash",
       // @ts-expect-error type
-      env: restEnv,
+      env,
       timeout: 5000,
     });
     return ctx.reply(code(escape(stdout)), {

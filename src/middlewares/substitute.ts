@@ -1,12 +1,15 @@
 import { Composer } from "../composer.js";
 import { messageIsReply } from "../guards/index.js";
+import { log } from "../logger.js";
 
 type ParsedQuery = {
   rawFrom: string;
   rawTo: string;
-  flags: string;
+  flags: string | undefined;
   isStrict: boolean;
   sep: string;
+  deleteFlag: boolean;
+  indexes?: number[];
 };
 
 function parseSedQuery(q: string): ParsedQuery | undefined {
@@ -17,34 +20,61 @@ function parseSedQuery(q: string): ParsedQuery | undefined {
   if (!sep) return;
   if ("|+".includes(sep)) sep = `\\${sep}`;
   const parseQueryRe = new RegExp(
-    String.raw`^s(!)?${sep}((?:\\${sep}|[^${sep}])+)${sep}((?:\\${sep}|[^${sep}])*)(?:${sep}([gimsu]*))?$`,
+    String.raw`^s(!)?${sep}((?:\\${sep}|[^${sep}])+)${sep}((?:\\${sep}|[^${sep}])*)(?:${sep}(\d+(?:,\d+)*)?([gimsud]*))?$`,
   );
   const sedQueryMatch = q.match(parseQueryRe);
   if (!sedQueryMatch) return;
-  type SedQueryMatch = [string, string, string, string, string];
-  const [, strictFlag, rawFrom, rawTo, flags] = sedQueryMatch as SedQueryMatch;
+  type SedQueryMatch = [
+    string, // Full match
+    string | undefined,
+    string,
+    string,
+    string | undefined,
+    string | undefined,
+  ];
+  const [, strictFlag, rawFrom, rawTo, indexesRaw, flags] =
+    sedQueryMatch as SedQueryMatch;
   const isStrict = strictFlag === "!";
-  return { rawFrom: rawFrom, rawTo: rawTo, flags, isStrict, sep };
+  return {
+    rawFrom: rawFrom,
+    rawTo: rawTo,
+    flags,
+    isStrict,
+    sep,
+    deleteFlag: flags?.includes("d") ?? false,
+    indexes: indexesRaw?.split(",").map((s) => parseInt(s)),
+  };
 }
 
 export function applySedQueries(
   inputText: string,
   queries: string[],
-): string | undefined {
+): { text: string; deleteFlag: boolean } | undefined {
   let nValidQueries = 0;
+  let deleteFlag = false;
   for (const sedQuery of queries) {
     const parsedQuery = parseSedQuery(sedQuery);
     if (!parsedQuery) continue;
-    const { rawFrom, rawTo, flags, isStrict } = parsedQuery;
+    log.info({ query: parsedQuery }, "Sed query");
+    if (parsedQuery.deleteFlag) deleteFlag = true;
     try {
-      const replaceFrom = new RegExp(rawFrom, flags);
+      if (parsedQuery.indexes && !parsedQuery.flags?.includes("g")) {
+        // When capture indexes are specified in the end, always use global flag
+        parsedQuery.flags ??= "";
+        parsedQuery.flags += "g";
+      }
+      const replaceFrom = new RegExp(parsedQuery.rawFrom, parsedQuery.flags);
+      let captureIndex = 0;
       const newText = inputText.replace(replaceFrom, (...args) => {
+        captureIndex += 1;
+        if (parsedQuery.indexes && !parsedQuery.indexes.includes(captureIndex))
+          return args[0];
         // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String/replace#specifying_a_function_as_a_parameter
         const capGroups = args.slice(
           0,
           args.findIndex((it) => typeof it === "number"),
         );
-        return rawTo.replace(
+        return parsedQuery.rawTo.replace(
           /[\\$](?:(&|\d+)|\{(&|\d+)\})/g,
           (fullMatch, groupIndex1, groupIndex2) => {
             // groupIndex1 is for indexes w/o braces, i.e. $0, \1
@@ -55,7 +85,7 @@ export function applySedQueries(
           },
         );
       });
-      if (isStrict && newText === inputText) return;
+      if (parsedQuery.isStrict && newText === inputText) return;
       inputText = newText;
       nValidQueries++;
     } catch {
@@ -65,7 +95,7 @@ export function applySedQueries(
   if (nValidQueries < queries.length) {
     return;
   }
-  return inputText;
+  return { text: inputText, deleteFlag };
 }
 
 function runSubstituteOnText(text: string, substitute: string) {
@@ -91,25 +121,25 @@ composer.on("edited_message:text", async (ctx, next) => {
   if (!reply) return next();
   const inputText = reply.text ?? reply.caption;
   if (!inputText) return next();
-  const finalText = runSubstituteOnText(inputText, ctx.editedMessage.text);
-  if (!finalText) return next();
-  await ctx.api.editMessageText(ctx.chat.id, replyMessageId, finalText);
+  const subResult = runSubstituteOnText(inputText, ctx.editedMessage.text);
+  if (!subResult) return next();
+  await ctx.api.editMessageText(ctx.chat.id, replyMessageId, subResult.text);
 });
 
 composer.filter(messageIsReply).on("message:text", async (ctx, next) => {
   const reply = ctx.message.reply_to_message;
   const inputText = reply.text ?? reply.caption;
   if (!inputText) return next();
-  const finalText = runSubstituteOnText(inputText, ctx.message.text);
-  if (!finalText) return next();
-  const sent = await ctx.reply(finalText, {
+  const subResult = runSubstituteOnText(inputText, ctx.message.text);
+  if (!subResult) return next();
+  const sent = await ctx.reply(subResult.text, {
     reply_to_message_id: reply.message_id,
   });
   await ctx.dbStore.redisClient.set(
     `substitute:${ctx.message.message_id}`,
     sent.message_id,
   );
-  if (ctx.dbChat?.delete_substitute_prompt) {
+  if (ctx.dbChat?.delete_substitute_prompt || subResult.deleteFlag) {
     try {
       await ctx.deleteMessage();
     } catch (err) {

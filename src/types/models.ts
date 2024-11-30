@@ -53,6 +53,7 @@ export type DbBalanceTrx = {
   dice_value?: number;
   dice_emoji?: string;
   current_balance: number;
+  chat_id?: number;
 };
 
 export type DbUserMessage = {

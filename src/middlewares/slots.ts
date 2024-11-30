@@ -83,29 +83,28 @@ c2.on("message:dice")
 
     // With the following distribution, player wins 62 points for 64 bets in
     // average, RTP = 96.875%
-    let diff = 0;
+    let winAmount = 0;
     switch (ctx.msg.dice.value) {
       case 0b111111 + 1:
-        diff = JP_AMOUNT - WAGER_AMOUNT;
+        winAmount = JP_AMOUNT;
         await ctx.eventQueue.pushDelayed(SLOT_ANIM_DURATION, "send_message", {
           chat_id,
-          text: ctx.t("slot_jp", { amount: diff }),
+          text: ctx.t("slot_jp", { amount: winAmount }),
           reply_to: message_id,
         });
         break;
       case 0b000000 + 1:
       case 0b010101 + 1:
       case 0b101010 + 1:
-        diff = WIN_AMOUNT - WAGER_AMOUNT;
+        winAmount = WIN_AMOUNT;
         await ctx.eventQueue.pushDelayed(SLOT_ANIM_DURATION, "send_message", {
           chat_id,
-          text: ctx.t("slot_win", { amount: diff }),
+          text: ctx.t("slot_win", { amount: winAmount }),
           reply_to: message_id,
         });
         break;
       case 0b101111 + 1:
       case 0b011111 + 1:
-        diff = -WAGER_AMOUNT;
         await ctx.eventQueue.pushDelayed(SLOT_ANIM_DURATION, "send_message", {
           chat_id,
           text: ctx.t("slot_almost_jp"),
@@ -113,17 +112,24 @@ c2.on("message:dice")
         });
         break;
       default:
-        diff = -WAGER_AMOUNT;
         break;
     }
-    const newBalance = lastTrx.current_balance + diff;
     await ctx.dbStore.knex<DbBalanceTrx>("balance_trx").insert({
       user_id: ctx.dbUser.id,
-      dice_emoji: ctx.msg.dice.emoji,
-      dice_value: ctx.msg.dice.value,
-      diff,
-      current_balance: newBalance,
+      chat_id,
+      diff: -WAGER_AMOUNT,
+      current_balance: lastTrx.current_balance - WAGER_AMOUNT,
     });
+    const newBalance = lastTrx.current_balance - WAGER_AMOUNT + winAmount;
+    if (winAmount > 0)
+      await ctx.dbStore.knex<DbBalanceTrx>("balance_trx").insert({
+        user_id: ctx.dbUser.id,
+        chat_id,
+        dice_emoji: ctx.msg.dice.emoji,
+        dice_value: ctx.msg.dice.value,
+        diff: winAmount,
+        current_balance: lastTrx.current_balance - WAGER_AMOUNT + winAmount,
+      });
     if (newBalance <= 0) {
       await ctx.eventQueue.pushDelayed(SLOT_ANIM_DURATION, "send_message", {
         chat_id,
@@ -199,6 +205,15 @@ c2.command("slot_rules", async (ctx) => {
   return ctx.reply(ctx.t("slot_rules"), { reply_parameters: { message_id } });
 });
 
+c2.command("slots_top", async (ctx) => {
+  `
+    select user_id, sum(diff) as win
+    from "balance_trx"
+    where diff > 0
+    group by user_id
+  `
+});
+
 c2.command("tumbochka", async (ctx, next) => {
   if (!ctx.dbUser) return next();
   const lastTrx = await ctx.dbStore
@@ -209,6 +224,7 @@ c2.command("tumbochka", async (ctx, next) => {
   if (!lastTrx || lastTrx.current_balance > 0) return;
   await ctx.dbStore.knex<DbBalanceTrx>("balance_trx").insert({
     user_id: ctx.dbUser.id,
+    chat_id: ctx.chat.id,
     diff: INITIAL_BALANCE,
     current_balance: lastTrx.current_balance + INITIAL_BALANCE,
   });
