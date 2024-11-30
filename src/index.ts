@@ -331,6 +331,7 @@ async function main() {
   bot.use(c.ping);
   bot.use(c.delMessage);
   bot.use(c.defCommand);
+  bot.use(c.help);
 
   const errorHandler = async (err: unknown) => {
     if (err instanceof BotError) {
