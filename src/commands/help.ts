@@ -17,14 +17,16 @@ composer
       <b>Sed emulation</b>
       Reply to a text with <a href="https://man.archlinux.org/man/sed.1.en">sed</a>-like string.
       May be repeated with newline as a separator.
-      The syntax is: <code>s[!]&lt;sep&gt;&lt;regex&gt;&lt;sep&gt;&lt;replacement&gt;/[indices][flags]</code>, where
+      The syntax is
+      <code>s[!]&lt;sep&gt;&lt;regex&gt;&lt;sep&gt;&lt;replacement&gt;&lt;sep&gt;[indices][flags]</code>
+      where
       - <code>!</code>: strict mode, if the resulting string is equal to the source text, be quiet
       - <code>sep</code>: any character from the set <code>/#@|+-"'</code>
       - <code>regex</code>: ECMAScript regular expression
-      - <code>replacement</code>: text to replace <code>regex</code> with. May contain <code>\`\\42\`</code> or <code>\`\\{42}\`</code> or <code>$42</code> to insert nth capture group. <code>\`\\0\`</code>, <code>\`\\{0}\`</code>, <code>$0</code> and <code>$&</code> means the whole matched string.
+      - <code>replacement</code>: text to replace <code>regex</code> with. May contain <code>\\42</code> or <code>\\{42}</code> or <code>$42</code> to insert nth capture group. 0th group or <code>$&</code> means the whole matched string
       - <code>indices</code>: comma-separated list of integers that indicates which matches to perform replacement on. I.e. <code>s/a/_/2,4</code> executed on string <code>aaaa</code> will return <code>a_a_</code>
-      - <code>flags</code>: set of characters from the following set:
-        - <code>g</code>: global flag
+      - <code>flags</code>: character(s) from the following set:
+        - <code>g</code>: global
         - <code>i</code>: ignore case
         - <code>m</code>: multiline mode
         - <code>s</code>: dot matches newline
