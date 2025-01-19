@@ -1,5 +1,5 @@
 /** @param {import('knex').Knex} knex */
-exports.up = async function (knex) {
+export async function up(knex) {
   await knex.schema.alterTable("users", (table) => {
     table.timestamp("banned_timestamp").nullable();
   });
@@ -9,7 +9,7 @@ exports.up = async function (knex) {
 };
 
 /** @param {import('knex').Knex} knex */
-exports.down = async function (knex) {
+export async function down(knex) {
   await knex.schema.alterTable("users", (table) => {
     table.dropColumn("banned_timestamp");
   });

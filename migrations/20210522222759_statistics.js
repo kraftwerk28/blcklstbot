@@ -1,5 +1,5 @@
 /** @param {import('knex').Knex} knex */
-exports.up = async function (knex) {
+export async function up(knex) {
   await knex.schema.createTable("stats", (table) => {
     table.bigInteger("chat_id").notNullable().primary();
     table.integer("captcha_kick_count").defaultTo(0);
@@ -8,6 +8,6 @@ exports.up = async function (knex) {
 };
 
 /** @param {import('knex').Knex} knex */
-exports.down = async function (knex) {
+export async function down(knex) {
   await knex.schema.dropTableIfExists("stats");
 };

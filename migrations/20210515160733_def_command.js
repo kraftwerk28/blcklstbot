@@ -1,5 +1,5 @@
 /** @param {import('knex').Knex} knex */
-exports.up = async function (knex) {
+export async function up(knex) {
   await knex.schema.createTable("dynamic_commands", (table) => {
     table.bigInteger("message_id").notNullable();
     table.bigInteger("chat_id").notNullable();
@@ -11,6 +11,6 @@ exports.up = async function (knex) {
 };
 
 /** @param {import('knex').Knex} knex */
-exports.down = async function (knex) {
+export async function down(knex) {
   await knex.schema.dropTableIfExists("dynamic_commands");
 };
