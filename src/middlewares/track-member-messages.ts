@@ -8,7 +8,7 @@ composer
   .on("message")
   .chatType(["group", "supergroup"])
   .use(async (ctx, next) => {
-    ctx.log.debug("Persisting user message");
+    // ctx.log.debug("Persisting user message");
     try {
       await ctx.dbStore.addUserMessage(ctx.msg, ctx.from);
     } catch (err) {

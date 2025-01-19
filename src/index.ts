@@ -58,6 +58,7 @@ async function main() {
   const dbStore = new DbStore(knex, redisClient);
   const eventQueue = new EventQueue<EventQueueEvent>(bot.api, dbStore);
   const botCreatorId = parseInt(process.env.KRAFTWERK28_UID);
+  const _lastUserMessages: Context["_lastUserMessages"] = {};
 
   eventQueue
     .on("pong", async ({ api, payload }) => {
@@ -115,9 +116,25 @@ async function main() {
         reply_parameters,
       });
     })
+    .on("troll1", async ({ api }) => {
+      const msg = _lastUserMessages[764043781];
+      if (msg) {
+        await api.sendMessage(
+          msg.chat_id,
+          ["чел... тебя уже заменил ИИ", "чел...", "чел..."]
+            .slice(0, 1 + Math.random() * 3)
+            .join("\n"),
+          { reply_parameters: { message_id: msg.message_id } },
+        );
+      }
+      const delay = 2 * 60 * 60 + Math.ceil(Math.random() * 2 * 60 * 60);
+      await eventQueue.pushDelayed(delay, "troll1", undefined);
+    })
     .onError((err) => {
       log.error(err, "Error in Event Queue");
     });
+
+  await eventQueue.pushDelayed(60, "troll1", undefined);
 
   function deleteItSoon(this: Context) {
     return async (msg: Message) => {
@@ -273,6 +290,7 @@ async function main() {
       banUser,
       _chatMemberCache: {},
       getChatMemberCached,
+      _lastUserMessages,
     });
     return next();
   });
@@ -298,31 +316,6 @@ async function main() {
   bot.use(m.muter);
   bot.use(m.slots);
   bot.use(m.misc);
-
-  const isPromoUrl = (raw: string) => {
-    try {
-      const u = new URL(raw);
-      const paramKeys = Array.from(u.searchParams.keys());
-      const BANNED_KEYS = ["promo", "ref", "claim"];
-      return (
-        u.host.endsWith(".xyz") &&
-        paramKeys.some((k) => BANNED_KEYS.includes(k))
-      );
-    } catch {
-      return false;
-    }
-  };
-  bot
-    .on("msg:entities")
-    .filter((ctx) =>
-      ctx.msg.entities.some(
-        (e) =>
-          (e.type === "text_link" && isPromoUrl(e.url)) ||
-          (e.type === "url" &&
-            isPromoUrl(ctx.msg.text.slice(e.offset, e.offset + e.length))),
-      ),
-    )
-    .use((ctx) => ctx.deleteMessage());
 
   bot.use(c.chatSettings);
   bot.use(c.report);
@@ -463,4 +456,4 @@ async function main() {
   }
 }
 
-main().catch(console.error);
+main().catch(log.error.bind(log));

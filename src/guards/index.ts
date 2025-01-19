@@ -8,7 +8,7 @@ export const botHasSufficientPermissions = async <C extends Context>(
   // TODO: cache chat member with some EXPIRE in redis
   const me = await ctx.getChatMemberCached(ctx.me.id);
   if (me.status !== "administrator" || !me.can_delete_messages) {
-    ctx.log.debug("Bot doesn't have sufficient permissions");
+    // ctx.log.debug("Bot doesn't have sufficient permissions");
     return false;
   }
   // FIXME: doesn't work for some reasons

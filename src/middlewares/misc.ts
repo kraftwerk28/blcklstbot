@@ -1,8 +1,9 @@
-import { Composer } from "grammy";
+import { Filter } from "grammy";
+import { Composer } from "../composer.js";
 import { botHasSufficientPermissions } from "../guards/index.js";
 import { Context } from "../types/index.js";
 
-const composer = new Composer<Context>();
+const composer = new Composer();
 export default composer;
 
 composer
@@ -69,6 +70,7 @@ const CHANNEL_USERNAME_BLOCKLIST = [
   "ZOV_Voevoda",
   "novynypravdy",
   "ukhylyant_smsbot",
+  "ASupersharij",
 ];
 const CHECK_USER_ID = [764043781, 847814684];
 composer
@@ -84,6 +86,119 @@ composer
     );
   })
   .use((ctx) => ctx.deleteMessage());
+
+composer
+  .on("message:forward_origin")
+  .filter((ctx) => ctx.chatId === -1002119332225)
+  .filter(
+    (ctx) =>
+      ctx.msg.forward_origin.type === "channel" &&
+      ctx.msg.forward_origin.chat.username === "Agdchan",
+  )
+  .use((ctx) => {
+    const { message_id } = ctx.msg;
+    return ctx.replyWithAnimation(
+      "CgACAgIAAx0EflJxgQABBQOgZ4gXTrQbgV9LwHdt2_PyjxDwJfAAAsZmAAKU3EFIisDkO8lfsN42BA",
+      { reply_parameters: { message_id } },
+    );
+  });
+
+const lenToChance = (ctx: Context) =>
+  Math.random() <
+  Math.min(((ctx.msg?.caption ?? ctx.msg?.text)?.length ?? 0) / 10, 1);
+
+composer
+  .on(["msg:text", "msg:caption"])
+  .filter(lenToChance)
+  .hears(/(?<=^|[^а-яіїє])я(?=$|[^а-яіїє])/i)
+  .filter(
+    (ctx) =>
+      (ctx.chat.id === -1002167883618 &&
+        ctx.from?.id !== 5857978484 &&
+        ctx.from?.id !== 389726243 &&
+        ctx.from?.id !== 458166704 &&
+        Math.random() < 0.2) ||
+      (ctx.chat.id === -1002167883618 &&
+        ctx.from?.id === 458166704 &&
+        Math.random() < 0.2) ||
+      ctx.chat.id === -1001281720535,
+  )
+  .use(async (ctx, next) => {
+    if (typeof ctx.match === "string") return next();
+    const fileId =
+      "CgACAgIAAx0ETGWA1wACN59nTk_TwfYLRfEDxaRuQuBMoTBifQACq6IAAqMLcUoAAZifuyewl942BA";
+    const { message_id, entities, caption_entities } = ctx.msg;
+    return ctx.replyWithAnimation(fileId, {
+      reply_parameters: {
+        message_id,
+        quote: ctx.match[0],
+        quote_entities: entities ?? caption_entities,
+        quote_position: ctx.match.index,
+      },
+    });
+  });
+
+composer
+  .on(["msg:text", "msg:caption"])
+  .filter(lenToChance)
+  .hears(/(?<=^|[^а-яіїє])ми(?=$|[^а-яіїє])/i)
+  .filter(
+    (ctx) =>
+      (ctx.chat.id === -1002167883618 &&
+        ctx.from?.id !== 5857978484 &&
+        ctx.from?.id !== 389726243) ||
+      ctx.chat.id === -1001281720535,
+  )
+  .use(async (ctx, next) => {
+    if (typeof ctx.match === "string") return next();
+    const fileId =
+      "CgACAgIAAx0ETGWA1wACN6BnTk_1W3S3eEqBDntGEio54lnY9AACrKIAAqMLcUqOC9EmWLCk_TYE";
+    const { message_id, entities, caption_entities } = ctx.msg;
+    return ctx.replyWithAnimation(fileId, {
+      reply_parameters: {
+        message_id,
+        quote: ctx.match[0],
+        quote_entities: entities ?? caption_entities,
+        quote_position: ctx.match.index,
+      },
+    });
+  });
+
+composer
+  .on("message")
+  .filter((ctx) => ctx.chat.id === -1002119332225 && ctx.from.id === 764043781)
+  .use((ctx, next) => {
+    ctx._lastUserMessages[ctx.from.id] = {
+      chat_id: ctx.chat.id,
+      message_id: ctx.msg.message_id,
+    };
+    return next();
+  });
+
+// const isPromoUrl = (raw: string) => {
+//   try {
+//     const u = new URL(raw);
+//     const paramKeys = Array.from(u.searchParams.keys());
+//     const BANNED_KEYS = ["promo", "ref", "claim"];
+//     return (
+//       u.host.endsWith(".xyz") && paramKeys.some((k) => BANNED_KEYS.includes(k))
+//     );
+//   } catch {
+//     return false;
+//   }
+// };
+
+// composer
+//   .on("msg:entities")
+//   .filter((ctx) =>
+//     ctx.msg.entities.some(
+//       (e) =>
+//         (e.type === "text_link" && isPromoUrl(e.url)) ||
+//         (e.type === "url" &&
+//           isPromoUrl(ctx.msg.text.slice(e.offset, e.offset + e.length))),
+//     ),
+//   )
+//   .use((ctx) => ctx.deleteMessage());
 
 // Only
 // composer

@@ -53,13 +53,16 @@ export type SendMessageEvent = BaseEvent<
   }
 >;
 
+export type Troll1Event = BaseEvent<"troll1">;
+
 export type EventQueueEvent =
   | PongEvent
   | CaptchaTimeoutEvent
   | UnkickAfterCaptcha
   | DeleteMessageEvent
   | UnmuteEvent
-  | SendMessageEvent;
+  | SendMessageEvent
+  | Troll1Event;
 
 export type BaseEvent<
   T extends string = any,

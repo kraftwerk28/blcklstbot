@@ -38,6 +38,7 @@ export interface Context extends GrammyContext {
   ): Promise<void>;
   _chatMemberCache: Record<number, ChatMember>;
   getChatMemberCached(this: Context, userId: number): Promise<ChatMember>;
+  _lastUserMessages: Record<number, { chat_id: number; message_id: number }>;
 }
 
 export type GroupChatContext = ChatTypeContext<Context, "group" | "supergroup">;
