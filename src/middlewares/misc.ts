@@ -54,6 +54,11 @@ composer
   .filter((ctx) => ctx.chat.id === -1001134294720 && ctx.from.id === 414490047)
   .use((ctx) => ctx.react("🤡"));
 
+// Meow Clown
+composer
+  .on(["message"])
+  .filter(ctx.from.id === 414490047)
+  .use((ctx) => ctx.react("🤡"));
 // NN elephant
 composer
   .on("message:text")
